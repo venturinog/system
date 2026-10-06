@@ -1,8 +1,8 @@
 %define modname system
 Name: issabel-system
 Summary: Issabel System Module
-Version: 5.0.0
-Release: 5
+Version: 6.0.0
+Release: 1
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -20,10 +20,10 @@ Requires: hdparm
 
 Obsoletes: elastix-system
 
-# commands: /bin/date /usr/bin/stat /usr/bin/du rm /bin/chown /bin/su /bin/df
+# commands: /usr/bin/date /usr/bin/stat /usr/bin/du rm /usr/bin/chown /usr/bin/su /usr/bin/df
 Requires: coreutils
 
-# commands: /sbin/dmsetup
+# commands: /usr/sbin/dmsetup
 Requires: device-mapper
 
 # commands: rpm
@@ -32,10 +32,10 @@ Requires: rpm
 # commands: yum
 Requires: yum
 
-# commands: /sbin/ip
+# commands: /usr/sbin/ip
 Requires: iproute
 
-# commands: /sbin/route
+# commands: /usr/sbin/route
 Requires: net-tools
 
 # netconfig assumes postfix service is present
@@ -58,9 +58,9 @@ Requires: cyrus-imapd
 
 Requires: /usr/sbin/saslpasswd2
 
-Requires: /sbin/pidof
-Requires: /bin/hostname
-Requires: /sbin/shutdown
+Requires: /usr/sbin/pidof
+Requires: /usr/bin/hostname
+Requires: /usr/sbin/shutdown
 
 %description
 Issabel System Module
@@ -144,7 +144,7 @@ fi
 
 # If openfire is not running probably we're in the distro installation process
 # So, i configure openfire init script as stopped by default
-/sbin/service openfire status | grep "not running" &>/dev/null
+/usr/sbin/service openfire status | grep "not running" &>/dev/null
 res=$?
 # Openfire esta apagado
 if [ $res -eq 0 ]; then
