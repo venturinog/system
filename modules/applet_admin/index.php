@@ -95,9 +95,9 @@ function showApplets_Admin($module_name)
 function saveApplets_Admin($module_name)
 {
     global $smarty;
-    $arrIDs_DAU = null;
+    $arrIDs_DAU = array();
 
-    if(is_array($_POST) & count($_POST)>0){
+    if(is_array($_POST) && count($_POST)>0){
         foreach($_POST as $key => $value){
             if(substr($key,0,7) == "chkdau_")
                 $arrIDs_DAU[] = substr($key,7);
