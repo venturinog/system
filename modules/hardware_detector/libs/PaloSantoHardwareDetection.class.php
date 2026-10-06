@@ -29,7 +29,7 @@ class PaloSantoHardwareDetection
     var $_DB; // instancia de la clase paloDB
     var $errMsg;
 
-    function PaloSantoHardwareDetection()
+    function __construct()
     {
 
     }
