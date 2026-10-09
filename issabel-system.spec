@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 1
+Release: 3
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -15,7 +15,7 @@ Requires(pre): dahdi
 Conflicts: elastix-agenda < 2.2.0-1
 Conflicts: elastix-pbx <= 2.4.0-15
 Requires: dhcp
-Requires: php-simplepie
+Requires: issabel-php-simplepie
 Requires: hdparm
 
 Obsoletes: elastix-system
@@ -186,3 +186,6 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Fri Oct 09 2026 Issabel Foundation <info@issabel.org> - 6.0.0-3
+- Require the unversioned PHP packages (php-*, 8.3 on EL10) instead of the
+  versioned php8.4-*, which conflict with the PHP 8.3 in the netinstall base.
