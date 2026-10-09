@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 3
+Release: 4
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -11,10 +11,8 @@ BuildArch: noarch
 Requires(pre): issabel-framework >= 5.0.0-1
 #Requires(pre): issabel-fax >= 2.2.0-4
 Requires(pre): php-soap
-Requires(pre): dahdi
 Conflicts: elastix-agenda < 2.2.0-1
 Conflicts: elastix-pbx <= 2.4.0-15
-Requires: dhcp
 Requires: issabel-php-simplepie
 Requires: hdparm
 
@@ -41,8 +39,8 @@ Requires: net-tools
 # netconfig assumes postfix service is present
 Requires: postfix
 
-# dhcpconfig assumes dhcpd service is present
-Requires: dhcp
+# dhcpconfig necesita un servidor DHCP, pero EL10 no trae el paquete 'dhcp'.
+# Ver TODO.md (hay que agregarlo y configurarlo).
 
 # commands: chkconfig
 Requires: chkconfig
@@ -186,6 +184,9 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Fri Oct 09 2026 Issabel Foundation <info@issabel.org> - 6.0.0-4
+- Drop the dahdi and dhcp requirements: neither exists in EL10. A DHCP server
+  still has to be added and configured; see TODO.md.
 * Fri Oct 09 2026 Issabel Foundation <info@issabel.org> - 6.0.0-3
 - Require the unversioned PHP packages (php-*, 8.3 on EL10) instead of the
   versioned php8.4-*, which conflict with the PHP 8.3 in the netinstall base.
