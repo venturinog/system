@@ -1,45 +1,31 @@
-/* APPLET NEWS */
-div.neo-applet-news-row {
-    height: 26px;
-    border-bottom: 1px dashed #ccc;
-    padding: 8px 0px 0px 0px;
+/* APPLET NEWS (tema Modern) */
+.iss-news { font-size: 13px; }
+
+.iss-news__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--tblr-border-color, #e3e8ef);
+}
+.iss-news__item:last-child { border-bottom: 0; }
+
+.iss-news__date {
+    flex: 0 0 auto;
+    font-size: 11px;
+    color: var(--tblr-secondary-color, #74838f);
+    border: 1px solid var(--tblr-border-color, #e3e8ef);
+    border-radius: 6px;
+    padding: 2px 6px;
+}
+.iss-news__title {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--tblr-body-color, #22303e);
+    text-decoration: none;
     overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
-
-.neo-applet-news-row img {
-    margin: 0px 5px 0px 4px;
-    border: 0px;
-}
-
-.neo-applet-news-row a {
-    color: #444;
-    text-decoration: none;
-}
-
-.neo-applet-news-row a:active a:hover {
-    color: #000099;
-    text-decoration: underline;
-}
-
-span.neo-applet-news-row-date {
-    padding: 2px 4px 2px 4px;
-    border: 1px solid #bbb;
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    border-radius: 3px;
-    background-color: #ffffff;
-}
-
-span.neo-applet-news-row-tweet {
-    padding: 2px 4px 2px 4px;
-    margin: 0px 3px 0px 3px;
-    height: 16px;
-    border: 1px solid #fff;
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    border-radius: 3px;
-    color: #fff;
-    font: 11px Verdana, Arial,Helvetica,sans-serif;
-    background-color: #E35332;
-}
+.iss-news__title:hover { color: #522b76; text-decoration: underline; }
+.iss-news__tweet { flex: 0 0 auto; color: #4099FF; font-size: 16px; }

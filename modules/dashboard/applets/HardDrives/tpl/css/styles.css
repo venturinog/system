@@ -1,50 +1,48 @@
-/* APPLET HD */
-div.neo-applet-hd-innerbox {
-    position:absolute;
-    top:20px;
-    right:20px;
-    width:300px;
-    height:100px;
-    border:1px solid #999;
-    -moz-border-radius: 8px;
-    -webkit-border-radius: 8px;
-    border-radius: 8px;
-    background-color:#f3f3f3;
+/* APPLET HARD DRIVES (tema Modern) */
+.iss-hd {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--tblr-border-color, #e3e8ef);
 }
-div.neo-applet-hd-innerbox-top {
-    position:relative;
-    padding:2px 0px 0px 8px;
-    width:292px;
-    height:25px;
+.iss-hd:last-of-type { border-bottom: 0; }
+.iss-hd__gauge { flex: 0 0 auto; }
+.iss-hd__info { flex: 1 1 auto; min-width: 0; }
+
+.iss-hd__legend {
+    font-size: 12.5px;
+    color: var(--tblr-secondary-color, #74838f);
+    margin-bottom: 8px;
 }
-div.neo-applet-hd-innerbox-bottom {
-    position:relative;
-    padding:5px 0px 0px 8px;
-    width:292px;
-    height:67px;
-    border-top:1px solid #999;
+.iss-hd__dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; }
+.iss-hd__dot.used { background: #3184d5; }
+.iss-hd__dot.free { background: #6e407e; }
+
+.iss-hd__specs { list-style: none; margin: 0; padding: 0; }
+.iss-hd__specs li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 4px 0;
+    font-size: 13px;
 }
-div.neo-applet-hd-report-row {
-    position:relative;
-    height:32px;
-    border-bottom: 1px dashed #ccc;
+.iss-hd__specs li span { color: var(--tblr-secondary-color, #74838f); }
+.iss-hd__specs li strong { color: var(--tblr-body-color, #22303e); text-align: right; font-weight: 600; }
+
+.iss-hd__warn { color: var(--tblr-secondary-color, #74838f); font-size: 12.5px; }
+
+.iss-hd__report {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 16px;
+    font-size: 12.5px;
+    margin-top: 8px;
 }
-div.neo-applet-hd-report-row-left {
-    position:relative;
-    float:left;
-    padding:3px 0px 0px 10px;
-    width: 220px;
-    height:29px;
-    overflow:hidden;
-    white-space:nowrap;
+.iss-hd__report > div {
+    border-top: 1px dashed var(--tblr-border-color, #e3e8ef);
+    padding: 6px 0;
+    color: var(--tblr-body-color, #22303e);
 }
-div.neo-applet-hd-report-row-right {
-    position:relative;
-    float:right;
-    width: 220px;
-    height:29px;
-    padding:3px 0px 0px 0px;
-    margin:0px 5px 0px 0px;
-    overflow:hidden;
-    white-space:nowrap;
-}
+.iss-hd__report strong { color: var(--tblr-body-color, #22303e); }
+.iss-hd__report small { display: block; color: var(--tblr-secondary-color, #74838f); }
