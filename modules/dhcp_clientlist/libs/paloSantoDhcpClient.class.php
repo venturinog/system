@@ -47,26 +47,52 @@ class paloSantoDhcpClienList {
 
 
     /////////NEW FUNCTIONS FOR MODULE DHCP_CLIENT
-    
+
+    /*
+     * Lee la lista de concesiones del archivo memfile de Kea. El formato es
+     * CSV con las columnas:
+     * address,hwaddr,client_id,valid_lifetime,expire,subnet_id,fqdn_fwd,
+     * fqdn_rev,hostname,state,user_context,pool_id
+     */
     function getDhcpClientList()
     {
-	    $data = array();
-	    $i = 0;    // Por compat, la lista empieza desde 1
-        foreach (file('/var/lib/dhcpd/dhcpd.leases') as $line) {
-            // Saltarse los comentarios
+        $data = array();
+        $i = 0;    // Por compat, la lista empieza desde 1
+        $sLeaseFile = '/var/lib/kea/kea-leases4.csv';
+        if (!file_exists($sLeaseFile)) {
+            return $data;
+        }
+        foreach (file($sLeaseFile) as $line) {
+            // Saltarse los comentarios y la linea de encabezado
             if (preg_match('/^\s*#/', $line)) continue;
-            
-            $regs = NULL;
-            if (preg_match('/^\s*lease\s+([0-9.]+)/i', $line, $regs)) {
-                $data[++$i] = array('iphost'    =>  $regs[1]);
-            } elseif (preg_match('|^\s*starts\s+\d+\s+([0-9/]+)\s+([0-9:]+)|i', $line, $regs)) {
-                $data[$i]['date_starts'] = $regs[1].' '.$regs[2];
-            } elseif (preg_match('|^\s*ends\s+\d+\s+([0-9/]+)\s+([0-9:]+)|i', $line, $regs)) {
-                $data[$i]['date_ends'] = $regs[1].' '.$regs[2];
-            } elseif (preg_match('/hardware\s+\S+\s+([a-z0-9:]+)/i', $line, $regs)) {
-                $data[$i]['macaddress'] = $regs[1];
-            } elseif (preg_match('/^\s*binding\sstate\s+(\w+)/i', $line, $regs)) {
-                $data[$i]['binding state'] = $regs[1];
+            if (strpos(ltrim($line), 'address,') === 0) continue;
+
+            $fields = str_getcsv(trim($line));
+            if (count($fields) < 10) continue;
+
+            $sIp        = $fields[0];
+            $sHwaddr    = $fields[1];
+            $iValid     = (int)$fields[3];
+            $iExpire    = (int)$fields[4];
+            $iState     = (int)$fields[9];
+
+            // state: 0=activa, 1=declinada, 2=expirada/reclamada
+            if ($iState == 0) $sBindingState = 'active';
+            elseif ($iState == 1) $sBindingState = 'declined';
+            else $sBindingState = 'expired';
+
+            $data[++$i] = array(
+                'iphost'        => $sIp,
+                'macaddress'    => $sHwaddr,
+                'binding state' => $sBindingState,
+            );
+
+            if ($iExpire > 0) {
+                $data[$i]['date_starts'] = date('Y/m/d H:i:s', $iExpire - $iValid);
+                $data[$i]['date_ends']   = date('Y/m/d H:i:s', $iExpire);
+            } else {
+                $data[$i]['date_starts'] = '';
+                $data[$i]['date_ends']   = '';
             }
         }
 

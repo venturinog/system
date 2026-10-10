@@ -22,6 +22,10 @@
   | The Initial Developer of the Original Code is PaloSanto Solutions    |
   +----------------------------------------------------------------------+
   $Id: dhcpconfig.php,v 1.1 2007/01/09 23:49:36 alex Exp $
+
+  El servidor DHCP de Issabel 6 es Kea (ISC DHCP no existe en EL10). Este
+  helper genera el archivo JSON /etc/kea/kea-dhcp4.conf y controla la unidad
+  systemd kea-dhcp4.
 */
 require_once 'Console/Getopt.php';
 
@@ -30,7 +34,7 @@ load_default_timezone();
 // Parse command-line options
 $opt = Console_Getopt::getopt($argv, '', array(
     'dumpconfig', // Dump DHCP configuration
-    'refresh',  // Rewrites /etc/dhcpd.conf from current config and network.db
+    'refresh',  // Rewrites /etc/kea/kea-dhcp4.conf from current config and network.db
     'config',   // Configurate DHCP options
     'start',    // Start DHCP service and mark as autostart
     'stop',     // Stop DHCP service and remove from autostart
@@ -90,6 +94,12 @@ function load_default_timezone()
     date_default_timezone_set($sDefaultTimezone);
 }
 
+// Path of the Kea DHCPv4 configuration file
+function keaConfigPath()
+{
+    return '/etc/kea/kea-dhcp4.conf';
+}
+
 // Parse and validate known command-line options
 function validateOptions($opt)
 {
@@ -117,15 +127,12 @@ function validateOptions($opt)
 // Dump configuration
 function action_dumpconfig($opt)
 {
-    if (file_exists('/etc/dhcp/dhcpd.conf')) {
-        readfile('/etc/dhcp/dhcpd.conf');
+    $sPath = keaConfigPath();
+    if (file_exists($sPath)) {
+        readfile($sPath);
         return TRUE;
-    } elseif (file_exists('/etc/dhcpd.conf')) {
-        readfile('/etc/dhcpd.conf');
-        return TRUE;
-    } else {
-        return FALSE;
     }
+    return FALSE;
 }
 
 // Execute DNS configuration. Returns TRUE on success
@@ -163,12 +170,9 @@ function action_configuration($opt)
     case '--filename':
         $sFILENAME = $option[1];
         break;
-    case '--filename':
-        $sFILENAME = $option[1];
-        break;
     case '--phonesonly':
         $bPhonesOnly = TRUE;
-    	break;
+        break;
     }
 
     // Check required parameters
@@ -196,192 +200,222 @@ function action_configuration($opt)
     return $bExito;
 }
 
-// Write out DHCP configuration from requested parameters. Return TRUE on success
+// Write out the Kea DHCP configuration from requested parameters. Return TRUE on success
 function configureDHCP($sIpStart, $sIpEnd, $iLeaseTime, $sGateway = NULL,
     $sDNS1 = NULL, $sDNS2 = NULL, $sWINS = NULL, $sNEXTSERVER = NULL, $sFILENAME = NULL, $bPhonesOnly = FALSE)
 {
-    $bExito = TRUE;
-
     // Fix reversed start and end
     if ((explode(".", $sIpStart) > explode(".", $sIpEnd))) {
         $t = $sIpStart; $sIpStart = $sIpEnd; $sIpEnd = $t;
     }
 
-    // Optional and derived parameters
-    $sConfigWINS = $sConfigDNS = $sConfigGateway = '';
-    if (!is_null($sGateway))
-        $sConfigGateway = "\toption routers\t\t\t{$sGateway};\n";
-    if (!is_null($sWINS))
-        $sConfigWINS = "\toption netbios-name-servers\t{$sWINS};\n";
-    if (!is_null($sNEXTSERVER))
-        $sConfigNEXTSERVER = "\tnext-server\t{$sNEXTSERVER};\n";
-    if (!is_null($sFILENAME))
-        $sConfigFILENAME = "\tfilename\t\"{$sFILENAME}\";\n";
-    $dnsList = array();
-    if (!is_null($sDNS1)) $dnsList[] = $sDNS1;
-    if (!is_null($sDNS2)) $dnsList[] = $sDNS2;
-    if (count($dnsList) > 0)
-        $sConfigDNS .= "\toption domain-name-servers\t".implode(', ', $dnsList).";\n";
-
     // Get timezone offset
-    $sTimezoneOffset = date("Z");
+    $sTimezoneOffset = (int)date("Z");
     $sTimezoneName = date_default_timezone_get();
 
-    // Find out hostname
+    // Find out hostname and derive a domain from it
     $sHostname = trim(file_get_contents("/proc/sys/kernel/hostname"));
-
-    // Figure out a domain for the hostname
-    $sDomain = array_pop(explode('.', $sHostname, 2));
+    $hostnameParts = explode('.', $sHostname, 2);
+    $sDomain = array_pop($hostnameParts);
 
     /* There might be multiple interfaces on the machine. The configuration
-     * file must be built with the subnet/mask information of the interface
-     * that contains the required IP range */
-    $sIpAddress = $sNetwork = $sNetmask = NULL;
-    foreach (listIpAddresses() as $addrInfo) {
+     * must be built with the subnet/mask information of the interface that
+     * contains the required IP range */
+    $sIpAddress = $sNetwork = $sNetmask = $sIntf = NULL;
+    foreach (listIpAddresses() as $sIfName => $addrInfo) {
         $sNetwork_start = construir_ip_red($sIpStart, $addrInfo['netmask']);
         $sNetwork_end   = construir_ip_red($sIpEnd, $addrInfo['netmask']);
         if ($addrInfo['network'] == $sNetwork_start && $addrInfo['network'] == $sNetwork_end) {
             $sNetwork = $addrInfo['network'];
             $sNetmask = $addrInfo['netmask'];
             $sIpAddress = $addrInfo['ipaddr'];
+            $sIntf = $sIfName;
             break;
         }
     }
     if (is_null($sIpAddress)) {
-        $bExito = FALSE;
         fprintf(STDERR, "ERR: start or end IPs are outside range on all configured interfaces\n");
-    } else {
-        // Query all configured fixed IPs for DHCP
-        $ipsInsideNet = array();
-        $ipsOutsideNet = array();
+        return FALSE;
+    }
 
-        // network.db exists in Elastix 2.0 only
-        if (file_exists('/var/www/db/network.db')) {
-            try {
-                $conn = new PDO('sqlite:/var/www/db/network.db');
-                $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                $sth = $conn->query('SELECT hostname, ipaddress, macaddress FROM dhcp_conf ORDER BY ipaddress');
-                $ips = $sth->fetchAll(PDO::FETCH_ASSOC);
+    // Query all configured fixed IPs for DHCP
+    $ipsInsideNet = array();
 
-                // Classify IPs on whether they are inside or outside subnet
-                foreach ($ips as $ip) {
-                    if (construir_ip_red($ip['ipaddress'], $sNetmask) == $sNetwork)
-                        $ipsInsideNet[] = $ip;
-                    else $ipsOutsideNet[] = $ip;
-                }
-                $conn = NULL;
-            } catch (PDOException $e) {
-                $bExito = FALSE;
-                fprintf(STDERR, "ERR: failed to query fixed IPs for DHCP - %s\n", $e->getMessage());
+    // network.db exists in Elastix 2.0 only
+    if (file_exists('/var/www/db/network.db')) {
+        try {
+            $conn = new PDO('sqlite:/var/www/db/network.db');
+            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $sth = $conn->query('SELECT hostname, ipaddress, macaddress FROM dhcp_conf ORDER BY ipaddress');
+            $ips = $sth->fetchAll(PDO::FETCH_ASSOC);
+
+            // Keep only the IPs that belong to the configured subnet. Kea
+            // requires reservations to live inside the subnet that serves them.
+            foreach ($ips as $ip) {
+                if (construir_ip_red($ip['ipaddress'], $sNetmask) == $sNetwork)
+                    $ipsInsideNet[] = $ip;
+            }
+            $conn = NULL;
+        } catch (PDOException $e) {
+            fprintf(STDERR, "ERR: failed to query fixed IPs for DHCP - %s\n", $e->getMessage());
+            return FALSE;
+        }
+    }
+
+    // Known phone MAC prefixes, when restricting the pool to known phones
+    $macs = array();
+    if ($bPhonesOnly) {
+        $sMysqlRootPass = 'iSsAbEl.2o17';
+        foreach (file('/etc/issabel.conf') as $s) {
+            $regs = NULL;
+            if (preg_match('/^mysqlrootpwd\s*=\s*(.+)$/', trim($s), $regs)) {
+                $sMysqlRootPass = $regs[1];
+                break;
             }
         }
 
-        $sMacClass = '';
-        $sMacAllow = '';
-        if ($bExito && $bPhonesOnly) {
-            $sMysqlRootPass = 'iSsAbEl.2o17';
-            foreach (file('/etc/issabel.conf') as $s) {
-                $regs = NULL;
-                if (preg_match('/^mysqlrootpwd\s*=\s*(.+)$/', trim($s), $regs)) {
-                    $sMysqlRootPass = $regs[1];
-                    break;
-                }
-            }
-
-            try {
-                $conn = new PDO('mysql:host=localhost;dbname=endpointconfig', 'root', $sMysqlRootPass);
-                $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                $sth = $conn->query('SELECT mac_prefix FROM mac_prefix ORDER BY mac_prefix');
-                $macs = $sth->fetchAll(PDO::FETCH_COLUMN);
-                if (count($macs) > 0) {
-                    $sMacAllow = 'allow members of "issabel-known-phones";';
-                    $sMacClass = "class \"issabel-known-phones\" {\n".
-                        "\tmatch if substring(hardware,1,3) = ".
-                        implode("\n\t\tor substring(hardware,1,3) = ", $macs).";\n}";
-                }
-                $conn = NULL;
-            } catch (PDOException $e) {
-                $bExito = FALSE;
-                fprintf(STDERR, "ERR: failed to query known phone MAC prefixes - %s\n", $e->getMessage());
-            }
+        try {
+            $conn = new PDO('mysql:host=localhost;dbname=endpointconfig', 'root', $sMysqlRootPass);
+            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $sth = $conn->query('SELECT mac_prefix FROM mac_prefix ORDER BY mac_prefix');
+            $macs = $sth->fetchAll(PDO::FETCH_COLUMN);
+            $conn = NULL;
+        } catch (PDOException $e) {
+            fprintf(STDERR, "ERR: failed to query known phone MAC prefixes - %s\n", $e->getMessage());
+            return FALSE;
         }
+    }
 
-        if ($bExito) {
-            $sConfigIPs_inside = $sConfigIPs_outside = '';
-            foreach ($ipsInsideNet as $ip) {
-                $sConfigIPs_inside .= "\n".
-                    "\thost {$ip['hostname']} {\n".
-                    "\t\thardware ethernet {$ip['macaddress']};\n".
-                    "\t\tfixed-address {$ip['ipaddress']};\n".
-                    "\t}\n";
-            }
-            foreach ($ipsOutsideNet as $ip) {
-                $sConfigIPs_outside .= "\n".
-                    "host {$ip['hostname']} {\n".
-                    "\thardware ethernet {$ip['macaddress']};\n".
-                    "\tfixed-address {$ip['ipaddress']};\n".
-                    "}\n";
-            }
+    // Build the option-data list common to the subnet
+    $optionData = array();
+    if (!is_null($sGateway))
+        $optionData[] = array('name' => 'routers', 'data' => $sGateway);
+    if (!is_null($sWINS))
+        $optionData[] = array('name' => 'netbios-name-servers', 'data' => $sWINS);
+    $dnsList = array();
+    if (!is_null($sDNS1)) $dnsList[] = $sDNS1;
+    if (!is_null($sDNS2)) $dnsList[] = $sDNS2;
+    if (count($dnsList) > 0)
+        $optionData[] = array('name' => 'domain-name-servers', 'data' => implode(', ', $dnsList));
+    $optionData[] = array('name' => 'nis-domain', 'data' => $sDomain);
+    $optionData[] = array('name' => 'domain-name', 'data' => $sDomain);
+    $optionData[] = array('name' => 'time-offset', 'data' => (string)$sTimezoneOffset);
+    $optionData[] = array('name' => 'ntp-servers', 'data' => $sIpAddress);
+    $optionData[] = array('name' => 'tftp-server-name', 'data' => $sIpAddress);
+    // The following option tells Cisco phones the address of the TFTP server
+    $optionData[] = array('name' => 'cisco-tftp-server', 'data' => $sIpAddress);
 
-            $sPlantilla = <<<PLANTILLA_DHCP
-ddns-update-style interim;
-ignore client-updates;
-allow booting;
-allow bootp;
+    // Fixed reservations. Kea uses hw-address/ip-address and does not require
+    // a hostname, but we keep it so the lease can be identified.
+    $reservations = array();
+    foreach ($ipsInsideNet as $ip) {
+        $entry = array(
+            'hw-address' => $ip['macaddress'],
+            'ip-address' => $ip['ipaddress'],
+        );
+        if (isset($ip['hostname']) && $ip['hostname'] !== '')
+            $entry['hostname'] = $ip['hostname'];
+        $reservations[] = $entry;
+    }
 
-# The following option tells Cisco phones the address of the TFTP server
-option cisco-tftp-server code 150 = ip-address;
+    // Pool, optionally restricted to known phones through a client class
+    $pool = array('pool' => $sIpStart.' - '.$sIpEnd);
 
-# The following option tells Polycom phones the URL of the boot server
-#option polycom-boot-server code 160 = string;
+    // Subnet definition
+    $subnet = array(
+        'id' => 1,
+        'subnet' => $sNetwork.'/'.maskToBits($sNetmask),
+        'interface' => $sIntf,
+        'pools' => array($pool),
+        'option-data' => $optionData,
+    );
+    if (!is_null($sNEXTSERVER)) $subnet['next-server'] = $sNEXTSERVER;
+    if (!is_null($sFILENAME)) $subnet['boot-file-name'] = $sFILENAME;
+    if (count($reservations) > 0) $subnet['reservations'] = $reservations;
 
-$sMacClass
-subnet $sNetwork netmask $sNetmask {
-$sConfigGateway
+    // Restrict the pool to known phones, if requested
+    $clientClasses = NULL;
+    if ($bPhonesOnly && count($macs) > 0) {
+        $tests = array();
+        foreach ($macs as $mac) {
+            $mac = strtolower(trim($mac));
+            $tests[] = "substring(hexstring(pkt4.mac, ':'),0,".strlen($mac).") == '".$mac."'";
+        }
+        $clientClasses = array(array(
+            'name' => 'issabel-known-phones',
+            'test' => implode(' or ', $tests),
+        ));
+        $subnet['pools'][0]['client-classes'] = array('issabel-known-phones');
+    }
 
-	option subnet-mask		$sNetmask;
-	option nis-domain		"$sDomain";
-	option domain-name		"$sDomain";
-$sConfigDNS
-	option time-offset		$sTimezoneOffset; # $sTimezoneName
-	option ntp-servers		$sIpAddress;
-	option tftp-server-name		"$sIpAddress";
-$sConfigWINS
-$sConfigNEXTSERVER
-$sConfigFILENAME
+    // Global configuration
+    $dhcp4 = array(
+        'interfaces-config' => array('interfaces' => array($sIntf)),
+        'valid-lifetime' => (int)$iLeaseTime,
+        'max-valid-lifetime' => 50000,
+        'lease-database' => array(
+            'type' => 'memfile',
+            'persist' => TRUE,
+            'name' => '/var/lib/kea/kea-leases4.csv',
+        ),
+        // Option 150 is not a standard DHCPv4 option, it must be defined
+        'option-def' => array(array(
+            'name' => 'cisco-tftp-server',
+            'code' => 150,
+            'type' => 'ipv4-address',
+            'space' => 'dhcp4',
+        )),
+        'subnet4' => array($subnet),
+    );
+    if (!is_null($clientClasses)) $dhcp4['client-classes'] = $clientClasses;
 
-	option cisco-tftp-server	$sIpAddress;
-#	class "polycom-phones" {
-#		match if substring(hardware,1,3) = 00:04:f2;
-#		option polycom-boot-server	"tftp://$sIpAddress";
-#	}
+    $sPlantilla = json_encode(array('Dhcp4' => $dhcp4), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n";
 
-	pool {
-		range dynamic-bootp $sIpStart $sIpEnd;
-		$sMacAllow
-	}
-	default-lease-time $iLeaseTime;
-	max-lease-time 50000;
-$sConfigIPs_inside
-}
-$sConfigIPs_outside
-PLANTILLA_DHCP;
-            if (file_exists('/etc/dhcp/dhcpd.conf')) {
-                file_put_contents('/etc/dhcp/dhcpd.conf', $sPlantilla);
-            } else {
-                file_put_contents('/etc/dhcpd.conf', $sPlantilla);
-            }
+    $sPath = keaConfigPath();
+    if (!is_dir(dirname($sPath)) && !@mkdir(dirname($sPath), 0755, TRUE)) {
+        fprintf(STDERR, "ERR: cannot create directory %s\n", dirname($sPath));
+        return FALSE;
+    }
+    if (file_put_contents($sPath, $sPlantilla) === FALSE) {
+        fprintf(STDERR, "ERR: cannot write %s\n", $sPath);
+        return FALSE;
+    }
+
+    // Validate the generated configuration before touching the service
+    if (file_exists('/usr/sbin/kea-dhcp4')) {
+        $output = $ret = NULL;
+        exec('/usr/sbin/kea-dhcp4 -t '.escapeshellarg($sPath).' 2>&1', $output, $ret);
+        if ($ret != 0) {
+            fprintf(STDERR, "ERR: invalid Kea configuration - %s\n", implode('', $output));
+            return FALSE;
         }
     }
 
     // Restart dhcp service for changes to take effect
-    if ($bExito && is_dhcp_active()) {
+    if (is_dhcp_active()) {
         $output = $ret = NULL;
-        exec('/sbin/service dhcpd restart', $output, $ret);
-        $bExito = ($ret == 0);
+        exec('/usr/bin/systemctl restart kea-dhcp4 2>&1', $output, $ret);
+        if ($ret != 0) {
+            fprintf(STDERR, "ERR: failed to restart kea-dhcp4 - %s\n", implode('', $output));
+            return FALSE;
+        }
     }
 
-    return $bExito;
+    return TRUE;
+}
+
+// Convert a dotted netmask into a prefix length
+function maskToBits($sMask)
+{
+    $iBits = 0;
+    foreach (explode('.', $sMask) as $octet) {
+        $iOctet = (int)$octet;
+        while ($iOctet) {
+            $iBits += $iOctet & 1;
+            $iOctet >>= 1;
+        }
+    }
+    return $iBits;
 }
 
 // List IPv4/Netmask for all Ethernet interfaces
@@ -389,16 +423,12 @@ function listIpAddresses()
 {
     $iflist = array(); $if = NULL;
     $output = NULL;
-    exec('/sbin/ip addr show', $output);
-    $bIsEther = FALSE;
+    exec('/usr/sbin/ip addr show', $output);
     $ip = NULL;
     foreach ($output as $s) {
         $regs = NULL;
         if (preg_match('/^\d+:\s+([\w\.-]+)(@\w+)?:\s*<(.*)>/', $s, $regs)) {
             $if = $regs[1];
-            $bIsEther = FALSE;
-        } elseif (strpos($s, 'link/ether') !== FALSE) {
-            $bIsEther = TRUE;
         } elseif (preg_match('|\s*inet (\d+\.\d+\.\d+.\d+)/(\d+) brd (\d+\.\d+\.\d+.\d+).+\s(([\w\.-]+)(:(\d+)?)?)\s*$|', trim($s), $regs)) {
             // Calcular IP de máscara a partir de número de bits
             $iMaskBits = $regs[2];
@@ -434,11 +464,11 @@ function construir_ip_red($ip, $mascara)
 function action_start($opt)
 {
     $output = $ret = NULL;
-	if (!is_dhcp_active()) {
-		exec('/sbin/service dhcpd start', $output, $ret);
+    if (!is_dhcp_active()) {
+        exec('/usr/bin/systemctl start kea-dhcp4 2>&1', $output, $ret);
         if ($ret != 0) return FALSE;
-	}
-    exec('/sbin/chkconfig --level 235 dhcpd on', $output, $ret);
+    }
+    exec('/usr/bin/systemctl enable kea-dhcp4 2>&1', $output, $ret);
     return ($ret == 0);
 }
 
@@ -447,10 +477,10 @@ function action_stop($opt)
 {
     $output = $ret = NULL;
     if (is_dhcp_active()) {
-        exec('/sbin/service dhcpd stop', $output, $ret);
+        exec('/usr/bin/systemctl stop kea-dhcp4 2>&1', $output, $ret);
         if ($ret != 0) return FALSE;
     }
-    exec('/sbin/chkconfig --level 235 dhcpd off', $output, $ret);
+    exec('/usr/bin/systemctl disable kea-dhcp4 2>&1', $output, $ret);
     return ($ret == 0);
 }
 
@@ -458,54 +488,70 @@ function action_stop($opt)
 function is_dhcp_active()
 {
     $output = $ret = NULL;
-    exec('/sbin/service dhcpd status > /dev/null 2>&1', $output, $ret);
+    exec('/usr/bin/systemctl is-active --quiet kea-dhcp4 2>&1', $output, $ret);
     return ($ret == 0);
 }
 
-// Refresh /etc/dhcpd.conf with fixed IPs from /var/www/db/network.db
+// Refresh the Kea configuration with fixed IPs from /var/www/db/network.db
 function action_refresh($opt)
 {
-    $bExito = TRUE;
+    $sPath = keaConfigPath();
+    if (!file_exists($sPath)) {
+        fprintf(STDERR, "ERR: Kea configuration file %s does not exist\n", $sPath);
+        return FALSE;
+    }
+    $conf = json_decode(file_get_contents($sPath), TRUE);
+    if (!is_array($conf) || !isset($conf['Dhcp4']['subnet4'][0])) {
+        fprintf(STDERR, "ERR: cannot parse Kea DHCP configuration\n");
+        return FALSE;
+    }
+
+    $dhcp4 = $conf['Dhcp4'];
+    $subnet = $dhcp4['subnet4'][0];
 
     $sIpStart = $sIpEnd = $iLeaseTime = $sGateway = $sDNS1 = $sDNS2 = $sWINS = $sNEXTSERVER = $sFILENAME = NULL;
-    $bSeenSubnet = FALSE;
     $bPhonesOnly = FALSE;
-    foreach (file('/etc/dhcp/dhcpd.conf') as $s) {
-        $regs = NULL;
-        if (preg_match('/^\s*subnet\s+(\S+)\s+netmask\s+(\S+)/', $s, $regs)) {
-            if ($bSeenSubnet) {
-                $bExito = FALSE;
-                fprintf(STDERR, "ERR: cannot handle multiple subnets\n");
-            } else $bSeenSubnet = TRUE;
-        } elseif (preg_match('/^\s*option\s+routers\s+(\S+)\s*;/', $s, $regs)) {
-            $sGateway = $regs[1];
-        } elseif (preg_match('/^\s*option\s+netbios-name-servers\s+(\S+)\s*;/', $s, $regs)) {
-            $sWINS = $regs[1];
-        } elseif (preg_match('/^\s*next-server\s+(\S+)\s*;/', $s, $regs)) {
-            $sNEXTSERVER = $regs[1];
-        } elseif (preg_match('/^\s*filename\s+(\S+)\s*;/', $s, $regs)) {
-            $sFILENAME = $regs[1];
-        } elseif (preg_match('/^\s*option\s+domain-name-servers\s+(\S+)\s*;/', $s, $regs)) {
-            if (is_null($sDNS1))
-                $sDNS1 = $regs[1];
-            else $sDNS2 = $regs[1];
-        } elseif (preg_match('/^\s*range\s+dynamic-bootp\s+(\S+)\s+(\S+)\s*;/', $s, $regs)) {
-            $sIpStart = $regs[1];
-            $sIpEnd = $regs[2];
-        } elseif (preg_match('/^\s*default-lease-time\s+(\d+)/', $s, $regs)) {
-            $iLeaseTime = $regs[1];
-        } elseif (strpos($s, 'issabel-known-phones') !== FALSE) {
-            $bPhonesOnly = TRUE;
+
+    if (isset($subnet['pools'][0]['pool'])) {
+        $parts = array_map('trim', explode('-', $subnet['pools'][0]['pool']));
+        if (count($parts) == 2) {
+            $sIpStart = $parts[0];
+            $sIpEnd = $parts[1];
         }
+    }
+    if (isset($dhcp4['valid-lifetime']))
+        $iLeaseTime = $dhcp4['valid-lifetime'];
+    if (isset($subnet['next-server']))
+        $sNEXTSERVER = $subnet['next-server'];
+    if (isset($subnet['boot-file-name']))
+        $sFILENAME = $subnet['boot-file-name'];
+    if (isset($dhcp4['client-classes']) && count($dhcp4['client-classes']) > 0)
+        $bPhonesOnly = TRUE;
 
-        if (!$bExito) break;
+    // Options may live either on the subnet or at the global scope
+    foreach (array($subnet, $dhcp4) as $scope) {
+        if (!isset($scope['option-data'])) continue;
+        foreach ($scope['option-data'] as $od) {
+            $name = isset($od['name']) ? $od['name'] : (isset($od['code']) ? $od['code'] : NULL);
+            if ($name === 'routers' && is_null($sGateway)) {
+                $sGateway = $od['data'];
+            } elseif ($name === 'netbios-name-servers' && is_null($sWINS)) {
+                $sWINS = $od['data'];
+            } elseif ($name === 'domain-name-servers' && is_null($sDNS1)) {
+                $list = array_map('trim', explode(',', $od['data']));
+                $sDNS1 = $list[0];
+                if (isset($list[1])) $sDNS2 = $list[1];
+            }
+        }
     }
 
-    if ($bExito) {
-        $bExito = configureDHCP($sIpStart, $sIpEnd, $iLeaseTime, $sGateway,
-            $sDNS1, $sDNS2, $sWINS, $sNEXTSERVER, $sFILENAME, $bPhonesOnly);
+    if (is_null($sIpStart) || is_null($sIpEnd)) {
+        fprintf(STDERR, "ERR: could not find IP range in Kea configuration\n");
+        return FALSE;
     }
+    if (is_null($iLeaseTime)) $iLeaseTime = 7200;
 
-    return $bExito;
+    return configureDHCP($sIpStart, $sIpEnd, $iLeaseTime, $sGateway,
+        $sDNS1, $sDNS2, $sWINS, $sNEXTSERVER, $sFILENAME, $bPhonesOnly);
 }
 ?>

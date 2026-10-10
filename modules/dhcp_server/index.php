@@ -293,7 +293,7 @@ function serviceStartDHCP($smarty, $module_name, $local_templates_dir, &$oForm)
     $paloDHCP = new PaloSantoDHCP();
     if(!$paloDHCP->startServiceDHCP()){
         $smarty->assign("mb_title",_tr('Information'));
-        $smarty->assign("mb_message",_tr("The Service dhcpd can't start"));
+        $smarty->assign("mb_message",_tr("The DHCP service can't start"));
         return $oForm->fetchForm("$local_templates_dir/dhcp.tpl", _tr("DHCP Configuration"), $_POST);
     }
 
@@ -315,7 +315,7 @@ function serviceStopDHCP($smarty, $module_name, $local_templates_dir, &$oForm)
     $paloDHCP = new PaloSantoDHCP();
     if(!$paloDHCP->stopServiceDHCP()){
         $smarty->assign("mb_title",_tr('Information'));
-        $smarty->assign("mb_message",_tr("The Service dhcpd can't stop"));
+        $smarty->assign("mb_message",_tr("The DHCP service can't stop"));
         return $oForm->fetchForm("$local_templates_dir/dhcp.tpl", _tr("DHCP Configuration"), $_POST);
     }
 

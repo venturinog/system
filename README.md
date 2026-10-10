@@ -15,6 +15,17 @@ System
 
 Issabel System Modules to manage network configuration, backups, repositories, dashboard, hardware detector, and more.
 
+DHCP Server (Kea)
+----
+
+Issabel 6 uses [Kea](https://www.isc.org/kea/) as the DHCP server (ISC `dhcp`
+does not exist on EL10). The privileged helper
+`/usr/share/issabel/privileged/dhcpconfig` writes the Kea configuration file
+`/etc/kea/kea-dhcp4.conf` (JSON) and controls the `kea-dhcp4` systemd unit. The
+web module (`modules/dhcp_server`) reads that file back and the client list
+(`modules/dhcp_clientlist`) reads the memfile leases from
+`/var/lib/kea/kea-leases4.csv`.
+
 
 License
 ----

@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 7
+Release: 8
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -39,8 +39,9 @@ Requires: net-tools
 # netconfig assumes postfix service is present
 Requires: postfix
 
-# dhcpconfig necesita un servidor DHCP, pero EL10 no trae el paquete 'dhcp'.
-# Ver TODO.md (hay que agregarlo y configurarlo).
+# dhcpconfig usa el servidor DHCP Kea (ISC dhcp no existe en EL10)
+# commands: /usr/sbin/kea-dhcp4
+Requires: kea
 
 # commands: chkconfig
 Requires: chkconfig
@@ -179,6 +180,12 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-8
+- DHCP Server: port the GUI and the privileged dhcpconfig helper from ISC
+  dhcpd to Kea (JSON config in /etc/kea/kea-dhcp4.conf, systemd unit kea-dhcp4),
+  and read the client list from the Kea memfile lease CSV. Require the kea
+  package.
+
 * Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-7
 - Dashboard: modernize the Performance Graphic applet (flot) with a theme-aware
   HTML legend (fixes it under the dark theme) and a responsive container.
