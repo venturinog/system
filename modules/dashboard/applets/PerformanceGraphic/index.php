@@ -38,7 +38,8 @@ class Applet_PerformanceGraphic
             'message'   =>  '(no message)',
         );
         //CallsMemoryCPU
-        $respuesta['html'] = "<div style='width:442px;height:240px;' id='dashboard-applet-performancegraph'></div>
+        $respuesta['html'] = "<div id='dashboard-applet-performancegraph' style='width:100%;height:230px;'></div>
+<div class='iss-perf-legend'></div>
 <script>
 $.plot('#dashboard-applet-performancegraph', ".
 $this->_sampler_CallsMemoryCPU().
@@ -46,10 +47,15 @@ $this->_sampler_CallsMemoryCPU().
     xaxes: [ {
         mode: 'time',
         timezone: 'browser',
-        position: 'bottom'
+        position: 'bottom',
+        font: {
+           size: 11,
+           lineHeight: 13,
+           family: 'sans-serif',
+           color: '#8a97a6'
+        }
     } ],
     yaxes: [ {
-    // align if we are to the right
           min: 0,
           font: {
              size: 11,
@@ -83,10 +89,11 @@ $this->_sampler_CallsMemoryCPU().
        }
     ],
     legend: {
-       position: 'ne',
-       labelBoxBorderColor: '#ffffff'
+       container: '.iss-perf-legend',
+       noColumns: 3,
+       labelBoxBorderColor: 'transparent'
      },
-    margin: { top: 20,  left: 20, bottom: 20, right: 10 },
+    margin: { top: 10,  left: 10, bottom: 10, right: 10 },
     series: {
        lines: {
           lineWidth: 1,
@@ -98,9 +105,9 @@ $this->_sampler_CallsMemoryCPU().
     grid: {
        hoverable: true,
        clickable: true,
-       tickColor: '#f6f6f6',
+       tickColor: 'rgba(128,128,128,0.15)',
        borderWidth: 0,
-       labelMargin: 18
+       labelMargin: 12
     },
 });
 </script>";

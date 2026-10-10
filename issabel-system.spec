@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 6
+Release: 7
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -179,6 +179,10 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-7
+- Dashboard: modernize the Performance Graphic applet (flot) with a theme-aware
+  HTML legend (fixes it under the dark theme) and a responsive container.
+
 * Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-6
 - Dashboard: drop the Telephony Hardware and Faxes applets (no hardware/fax
   support in Issabel 6), modernize the remaining applets to the "modern" theme,
