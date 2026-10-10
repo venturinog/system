@@ -636,10 +636,6 @@ function Array_Options($disabled="")
             "fx_db"             =>  array("desc"=>_tr('Database')),
             "fx_pdf"            =>  array("desc"=>_tr('PDF')),
         ),
-        "email"         =>  array(
-            "em_db"             =>  array("desc"=>_tr('Database')),
-            "em_mailbox"        =>  array("desc"=>_tr('Mailbox')),
-        ),
         "endpoint"      =>  array(
             "ep_db"             =>  array("desc"=>_tr('Database')),
             "ep_config_files"   =>  array("desc"=>_tr('Configuration Files')),

@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 4
+Release: 5
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -50,11 +50,6 @@ Requires: tar
 
 # commands: mysqldump mysql
 Requires: mariadb
-
-# commands: /usr/lib/cyrus-imapd/reconstruct
-Requires: cyrus-imapd
-
-Requires: /usr/sbin/saslpasswd2
 
 Requires: /usr/sbin/pidof
 Requires: /usr/bin/hostname
@@ -184,6 +179,10 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Fri Oct 09 2026 Issabel Foundation <info@issabel.org> - 6.0.0-5
+- Drop the email dashboard applets (webmail quota "System" and "Emails") and
+  the email backup/restore component, including its cyrus-imapd/saslpasswd2
+  dependencies: Issabel 6 no longer ships a local mail server.
 * Fri Oct 09 2026 Issabel Foundation <info@issabel.org> - 6.0.0-4
 - Drop the dahdi and dhcp requirements: neither exists in EL10. A DHCP server
   still has to be added and configured; see TODO.md.
