@@ -255,3 +255,25 @@ img.fullwidth {
 }
 .iss-calls__item:first-child { border-top: 0; }
 .iss-calls .badge { margin-right: 4px; }
+
+/* Applet Calendar (eventos) */
+.iss-events { list-style: none; margin: 0; padding: 0; }
+.iss-events__item {
+    padding: 6px 0;
+    border-top: 1px dashed var(--tblr-border-color, #e3e8ef);
+    font-size: 13px;
+}
+.iss-events__item:first-child { border-top: 0; }
+.iss-events__title { color: #522b76; text-decoration: none; font-weight: 500; }
+.iss-events__title:hover { text-decoration: underline; }
+.iss-events__meta { display: block; color: var(--tblr-secondary-color, #74838f); font-size: 12px; margin-top: 2px; }
+
+/* Applet Voicemails */
+.iss-vm { list-style: none; margin: 0; padding: 0; }
+.iss-vm__item {
+    padding: 6px 0;
+    border-top: 1px dashed var(--tblr-border-color, #e3e8ef);
+    font-size: 13px;
+    color: var(--tblr-body-color, #22303e);
+}
+.iss-vm__item:first-child { border-top: 0; }

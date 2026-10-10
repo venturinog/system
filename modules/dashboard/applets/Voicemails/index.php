@@ -65,7 +65,11 @@ class Applet_Voicemails extends Applet_ReportForExtension
                     ),
                     _tr('voicemail recived'));
             }
-            $respuesta['html'] = implode(".<br/>\n", $estadoVM).".<br/>\n";
+            $htmlItems = '';
+            foreach ($estadoVM as $vmItem) {
+                $htmlItems .= '<li class="iss-vm__item">'.$vmItem.'</li>';
+            }
+            $respuesta['html'] = '<ul class="iss-vm">'.$htmlItems.'</ul>';
         }
     }
 }
