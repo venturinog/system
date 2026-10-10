@@ -64,7 +64,12 @@ SQL_LLAMADAS_RECIBIDAS;
                         _tr('call record'))
                         .($answ ? str_replace('{time}', $tupla['duration'], _tr('call duration')) : '.');
                 }
-                $respuesta['html'] = implode('<br/>', $estadoLlamadas);
+                $html = implode('</li><li class="iss-calls__item">', $estadoLlamadas);
+                $html = str_replace(
+                    array("<font color='green'>", "<font color='red'>", '</font>'),
+                    array('<span class="badge bg-green-lt">', '<span class="badge bg-red-lt">', '</span>'),
+                    $html);
+                $respuesta['html'] = '<ul class="iss-calls"><li class="iss-calls__item">'.$html.'</li></ul>';
             }
         }
     }
