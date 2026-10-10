@@ -186,3 +186,61 @@ img.fullwidth {
  -webkit-animation-iteration-count: infinite;
  -webkit-animation-duration: 5s;
 }
+
+/* =========================================================================
+   Issabel 6 · tema Modern: contenedor de applets (override de lo de arriba)
+   Mantiene las clases/ids que usa 1_javascript.js (applet_col_*, portlet-*,
+   appletwindow_*, appletrefresh). Usa tokens de Tabler para el modo oscuro.
+   ========================================================================= */
+.iss-appletgrid { display: flex; gap: 16px; align-items: flex-start; width: 100%; }
+.iss-appletgrid .appletcolumn { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+
+.appletwindow {
+    float: none;
+    width: auto;
+    height: auto;
+    margin: 0 0 16px 0;
+    padding: 0;
+    background-color: var(--tblr-bg-surface, #fff);
+    border: 1px solid var(--tblr-border-color, #e3e8ef);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    overflow: hidden;
+    transition: box-shadow .2s;
+}
+.appletwindow:hover { box-shadow: 0 4px 16px rgba(16, 24, 40, .10); }
+
+.appletwindow > .appletwindow_topbar {
+    position: static;
+    height: auto;
+    padding: 12px 16px;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--tblr-body-color, #22303e);
+    background-color: var(--tblr-bg-surface-secondary, #f7f8fa);
+    border-bottom: 1px solid var(--tblr-border-color, #e3e8ef);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: move;
+}
+.appletwindow > .appletwindow_topbar > .appletwindow_title {
+    position: static;
+    font: inherit;
+    color: inherit;
+    padding: 0;
+    float: none;
+}
+.appletwindow > .appletwindow_topbar > .appletwindow_widgets { padding: 0; }
+.appletwindow > .appletwindow_topbar > .appletwindow_widgets > a { color: var(--tblr-secondary-color, #74838f); cursor: pointer; }
+.appletwindow > .appletwindow_topbar > .appletwindow_widgets > a:hover { color: #522b76; }
+
+.appletwindow > .appletwindow_content { position: static; top: auto; left: auto; width: auto; padding: 16px; }
+.appletwindow_wait { text-align: center; }
+.imageSpin { width: 84px; height: auto; opacity: .5; }
+
+@media (max-width: 900px) {
+    .iss-appletgrid { flex-direction: column; }
+    .iss-appletgrid .appletcolumn { flex: 1 1 auto; width: 100%; }
+}
