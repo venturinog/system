@@ -49,13 +49,8 @@ class Applet_ProcessesStatus
 
         $listaIconos = array(
             'Asterisk'  =>  'icon_pbx.png',
-            'OpenFire'  =>  'icon_im.png',
-            'Prosody'   =>  'icon_im.png',
-            'Hylafax'   =>  'icon_fax.png',
-            'Postfix'   =>  'icon_email.png',
             'MySQL'     =>  'icon_db.png',
             'Apache'    =>  'icon_www.png',
-            'Dialer'    =>  'icon_headphones.png',
         );
         $sIconoDesconocido = 'system.png';
 
@@ -127,11 +122,7 @@ class Applet_ProcessesStatus
 
         $acciones = array('start', 'restart', 'stop', 'on', 'off');
         $servicios = array(
-            'Asterisk'  =>  'asterisk',            
-            'OpenFire'  =>  'openfire',            
-            'Prosody'   =>  'prosody',            
-            'Hylafax'   =>  'hylafax',
-            'Postfix'   =>  'postfix',
+            'Asterisk'  =>  'asterisk',
             'MySQL'     =>  'mysqld',
             'Apache'    =>  'httpd',
         );
@@ -185,41 +176,13 @@ class Applet_ProcessesStatus
     }
 
     private function getStatusServices()
-    {   // file pid service asterisk    is /var/run/asterisk/asterisk.pid
-        // file pid service openfire    is /var/run/openfire.pid
-        // file pid service hylafax     no founded but name services are hfaxd and faxq
-        // file pid service iaxmodem    is /var/run/iaxmodem.pid
-        // file pid service postfix     is /var/spool/postfix/pid/master.pid (can't to access to file by own permit,is better to use by CMD the serviceName is master)
-        // file pid service mysql       is /var/run/mysqld/mysqld.pid (can't to access to file by own permit,is better to use by CMD the serviceName is mysqld)
-        // file pid service apache      is /var/run/httpd.pid
-
+    {
+        /* Issabel 6: solo se monitorean los servicios críticos de la plataforma.
+         * (Telefonía/hardware, IM, fax y correo se retiraron; ver GUItodo/AGENTS.)
+         * A futuro: Issabel Network e Issabel Webphone (ver TODO.md). */
         $arrSERVICES["Asterisk"]["status_service"] = $this->_existPID_ByFile("/var/run/asterisk/asterisk.pid","asterisk");
         $arrSERVICES["Asterisk"]["activate"] = $this->_isActivate("asterisk");
         $arrSERVICES["Asterisk"]["name_service"]   = "Telephony Service";
-        if($this->_existPID_ByFile("/var/run/openfire.pid","openfire") <> 'Not_exists') {
-            $arrSERVICES["OpenFire"]["status_service"] = $this->_existPID_ByFile("/var/run/openfire.pid","openfire");
-            $arrSERVICES["OpenFire"]["activate"] = $this->_isActivate("openfire");
-            $arrSERVICES["OpenFire"]["name_service"]   = "Instant Messaging Service";
-        } else if ($this->_existPID_ByFile("/var/run/prosody/prosody.pid","prosody") <> 'Not_exists'){
-            $arrSERVICES["Prosody"]["activate"] = $this->_isActivate("prosody");
-            $arrSERVICES["Prosody"]["status_service"] = $this->_existPID_ByFile("/var/run/prosody/prosody.pid","prosody");
-            $arrSERVICES["Prosody"]["name_service"]   = "Instant Messaging Service";
-        } else {
-            $arrSERVICES["OpenFire"]["status_service"] = $this->_existPID_ByFile("/var/run/openfire.pid","openfire");
-            $arrSERVICES["OpenFire"]["activate"] = $this->_isActivate("openfire");
-            $arrSERVICES["OpenFire"]["name_service"]   = "Instant Messaging Service";
-        }
-
-        $arrSERVICES["Hylafax"]["status_service"]  = $this->getStatusHylafax();
-        $arrSERVICES["Hylafax"]["activate"]        = $this->_isActivate("hylafax");
-        $arrSERVICES["Hylafax"]["name_service"]    = "Fax Service";
-/*
-        $arrSERVICES["IAXModem"]["status_service"] = $this->_existPID_ByFile("/var/run/iaxmodem.pid","iaxmodem");
-        $arrSERVICES["IAXModem"]["name_service"]   = "IAXModem Service";
-*/
-        $arrSERVICES["Postfix"]["status_service"]  = $this->_existPID_ByCMD("master","postfix");
-        $arrSERVICES["Postfix"]["activate"]        = $this->_isActivate("postfix");
-        $arrSERVICES["Postfix"]["name_service"]    = "Email Service";
 
         $arrSERVICES["MySQL"]["status_service"]    = $this->_existPID_ByCMD("mysqld",array("mysqld", "mariadb"));
         $arrSERVICES["MySQL"]["activate"]      = $this->_isActivate("mysqld");
@@ -290,18 +253,6 @@ class Applet_ProcessesStatus
         }
 
         return in_array($process, $this->_initscript_cache) ? 1 : 0;
-    }
-
-    private function getStatusHylafax()
-    {
-        $status_hfaxd = $this->_existPID_ByCMD("hfaxd","hylafax");
-        $status_faxq  = $this->_existPID_ByCMD("faxq","hylafax");
-        if($status_hfaxd == "OK" && $status_faxq == "OK")
-            return "OK";
-        elseif($status_hfaxd == "Shutdown" && $status_faxq == "Shutdown")
-            return "Shutdown";
-        elseif($status_hfaxd == "Not_exists" && $status_faxq == "Not_exists")
-            return "Not_exists";
     }
 
 }

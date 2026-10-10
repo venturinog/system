@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 5
+Release: 6
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -179,6 +179,11 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-6
+- Dashboard: drop the Telephony Hardware and Faxes applets (no hardware/fax
+  support in Issabel 6), modernize the remaining applets to the "modern" theme,
+  and reduce Processes Status to Asterisk, MariaDB and Apache.
+
 * Fri Oct 09 2026 Issabel Foundation <info@issabel.org> - 6.0.0-5
 - Drop the email dashboard applets (webmail quota "System" and "Emails") and
   the email backup/restore component, including its cyrus-imapd/saslpasswd2
