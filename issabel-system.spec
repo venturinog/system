@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 8
+Release: 9
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -180,6 +180,11 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-9
+- Processes Status: use /usr/sbin/pidof (EL10 merges /sbin) and accept the
+  mariadbd process/unit name, so the Database Service row is no longer reported
+  as down on Rocky 10.
+
 * Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-8
 - DHCP Server: port the GUI and the privileged dhcpconfig helper from ISC
   dhcpd to Kea (JSON config in /etc/kea/kea-dhcp4.conf, systemd unit kea-dhcp4),
