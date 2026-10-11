@@ -23,7 +23,7 @@
     <input type="hidden" name="idCard" value="{$DESC_ID}" />
 
     <label id="port_desc">{$CARD} # {$ID}: {$TIPO} {$ADICIONAL}</label>
-    <div id="form" style='background-color:yellow'>
+    <div id="form" style='background-color: var(--tblr-warning-lt, #fff3cd); color: var(--iss-text)'>
     <!--<table border="0" width="40%" cellspacing="0" style="border:1px solid black">-->
         {foreach key=key item=echocancel name=arrPortsEchoInfo from=$arrPortsEcho}
         <tr class="letra12">

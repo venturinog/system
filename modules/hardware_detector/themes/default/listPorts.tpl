@@ -83,7 +83,7 @@
                             <legend id="{$data.DESC.ID}" class="sombreado">{$CARD} # {$data.DESC.ID}: {$data.DESC.TIPO} {$data.DESC.ADICIONAL} </legend>
                             <table border ='0' align="left" cellspacing="0" cellpadding="3" width="100%">
                                 <tr>
-                                    <td class="textConf" width="25%" style="background-color:#EFEFEF">
+                                    <td class="textConf" width="25%" style="background-color: var(--iss-surface-2)">
                                         <div valign="middle">
                                             <div>{$SET_PARAMETERS_PORTS}.</div>
                                             <div align="center"><a id="confSPAN{$data.DESC.ID}" class="confSPAN">{$Configuration_Span}</a></div>
@@ -93,7 +93,7 @@
                                         </div>
                                     </td>
                                     <td width="5px"></td> <!-- Espàcio -->
-                                    <td align="right" style="background-color:#EFEFEF">
+                                    <td align="right" style="background-color: var(--iss-surface-2)">
                                         <table border ='0' align="right" cellspacing="0" cellpadding="0">
                                             <tr> 
                                                 <td colspan="4">
@@ -105,7 +105,7 @@
                                                                     <tr>
                                                                 {/if}
                                                                         <td>
-                                                                            <table style='border:1px #CCCCCC solid;padding:1px;background-color:white;' border='0' callpadding='0' cellspacing='0' onMouseOver="this.style.backgroundColor='#f2f2f2';" onMouseOut="this.style.backgroundColor='#ffffff';">
+                                                                            <table style='border:1px var(--iss-border) solid;padding:1px;background-color: var(--iss-surface);' border='0' callpadding='0' cellspacing='0' onMouseOver="this.style.backgroundColor='var(--iss-surface-2)';" onMouseOut="this.style.backgroundColor='var(--iss-surface)';">
                                                                                 <tr><td  align='center' style='font-size:11px;background-image:url(modules/hardware_detector/images/{$puerto.ESTADO_DAHDI});height:64px;width:68px;background-repeat:no-repeat;vertical-align:top'><p><br />{$puerto.TIPO}<br />{$puerto.LOCALIDAD} </p></td></tr>
                                                                                 <tr><td  align='center' style='width:68px;height:28px;font-size:11px;color:{$puerto.ESTADO_ASTERISK_COLOR}'>{$puerto.ESTADO_ASTERISK}</td></tr>
                                                                             </table>
@@ -117,7 +117,7 @@
                                                             {/foreach}
                                                     {else}
                                                         <tr>
-                                                            <td style='border:1px #CCCCCC solid;padding:1px;background-color:white'>{$PORT_NOT_FOUND}</td>
+                                                            <td style='border:1px var(--iss-border) solid;padding:1px;background-color: var(--iss-surface)'>{$PORT_NOT_FOUND}</td>
                                                         </tr>
                                                     {/if}
                                                 </table>
@@ -144,13 +144,13 @@
       {if $arrMisdn != "noMISDN"}
       <table border ='0' align="left" cellspacing="0" cellpadding="0" >
         <tr>
-          <td style='border:1px #CCCCCC solid' align='center' class="moduleTitle">{$CARD_MISDN}</td>
+          <td style='border:1px var(--iss-border) solid' align='center' class="moduleTitle">{$CARD_MISDN}</td>
         </tr>
         <tr> 
           <td>
             <table border ='0' align="center" cellspacing="0" cellpadding="0" class="table_title_row" width='100%'>
             <tr>
-                 <td style='border:1px #CCCCCC solid;padding:1px;background-color:white;font-size:10;'>{foreach from=$arrMisdn item=info}{$info}<br/>{/foreach}
+                 <td style='border:1px var(--iss-border) solid;padding:1px;background-color: var(--iss-surface);font-size:10;'>{foreach from=$arrMisdn item=info}{$info}<br/>{/foreach}
                  </td>
             </tr>
             </table>
@@ -161,7 +161,7 @@
     </td>
   </tr>
 </table>
-<center><h3 style='color:#990033;font-size:14px'>{$CARDS_NOT_FOUNDS}</h3></center>
+<center><h3 style='color: var(--iss-brand-ink);font-size:14px'>{$CARDS_NOT_FOUNDS}</h3></center>
 
 {*
 {counter start=1 skip=1 print=false assign=cnt}

@@ -27,7 +27,7 @@ var serv_msecdiff = browser_date.getTime() - serv_date2.getTime();
           </tr>
           <tr>
             <td width="15%"><b>{$TIME_NUEVA_FECHA}:</b></td>
-            <td><input type="text" name="date" id="datepicker" value="{$CURRENT_DATE}" style = "width: 10em; color: rgb(136, 68, 0); background-color: rgb(250, 250, 250); border: 1px solid rgb(153, 153, 153); text-align: center;" READONLY>
+            <td><input type="text" name="date" id="datepicker" value="{$CURRENT_DATE}" class="form-control form-control-sm" style="max-width: 12em; text-align: center;" readonly>
           </tr>
           <tr>
             <td width="15%"><b>{$TIME_NUEVA_HORA}:</b></td>
