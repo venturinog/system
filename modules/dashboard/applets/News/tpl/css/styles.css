@@ -27,5 +27,5 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.iss-news__title:hover { color: #522b76; text-decoration: underline; }
+.iss-news__title:hover { color: #572364; text-decoration: underline; }
 .iss-news__tweet { flex: 0 0 auto; color: #4099FF; font-size: 16px; }

@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 9
+Release: 10
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -180,6 +180,10 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-10
+- Dashboard: use the official Issabel brand purple (#572364) in the applet and
+  News styles (was #522b76).
+
 * Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-9
 - Processes Status: use /usr/sbin/pidof (EL10 merges /sbin) and accept the
   mariadbd process/unit name, so the Database Service row is no longer reported
