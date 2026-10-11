@@ -184,8 +184,8 @@ class Applet_ProcessesStatus
         $arrSERVICES["Asterisk"]["activate"] = $this->_isActivate("asterisk");
         $arrSERVICES["Asterisk"]["name_service"]   = "Telephony Service";
 
-        $arrSERVICES["MySQL"]["status_service"]    = $this->_existPID_ByCMD("mysqld",array("mysqld", "mariadb"));
-        $arrSERVICES["MySQL"]["activate"]      = $this->_isActivate("mysqld");
+        $arrSERVICES["MySQL"]["status_service"]    = $this->_existPID_ByCMD(array("mysqld", "mariadbd"),array("mysqld", "mariadb"));
+        $arrSERVICES["MySQL"]["activate"]      = $this->_isActivate(array("mysqld", "mariadb"));
         $arrSERVICES["MySQL"]["name_service"]      = "Database Service";
 
         $arrSERVICES["Apache"]["status_service"]   = $this->_existPID_ByCMD('httpd',"httpd");
@@ -209,7 +209,9 @@ class Applet_ProcessesStatus
     {
         if (!is_array($nameService)) $nameService = array($nameService);
         if (!$this->_existService($nameService)) return "Not_exists";
-        foreach (explode(' ', trim(`/sbin/pidof $serviceName`)) as $pid) {
+        if (!is_array($serviceName)) $serviceName = array($serviceName);
+        $cmd = '/usr/sbin/pidof ' . implode(' ', array_map('escapeshellarg', $serviceName));
+        foreach (explode(' ', trim(`$cmd`)) as $pid) {
             if (ctype_digit($pid) && (is_dir("/proc/$pid"))) return 'OK';
         }
         return 'Shutdown';
@@ -252,7 +254,11 @@ class Applet_ProcessesStatus
             }
         }
 
-        return in_array($process, $this->_initscript_cache) ? 1 : 0;
+        if (!is_array($process)) $process = array($process);
+        foreach ($process as $p) {
+            if (in_array($p, $this->_initscript_cache)) return 1;
+        }
+        return 0;
     }
 
 }
