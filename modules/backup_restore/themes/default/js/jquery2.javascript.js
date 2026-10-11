@@ -63,6 +63,5 @@ $(document).ready((function() {
 
     $("#sortable1, #sortable2").disableSelection();
 
-    $("a[rel*=facebox]").facebox();
 }));
 

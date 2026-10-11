@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 10
+Release: 11
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -180,6 +180,11 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Sun Oct 11 2026 Issabel Foundation <info@issabel.org> - 6.0.0-11
+- Remove hardcoded light colours and inline JS hover colours from the
+  time_config, hardware_detector and backup_restore templates so they follow the
+  theme in dark mode. Drop the dead jQuery facebox plugin from backup_restore.
+
 * Sat Oct 10 2026 Issabel Foundation <info@issabel.org> - 6.0.0-10
 - Dashboard: use the official Issabel brand purple (#572364) in the applet and
   News styles (was #522b76).
