@@ -1,12 +1,15 @@
-<table width="99%" border="0" cellspacing="0" cellpadding="4" align="center">
-    <tr class="letra12">
-        <td align="left"><input class="button" type="submit" name="save" value="{$SAVE}"></td>
-    </tr>
-</table>
-<table class="tabForm" style="font-size: 16px;" width="99%" >
-    <tr class="letra12">
-        <td align="left"><b>{$currency.LABEL}: </b></td>
-        <td align="left">{$currency.INPUT}</td>
-    </tr>
-
-</table>
+<div class="iss-form">
+    <div class="iss-form__toolbar">
+        <div class="iss-form__buttons">
+            <input class="button" type="submit" name="save" value="{$SAVE}">
+        </div>
+    </div>
+    <section class="iss-card">
+        <div class="iss-card__body iss-formgrid">
+            <div class="iss-field">
+                <span class="iss-field__label">{$currency.LABEL}</span>
+                <span class="iss-field__control">{$currency.INPUT}</span>
+            </div>
+        </div>
+    </section>
+</div>

@@ -1,44 +1,38 @@
-
-<table width="99%" border="0" cellspacing="0" cellpadding="4" align="center">
-    <tr class="letra12">
-        {if $mode eq 'input'}
-        <td align="left">
-            <input class="button" type="submit" name="save_new" value="{$SAVE}">&nbsp;&nbsp;
+<div class="iss-form">
+    <div class="iss-form__toolbar">
+        <span class="iss-form__hint"><span class="iss-required">*</span> {$REQUIRED_FIELD}</span>
+        <div class="iss-form__buttons">
+            {if $mode eq 'input'}
+            <input class="button" type="submit" name="save_new" value="{$SAVE}">
             <input class="button" type="submit" name="cancel" value="{$CANCEL}">
-        </td>
-        {elseif $mode eq 'view'}
-        <td align="left">
+            {elseif $mode eq 'view'}
             <input class="button" type="submit" name="cancel" value="{$CANCEL}">
-        </td>
-        {elseif $mode eq 'edit'}
-        <td align="left">
-            <input class="button" type="submit" name="save_edit" value="{$EDIT}">&nbsp;&nbsp;
+            {elseif $mode eq 'edit'}
+            <input class="button" type="submit" name="save_edit" value="{$EDIT}">
             <input class="button" type="submit" name="cancel" value="{$CANCEL}">
-        </td>
-        {/if}
-        <td align="right" nowrap><span class="letra12"><span  class="required">*</span> {$REQUIRED_FIELD}</span></td>
-    </tr>
-</table>
-<table class="tabForm" style="font-size: 16px;" width="99%" >
-    <input type="hidden" name="idCard" value="{$DESC_ID}" />
-
-    <label id="port_desc">{$CARD} # {$ID}: {$TIPO} {$ADICIONAL}</label>
-    <div id="form" style='background-color: var(--tblr-warning-lt, #fff3cd); color: var(--iss-text)'>
-    <!--<table border="0" width="40%" cellspacing="0" style="border:1px solid black">-->
-        {foreach key=key item=echocancel name=arrPortsEchoInfo from=$arrPortsEcho}
-        <tr class="letra12">
-            <td> </td>
-            <td> </td>
-            <td width="10%" align="left"><b>{$key}</b>  {$echocancel.name_port}: </td>
-            <td width="50%" align="left">
-                <select id='typeecho_{$key}' name='typeecho_{$key}'>
-                    {html_options options=$type_echo_names selected=$echocancel.type_echo}
-                </select>
-            </td>
-            <input type="hidden" value="{$echocancel.type_echo}" name="tmpTypeEcho{$key}" />
-        </tr>
-        {/foreach}
-    <!--</table>-->
+            {/if}
+        </div>
     </div>
-</table>
+    <section class="iss-card">
+        <div class="iss-card__body iss-formgrid">
+            <input type="hidden" name="idCard" value="{$DESC_ID}" />
+            <div class="iss-field iss-field--full">
+                <span class="iss-field__control"><label id="port_desc">{$CARD} # {$ID}: {$TIPO} {$ADICIONAL}</label></span>
+            </div>
+            <div id="form" class="iss-field iss-field--full" style='background-color: var(--tblr-warning-lt, #fff3cd); color: var(--iss-text)'>
+                {foreach key=key item=echocancel name=arrPortsEchoInfo from=$arrPortsEcho}
+                <div class="iss-field">
+                    <span class="iss-field__label"><b>{$key}</b> {$echocancel.name_port}</span>
+                    <span class="iss-field__control">
+                        <select id='typeecho_{$key}' name='typeecho_{$key}' class="form-control">
+                            {html_options options=$type_echo_names selected=$echocancel.type_echo}
+                        </select>
+                        <input type="hidden" value="{$echocancel.type_echo}" name="tmpTypeEcho{$key}" />
+                    </span>
+                </div>
+                {/foreach}
+            </div>
+        </div>
+    </section>
+</div>
 <input class="button" type="hidden" name="id" value="{$ID}" />

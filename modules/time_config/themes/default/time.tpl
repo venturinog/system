@@ -1,5 +1,5 @@
 <script type="text/javascript">
- 
+
 var serv_date2 = new Date({$CURRENT_DATETIME});
 var browser_date = new Date();
 var serv_msecdiff = browser_date.getTime() - serv_date2.getTime();
@@ -7,42 +7,32 @@ var serv_msecdiff = browser_date.getTime() - serv_date2.getTime();
 
 
 <form action="#" method="POST">
-<table width="99%" border="0" cellspacing="0" cellpadding="0" align="center">
-<tr>
-  <td>
-    <table width="100%" cellpadding="4" cellspacing="0" border="0">
-      <tr>
-            <td align='left'><input class="button" type="submit" name="Actualizar" value="{$INDEX_ACTUALIZAR}" onClick="return confirm('{$TIME_MSG_1}');" /></td>
-          </tr>
-     </table>
-</td>
-</tr>
-  <tr>
-    <td>
-    <table width="100%" border="0" cellspacing="0" cellpadding="0" class="tabForm">
-
-          <tr> 
-            <td width="15%"><b>{$INDEX_HORA_SERVIDOR}:</b></td>
-            <td><span id="SERVER_TIME" align='right'></span></td>
-          </tr>
-          <tr>
-            <td width="15%"><b>{$TIME_NUEVA_FECHA}:</b></td>
-            <td><input type="text" name="date" id="datepicker" value="{$CURRENT_DATE}" class="form-control form-control-sm" style="max-width: 12em; text-align: center;" readonly>
-          </tr>
-          <tr>
-            <td width="15%"><b>{$TIME_NUEVA_HORA}:</b></td>
-            <td>{html_select_time prefix="ServerDate_" }
-            </td>
-          </tr>
-          <tr>
-            <td width="15%"><b>{$TIME_NUEVA_ZONA}:</b></td>
-            <td>{html_options name="TimeZone" selected=$ZONA_ACTUAL values=$LISTA_ZONAS output=$LISTA_ZONAS }
-            </td>
-          </tr>
-
-        </table>
-    </td>
-  </tr>
-  </table>
-  <input type='hidden' name='configurar_hora' id='configurar_hora' value='0' />
+<div class="iss-form">
+    <div class="iss-form__toolbar">
+        <div class="iss-form__buttons">
+            <input class="button" type="submit" name="Actualizar" value="{$INDEX_ACTUALIZAR}" onClick="return confirm('{$TIME_MSG_1}');" />
+        </div>
+    </div>
+    <section class="iss-card">
+        <div class="iss-card__body iss-formgrid">
+            <div class="iss-field">
+                <span class="iss-field__label">{$INDEX_HORA_SERVIDOR}</span>
+                <span class="iss-field__control"><span id="SERVER_TIME" align='right'></span></span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$TIME_NUEVA_FECHA}</span>
+                <span class="iss-field__control"><input type="text" name="date" id="datepicker" value="{$CURRENT_DATE}" class="form-control form-control-sm" style="max-width: 12em; text-align: center;" readonly></span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$TIME_NUEVA_HORA}</span>
+                <span class="iss-field__control">{html_select_time prefix="ServerDate_" }</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$TIME_NUEVA_ZONA}</span>
+                <span class="iss-field__control">{html_options name="TimeZone" selected=$ZONA_ACTUAL values=$LISTA_ZONAS output=$LISTA_ZONAS }</span>
+            </div>
+        </div>
+    </section>
+    <input type='hidden' name='configurar_hora' id='configurar_hora' value='0' />
+</div>
 </form>

@@ -1,44 +1,37 @@
-<table width="99%" border="0" cellspacing="0" cellpadding="4" align="center">
-    <tr class="letra12">
-        {if $mode eq 'input'}
-        <td align="left">
-            <input class="button" type="submit" name="save_dhcpclient" value="{$SAVE}">&nbsp;&nbsp;
+<div class="iss-form">
+    <div class="iss-form__toolbar">
+        <span class="iss-form__hint"><span class="iss-required">*</span> {$REQUIRED_FIELD}</span>
+        <div class="iss-form__buttons">
+            {if $mode eq 'input'}
+            <input class="button" type="submit" name="save_dhcpclient" value="{$SAVE}">
             <input class="button" type="submit" name="cancel" value="{$CANCEL}">
-        </td>
-        {elseif $mode eq 'view'}
-        <td align="left">
+            {elseif $mode eq 'view'}
             <input class="button" type="submit" name="cancel" value="{$CANCEL}">
-        </td>
-        {elseif $mode eq 'edit'}
-        <td align="left">
-            <input class="button" type="submit" name="save_edit" value="{$EDIT}">&nbsp;&nbsp;
+            {elseif $mode eq 'edit'}
+            <input class="button" type="submit" name="save_edit" value="{$EDIT}">
             <input class="button" type="submit" name="cancel" value="{$CANCEL}">
-        </td>
-        {/if}
-        <td align="right" nowrap><span class="letra12"><span  class="required">*</span> {$REQUIRED_FIELD}</span></td>
-    </tr>
-</table>
-<table class="tabForm" style="font-size: 16px;" width="99%" >
-    <tr class="letra12">
-        <td align="left"><b>{$iphost.LABEL}: </b></td>
-        <td align="left">{$iphost.INPUT}</td>
-    </tr>
-
-    <tr class="letra12">
-        <td align="left"><b>{$date_starts.LABEL}: </b></td>
-        <td align="left">{$date_starts.INPUT}</td>
-    </tr>
-
-    <tr class="letra12">
-        <td align="left"><b>{$date_ends.LABEL}: </b></td>
-        <td align="left">{$date_ends.INPUT}</td>
-    </tr>
-
-    <tr class="letra12">
-        <td align="left"><b>{$macaddress.LABEL}: </b></td>
-        <td align="left">{$macaddress.INPUT}</td>
-    </tr>
-
-</table>
-
+            {/if}
+        </div>
+    </div>
+    <section class="iss-card">
+        <div class="iss-card__body iss-formgrid">
+            <div class="iss-field">
+                <span class="iss-field__label">{$iphost.LABEL}</span>
+                <span class="iss-field__control">{$iphost.INPUT}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$date_starts.LABEL}</span>
+                <span class="iss-field__control">{$date_starts.INPUT}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$date_ends.LABEL}</span>
+                <span class="iss-field__control">{$date_ends.INPUT}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$macaddress.LABEL}</span>
+                <span class="iss-field__control">{$macaddress.INPUT}</span>
+            </div>
+        </div>
+    </section>
+</div>
 <input class="button" type="hidden" name="id" value="{$ID}" />
