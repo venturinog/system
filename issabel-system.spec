@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 11
+Release: 12
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -180,6 +180,10 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Mon Oct 12 2026 Issabel Foundation <info@issabel.org> - 6.0.0-12
+- betachannel: drop the jQuery iButton plugin (and its assets); the status
+  toggle now uses the theme's Bootstrap 5 switch.
+
 * Sun Oct 11 2026 Issabel Foundation <info@issabel.org> - 6.0.0-11
 - Remove hardcoded light colours and inline JS hover colours from the
   time_config, hardware_detector and backup_restore templates so they follow the
