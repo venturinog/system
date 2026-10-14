@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 14
+Release: 15
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -180,6 +180,11 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Tue Oct 13 2026 Issabel Foundation <info@issabel.org> - 6.0.0-15
+- DHCP Server: widen the IPv4 octet inputs to 48px and trim their horizontal
+  padding so three digits are visible; the 30px boxes had no usable content
+  width under .form-control and appeared read-only.
+
 * Tue Oct 13 2026 Issabel Foundation <info@issabel.org> - 6.0.0-14
 - DHCP Server: lay the IPv4 octet fields (start/end range, DNS, WINS, gateway
   and PXE server) out in a single row instead of stacking them one per line.
