@@ -19,7 +19,7 @@
             </div>
             <div class="iss-field iss-field--full">
                 <span class="iss-field__label">{$START_RANGE_OF_IPS}&nbsp;<span class="iss-required">*</span></span>
-                <span class="iss-field__control">
+                <span class="iss-field__control iss-ip-octets">
                     {$in_ip_ini_1.LABEL}{$in_ip_ini_1.INPUT}
                     {$in_ip_ini_2.LABEL}{$in_ip_ini_2.INPUT}
                     {$in_ip_ini_3.LABEL}{$in_ip_ini_3.INPUT}
@@ -28,7 +28,7 @@
             </div>
             <div class="iss-field iss-field--full">
                 <span class="iss-field__label">{$END_RANGE_OF_IPS}&nbsp;<span class="iss-required">*</span></span>
-                <span class="iss-field__control">
+                <span class="iss-field__control iss-ip-octets">
                     {$in_ip_fin_1.LABEL}{$in_ip_fin_1.INPUT}
                     {$in_ip_fin_2.LABEL}{$in_ip_fin_2.INPUT}
                     {$in_ip_fin_3.LABEL}{$in_ip_fin_3.INPUT}
@@ -41,7 +41,7 @@
             </div>
             <div class="iss-field iss-field--full">
                 <span class="iss-field__label">{$DNS_1}</span>
-                <span class="iss-field__control">
+                <span class="iss-field__control iss-ip-octets">
                     {$in_dns1_1.LABEL}{$in_dns1_1.INPUT}
                     {$in_dns1_2.LABEL}{$in_dns1_2.INPUT}
                     {$in_dns1_3.LABEL}{$in_dns1_3.INPUT}
@@ -50,7 +50,7 @@
             </div>
             <div class="iss-field iss-field--full">
                 <span class="iss-field__label">{$DNS_2}</span>
-                <span class="iss-field__control">
+                <span class="iss-field__control iss-ip-octets">
                     {$in_dns2_1.LABEL}{$in_dns2_1.INPUT}
                     {$in_dns2_2.LABEL}{$in_dns2_2.INPUT}
                     {$in_dns2_3.LABEL}{$in_dns2_3.INPUT}
@@ -59,7 +59,7 @@
             </div>
             <div class="iss-field iss-field--full">
                 <span class="iss-field__label">{$WINS}</span>
-                <span class="iss-field__control">
+                <span class="iss-field__control iss-ip-octets">
                     {$in_wins_1.LABEL}{$in_wins_1.INPUT}
                     {$in_wins_2.LABEL}{$in_wins_2.INPUT}
                     {$in_wins_3.LABEL}{$in_wins_3.INPUT}
@@ -68,7 +68,7 @@
             </div>
             <div class="iss-field iss-field--full">
                 <span class="iss-field__label">{$GATEWAY}</span>
-                <span class="iss-field__control">
+                <span class="iss-field__control iss-ip-octets">
                     {$in_gw_1.LABEL}{$in_gw_1.INPUT}
                     {$in_gw_2.LABEL}{$in_gw_2.INPUT}
                     {$in_gw_3.LABEL}{$in_gw_3.INPUT}
@@ -77,7 +77,7 @@
             </div>
             <div class="iss-field iss-field--full">
                 <span class="iss-field__label">{$NEXT_SERVER}</span>
-                <span class="iss-field__control">
+                <span class="iss-field__control iss-ip-octets">
                     {$in_next_1.LABEL}{$in_next_1.INPUT}
                     {$in_next_2.LABEL}{$in_next_2.INPUT}
                     {$in_next_3.LABEL}{$in_next_3.INPUT}
