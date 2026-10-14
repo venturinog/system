@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 13
+Release: 14
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -180,6 +180,10 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Tue Oct 13 2026 Issabel Foundation <info@issabel.org> - 6.0.0-14
+- DHCP Server: lay the IPv4 octet fields (start/end range, DNS, WINS, gateway
+  and PXE server) out in a single row instead of stacking them one per line.
+
 * Mon Oct 12 2026 Issabel Foundation <info@issabel.org> - 6.0.0-12
 - betachannel: drop the jQuery iButton plugin (and its assets); the status
   toggle now uses the theme's Bootstrap 5 switch.
