@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 24
+Release: 25
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -194,6 +194,10 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-25
+- Network Parameters: use checkboxes in the static routes grid so several routes
+  can be deleted at once, matching the other delete-list grids.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-24
 - Network Parameters: show "New Static Route" before "Delete Route" in the
   static routes grid and use Title Case for the action buttons (Apply Changes,

@@ -491,7 +491,7 @@ function renderRoutesGrid($smarty, $module_name, &$pNet)
             foreach ($list as $spec) {
                 $r = parseRouteSpec($spec);
                 $data[] = array(
-                    "<input type='radio' name='del_route' value='".htmlspecialchars($dev.'|'.$spec, ENT_COMPAT, 'UTF-8')."' />",
+                    "<input type='checkbox' name='del_route[]' value='".htmlspecialchars($dev.'|'.$spec, ENT_COMPAT, 'UTF-8')."' />",
                     htmlspecialchars($dev, ENT_COMPAT, 'UTF-8'),
                     htmlspecialchars($r['dest'], ENT_COMPAT, 'UTF-8'),
                     htmlspecialchars($r['gw'], ENT_COMPAT, 'UTF-8'),
@@ -548,17 +548,27 @@ function saveStaticRoute(&$pNet)
     return TRUE;
 }
 
-// Borra una ruta estática. Devuelve TRUE o el mensaje de error.
+// Borra una o varias rutas estáticas. Devuelve TRUE o el mensaje de error.
 function deleteStaticRoute(&$pNet)
 {
     $sel = getParameter('del_route');
-    if (is_null($sel) || strpos($sel, '|') === FALSE) return _tr("No route selected");
-    list($dev, $spec) = explode('|', $sel, 2);
+    if (is_null($sel) || $sel === '') return _tr("No route selected");
+    if (!is_array($sel)) $sel = array($sel);
 
-    $list = routeBaseList($pNet, $dev);
-    $list = array_values(array_diff($list, array($spec)));
+    // Agrupa por interfaz para recomponer la lista de rutas de cada una.
+    $byDev = array();
+    foreach ($sel as $item) {
+        if (!is_string($item) || strpos($item, '|') === FALSE) continue;
+        list($dev, $spec) = explode('|', $item, 2);
+        $byDev[$dev][] = $spec;
+    }
+    if (count($byDev) == 0) return _tr("No route selected");
 
-    networkDraftAddRoutes($dev, implode(', ', $list));
+    foreach ($byDev as $dev => $specs) {
+        $list = routeBaseList($pNet, $dev);
+        $list = array_values(array_diff($list, $specs));
+        networkDraftAddRoutes($dev, implode(', ', $list));
+    }
     return TRUE;
 }
 
