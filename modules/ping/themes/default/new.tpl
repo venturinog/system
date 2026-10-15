@@ -36,8 +36,8 @@
         <header class="iss-card__header"><i class="ti ti-terminal"></i> {$LBL_RESULTS}</header>
         <div class="iss-card__body">
             <div class="iss-console" id="ping_console">
-                <div class="iss-console--pending" id="ping_pending"{if $frame_url neq ""} style="display:none;"{/if}><span class="iss-cursor"></span></div>
-                {if $frame_url neq ""}<iframe name="ifm" id="ifm" title="{$LBL_RESULTS}" src="{$frame_url}" style="height:500px;"></iframe>{/if}
+                <div class="iss-console--pending" id="ping_pending" style="display:none;"><span class="iss-cursor"></span></div>
+                <iframe name="ifm" id="ifm" title="{$LBL_RESULTS}" style="height:500px;{if $frame_url eq ""}display:none;{/if}"{if $frame_url neq ""} src="{$frame_url}"{/if}></iframe>
             </div>
         </div>
     </section>
@@ -46,7 +46,10 @@
 (function () {
     var form = document.getElementById('ping_form');
     var sendField = document.getElementById('send');
+    var ifm = document.getElementById('ifm');
     if (!form || !sendField) return;
+
+    var pendingTimer = null;
 
     // Mismas reglas que issabelPingHost::valid() en el servidor (feedback).
     function validV4(v) {
@@ -77,42 +80,84 @@
         el.addEventListener('blur', check);
     });
 
+    // El iframe de resultados ya pintó la consola: mostrar el panel real.
+    function revealIframe() {
+        var pending = document.getElementById('ping_pending');
+        if (pending) pending.style.display = 'none';
+        if (ifm) ifm.style.display = '';
+        if (pendingTimer) { window.clearTimeout(pendingTimer); pendingTimer = null; }
+    }
+
+    function finishRun() {
+        var b1 = document.getElementById('ping_submit');
+        var b2 = document.getElementById('trace_submit');
+        if (b1) b1.disabled = false;
+        if (b2) b2.disabled = false;
+        revealIframe();
+    }
+
+    // Borra el documento anterior del iframe (el resultado del comando previo)
+    // para que nunca se vean restos mientras llega la salida nueva.
+    function clearPreviousResult() {
+        if (!ifm) return;
+        try {
+            var doc = ifm.contentDocument || (ifm.contentWindow && ifm.contentWindow.document);
+            if (!doc) return;
+            doc.open();
+            doc.write('<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#0d1117;}</style>');
+            doc.close();
+        } catch (e) {}
+    }
+
+    // La consola avisa por postMessage: 'start' al pintarse y 'done' al
+    // terminar el comando (no se usa el load del iframe: el borrado anterior
+    // también lo dispararía).
+    window.addEventListener('message', function (ev) {
+        if (!ev || !ev.data) return;
+        if (ev.data === 'issabel-ping-start') revealIframe();
+        else if (ev.data === 'issabel-ping-done') finishRun();
+    });
+
     form.addEventListener('submit', function (e) {
-        // El botón pulsado decide qué campo se valida y qué comando se ejecuta.
+        // Sin recarga: el resultado se carga en el iframe de Results. El POST
+        // del <form> queda solo como respaldo sin JavaScript.
+        e.preventDefault();
+
         var btn = e.submitter || null;
         if (btn && btn.id) {
             if (btn.id === 'trace_submit') sendField.value = 'tracepath';
             else if (btn.id === 'ping_submit') sendField.value = 'ping';
         }
         var which = sendField.value === 'tracepath' ? 'tracepath' : 'ping';
+        if (!btn && document.activeElement) {
+            if (document.activeElement.id === 'tracert_hostname') which = 'tracepath';
+            else if (document.activeElement.id === 'ping_hostname') which = 'ping';
+            sendField.value = which;
+        }
         if (!btn) btn = document.getElementById(which === 'tracepath' ? 'trace_submit' : 'ping_submit');
 
         var el = fields[which];
         if (el && !valid(el.value.trim())) {
             mark(el, false);
-            e.preventDefault();
             el.focus();
             return false;
         }
 
-        // Feedback inmediato desde el clic: el botón pulsado queda deshabilitado
-        // un segundo y la consola muestra el cursor titilando mientras el
-        // servidor prepara y corre el comando.
-        if (btn) {
-            btn.disabled = true;
-            window.setTimeout(function () { btn.disabled = false; }, 1000);
-        }
-        showPendingCaret();
-    });
-
-    function showPendingCaret() {
         var results = document.getElementById('ping_results');
-        var ifm     = document.getElementById('ifm');
         var pending = document.getElementById('ping_pending');
+        clearPreviousResult();
         if (ifm) ifm.style.display = 'none';
         if (pending) pending.style.display = '';
         if (results) results.style.display = '';
-    }
+        // El botón pulsado queda deshabilitado hasta que termina el comando.
+        if (btn) btn.disabled = true;
+
+        if (pendingTimer) window.clearTimeout(pendingTimer);
+        pendingTimer = window.setTimeout(finishRun, 8000);
+
+        if (ifm) ifm.src = '/modules/ping/generate.php?send=' + encodeURIComponent(which)
+            + '&hostname=' + encodeURIComponent(el.value.trim());
+    });
 })();
 </script>
 {/literal}

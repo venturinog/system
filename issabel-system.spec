@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 40
+Release: 42
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -201,6 +201,22 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-42
+- Ping & Traceroute: flush the new console document before running the command,
+  so the browser stops showing the previous result while the new one loads
+  (ping's header is immediate, but tracepath's first line can take a while).
+  The page now clears the previous iframe content on submit and relies on
+  postMessage start/done instead of the iframe load event, which the clear
+  would also trigger.
+
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-41
+- Ping & Traceroute: load Results into its iframe with JavaScript instead of
+  reloading the module, so the disabled button and the waiting console are not
+  lost on navigation. The blinking cursor now stays at the end of the output
+  and is only removed when the command finishes, instead of disappearing with
+  ping's immediate header line. The plain POST path is kept as a no-JavaScript
+  fallback.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-40
 - Ping & Traceroute: disable the clicked button for one second on submit so the
   click is acknowledged while the page reloads and the command starts.

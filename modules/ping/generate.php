@@ -37,9 +37,18 @@ if(!$isUserAuth) { die('Unauthorized'); }
 
 header('Content-Type: text/html; charset=UTF-8');
 
+// Aviso a la página que embebe la consola. La página no usa el load del
+// iframe (lo dispararía cualquier borrado del contenido previo), sino estos
+// mensajes.
+function issabelPingPostMessage($type)
+{
+    return "<script>try{if(window.parent&&window.parent!==window){window.parent.postMessage("
+        .json_encode($type).",'*');}}catch(e){}</script>";
+}
+
 // El iframe es un documento aparte: no hereda el tema, así que trae su propia
 // paleta (la misma que el primitivo .iss-console del tema Modern). Con
-// $withCursor=true pinta un cursor que titila hasta que llega la salida.
+// $withCursor=true pinta un cursor que titila hasta que termina el comando.
 function issabelPingConsoleHead($withCursor = false)
 {
     $html = "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">\n"
@@ -52,16 +61,28 @@ function issabelPingConsoleHead($withCursor = false)
             .".iss-ping-cursor{display:inline-block;width:.6em;height:1em;vertical-align:text-bottom;background:#e6edf3;animation:iss-blink 1s step-end infinite;}\n"
             ."@media (prefers-reduced-motion: reduce){.iss-ping-cursor{animation:none;opacity:1;}}\n";
     }
-    $html .= "</style></head><body><pre>";
+    $html .= "</style></head><body><pre id=\"iss-ping-out\">";
     if ($withCursor) {
         $html .= "<span id=\"iss-ping-cursor\" class=\"iss-ping-cursor\"></span>";
+    }
+    // La consola ya existe: la página puede mostrar el iframe.
+    $html .= issabelPingPostMessage('issabel-ping-start');
+    if ($withCursor) {
+        // El cursor vive al final de la salida: se mueve con cada línea que
+        // llega (MutationObserver) para que no lo tape el texto.
+        $html .= "<script>(function(){var o=document.getElementById('iss-ping-out'),c=document.getElementById('iss-ping-cursor');"
+            ."if(!o||!c||!window.MutationObserver)return;"
+            ."new MutationObserver(function(){if(!c.parentNode)return;if(o.lastChild!==c)o.appendChild(c);}).observe(o,{childList:true});})();</script>";
     }
     return $html;
 }
 
 function issabelPingConsoleFoot()
 {
-    return "</pre></body></html>\n";
+    // Fin del comando: quitar el cursor, avisar a la página y cerrar.
+    return "</pre><script>var c=document.getElementById('iss-ping-cursor');if(c&&c.parentNode)c.parentNode.removeChild(c);</script>"
+        .issabelPingPostMessage('issabel-ping-done')
+        ."</body></html>\n";
 }
 
 function issabelPingConsoleMessage($message)
@@ -81,27 +102,26 @@ if ($send === 'ping' && $host !== '') {
     $cmd = "/usr/sbin/tracepath ".escapeshellarg($host);
 }
 
-// Defensa en profundidad: el host se valida aquí aunque index.php ya lo haya
-// comprobado, porque este script también es accesible de forma directa.
+// Defensa en profundidad: el host se valida aquí aunque el JavaScript del
+// formulario ya lo haya comprobado, porque este script también es accesible
+// de forma directa.
 if ($cmd === '' || !issabelPingHost::valid($host)) {
     echo issabelPingConsoleMessage('Invalid host name or IP address.');
     exit;
 }
 
 echo issabelPingConsoleHead(true);
+// Entregar ya la consola nueva (fondo oscuro + cursor + aviso) para que el
+// navegador la pinte antes de ejecutar el comando; si no, sigue mostrando el
+// documento anterior del iframe hasta la primera línea de salida.
+if (ob_get_level() > 0) ob_flush();
+flush();
 
 $file = popen($cmd." 2>&1", "r");
 if ($file !== false) {
-    $first = true;
     while (!feof($file)) {
         $line = fgets($file);
         if ($line === false) break;
-
-        // En cuanto llega la primera línea, quitar el cursor y escribirlo.
-        if ($first) {
-            echo "<script>var c=document.getElementById('iss-ping-cursor');if(c)c.parentNode.removeChild(c);</script>";
-            $first = false;
-        }
         echo htmlspecialchars($line, ENT_QUOTES, 'UTF-8');
 
         if (ob_get_level() > 0) ob_flush();
