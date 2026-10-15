@@ -42,6 +42,10 @@
  *   --confirm   cancela la reversión de un cambio pendiente
  *   --rollback  aplica el snapshot de un cambio (lo invoca el timer)
  *   --pending   imprime el cambio pendiente como JSON (para la GUI)
+ *   --recover   revierte un cambio pendiente en el arranque
+ *   --getroutes imprime las rutas estáticas IPv4 por interfaz como JSON
+ *   --getmethods imprime el método IPv4/IPv6 por interfaz como JSON
+ *   --apply     aplica un change set JSON de forma atómica (commit-confirm)
  */
 
 require_once 'Console/Getopt.php';
@@ -64,6 +68,7 @@ $opt = Console_Getopt::getopt($argv, '', array(
     'pending',  // Print the pending change as JSON
     'recover',  // Revert a pending change at boot (used by the systemd unit)
     'getroutes',// Print the IPv4 static routes per interface as JSON
+    'getmethods',// Print the IPv4/IPv6 connection methods per interface as JSON
     'setroutes',// Set the IPv4 static routes of an interface
     'routespec=',// Route list in nmcli syntax (for --setroutes)
     'apply',    // Apply an atomic change set (JSON)
@@ -107,6 +112,8 @@ case '--recover':
     exit(action_recover() ? 0 : 1);
 case '--getroutes':
     exit(action_getroutes() ? 0 : 1);
+case '--getmethods':
+    exit(action_getmethods() ? 0 : 1);
 case '--setroutes':
     exit(action_setroutes($opt) ? 0 : 1);
 case '--apply':
@@ -129,6 +136,7 @@ function validateOptions($opt)
     case '--pending':
     case '--recover':
     case '--getroutes':
+    case '--getmethods':
     case '--setroutes':
     case '--apply':
         break;
@@ -383,7 +391,7 @@ function deviceSubnetContaining($ip)
     $client = ip2long($ip);
     if ($client === FALSE) return NULL;
     $ret = NULL; $out = array();
-    runCommand(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', '/sbin/ip', '-4', '-o', 'addr', 'show'), $ret, $out);
+    runCommand(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', '/usr/sbin/ip', '-4', '-o', 'addr', 'show'), $ret, $out);
     foreach ($out as $line) {
         $m = NULL;
         if (preg_match('/^\d+:\s+(\S+)\s+inet (\d+\.\d+\.\d+\.\d+)\/(\d+)/', $line, $m)) {
@@ -902,6 +910,30 @@ function action_getroutes()
     return TRUE;
 }
 
+// Imprime el método IPv4/IPv6 configurado por interfaz (JSON) para la grilla de
+// la GUI: permite ver de un vistazo que una interfaz tiene IPv6 'disabled'.
+function action_getmethods()
+{
+    $result = array();
+    foreach (listConnectionNames() as $name) {
+        $dev = nmcliLines(array('-g', 'connection.interface-name', 'con', 'show', $name));
+        $dev = (count($dev) > 0) ? trim($dev[0]) : '';
+        if ($dev === '') continue;
+        $type = nmcliLines(array('-g', 'connection.type', 'con', 'show', $name));
+        $type = (count($type) > 0) ? trim($type[0]) : '';
+        if (!in_array($type, array('802-3-ethernet', 'vlan'))) continue;
+
+        $m4 = nmcliLines(array('-g', 'ipv4.method', 'con', 'show', $name));
+        $m6 = nmcliLines(array('-g', 'ipv6.method', 'con', 'show', $name));
+        $result[$dev] = array(
+            'ipv4' => (count($m4) > 0) ? trim($m4[0]) : '',
+            'ipv6' => (count($m6) > 0) ? trim($m6[0]) : '',
+        );
+    }
+    echo json_encode($result)."\n";
+    return TRUE;
+}
+
 // Fija la lista completa de rutas estáticas IPv4 de una interfaz (apply seguro).
 function action_setroutes($opt)
 {
@@ -1121,7 +1153,14 @@ function runChangeSet($plan)
 // Define el hostname del sistema y lo propaga a /etc/hosts y postfix.
 function setHostname($sHostname)
 {
-    exec('/usr/bin/hostnamectl set-hostname '.escapeshellarg($sHostname));
+    // hostnamectl puede fallar en entornos donde /etc/hostname no es escribible
+    // (contenedores, fichero inmutable). Se avisa pero no se aborta: el fichero
+    // se escribe igualmente unas líneas más abajo.
+    $ret = NULL; $out = array();
+    runCommand(array('/usr/bin/hostnamectl', 'set-hostname', $sHostname), $ret, $out);
+    if ($ret != 0)
+        fwrite(STDERR, "WARN: hostnamectl could not set the static hostname - ".implode(' ', $out)."\n");
+
     file_put_contents('/etc/hostname', "$sHostname\n");
     chmod('/etc/hostname', 0644);
 

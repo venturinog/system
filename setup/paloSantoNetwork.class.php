@@ -495,6 +495,25 @@ class paloNetwork
     }
 
     /**
+     * Obtiene el método IPv4/IPv6 configurado por interfaz (NetworkManager).
+     * Permite mostrar en la grilla que una interfaz tiene IPv6 deshabilitado.
+     *
+     * @return array   Arreglo interfaz => array('ipv4' => ..., 'ipv6' => ...)
+     */
+    function obtenerMetodosInterfases()
+    {
+        $this->errMsg = '';
+        $output = $ret = NULL;
+        exec('/usr/bin/issabel-helper netconfig --getmethods 2>&1', $output, $ret);
+        if ($ret != 0) {
+            $this->errMsg = implode('', $output);
+            return array();
+        }
+        $data = json_decode(implode('', $output), TRUE);
+        return is_array($data) ? $data : array();
+    }
+
+    /**
      * Fija la lista completa de rutas estáticas IPv4 de una interfaz.
      *
      * @param string $dev         Dispositivo de red

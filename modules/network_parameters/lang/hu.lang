@@ -86,5 +86,6 @@ $arrLangModule=array(
 "IPv4" => "IPv4",
 "%s is required" => "%s kötelező",
 "%s is invalid" => "%s érvénytelen",
+"The operation could not be completed." => "A műveletet nem sikerült befejezni.",
 );
 ?>

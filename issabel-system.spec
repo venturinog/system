@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 32
+Release: 33
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,18 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-33
+- Network Parameters: show action errors inside the module page and re-render it
+  when applying the staged change set or deleting a static route fails, instead
+  of returning an empty body (which left the tab blank and hid the reason: under
+  the tabbed layout the iframe prints only the module content, so mb_message is
+  never displayed). A failure always renders an alert, falling back to a
+  translated generic message when the helper produced no output, and a PHP
+  exception while applying is caught and shown as well. Show the NetworkManager
+  IPv4/IPv6 method per interface in the interfaces grid so an applied change is
+  visible. netconfig: add --getmethods, report hostnamectl failures when setting
+  the hostname, and use /usr/sbin/ip instead of /sbin/ip.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-32
 - Network Parameters: render the labels of the read-only summary card as
   uppercase micro-labels so they read clearly different from their values

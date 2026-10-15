@@ -49,6 +49,10 @@ function _moduleContent(&$smarty, $module_name)
     $smarty->assign("PENDING_CHANGE", "no");
     $smarty->assign("DRAFT_COUNT", 0);
     $smarty->assign("DRAFT_CHANGES", array());
+    // Aviso visible dentro de la propia página. Bajo el layout de pestañas el
+    // iframe solo imprime el contenido del módulo, así que mb_message (que pinta
+    // la shell completa) no sirve para mostrar errores de este módulo.
+    $smarty->assign("NETWORK_ALERT", "");
     $arrEths = $pNet->obtener_interfases_red_fisicas();
     $nics = array();
     foreach($arrEths as $iface=>$idata) {
@@ -180,8 +184,8 @@ function _moduleContent(&$smarty, $module_name)
                 : $pNet->revertirCambioRed($pending['token']);
         }
         if (!$ok) {
-            $smarty->assign("mb_title", _tr("ERROR"));
-            $smarty->assign("mb_message", $pNet->errMsg);
+            // El motivo se muestra en la propia página (ver NETWORK_ALERT).
+            networkSetAlert($smarty, $pNet->errMsg);
         } else {
             header("Location: index.php?menu=$module_name");
             return NULL;
@@ -194,18 +198,29 @@ function _moduleContent(&$smarty, $module_name)
         if (networkDraftCount($draft) > 0) {
             $changeJson = json_encode(networkDraftToChange($draft));
             $clientIp = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
-            if (!$pNet->aplicarCambioRed($changeJson, $clientIp)) {
-                $smarty->assign("mb_title", _tr("ERROR"));
-                $smarty->assign("mb_message", $pNet->errMsg);
-            } else {
-                networkDraftClear();
-                header("Location: index.php?menu=$module_name");
-                return NULL;
+            $ok = FALSE;
+            try {
+                $ok = $pNet->aplicarCambioRed($changeJson, $clientIp);
+            } catch (Throwable $e) {
+                // Un fallo de PHP (método inexistente por desajuste de versiones,
+                // TypeError, etc.) también se muestra: dejarlo pasar dejaría la
+                // pestaña en blanco y sin pista alguna.
+                $pNet->errMsg = get_class($e).': '.$e->getMessage();
             }
-        } else {
+            if (!$ok) {
+                // El borrador se conserva y el motivo se muestra en la propia
+                // página: en modo pestañas mb_message no se llega a pintar.
+                error_log('network_parameters: apply failed: '.$pNet->errMsg);
+                networkSetAlert($smarty, $pNet->errMsg);
+                return renderNetworkPage($smarty, $module_name, $local_templates_dir, $pNet,
+                    $arrFormNetwork, $vlan_dictionary, 'view', networkConfigData($pNet));
+            }
+            networkDraftClear();
             header("Location: index.php?menu=$module_name");
             return NULL;
         }
+        header("Location: index.php?menu=$module_name");
+        return NULL;
     } else if(isset($_POST['discard_changes'])) {
         networkDraftClear();
         header("Location: index.php?menu=$module_name");
@@ -231,12 +246,12 @@ function _moduleContent(&$smarty, $module_name)
     } else if(isset($_POST['delete_route'])) {
         $routeResult = deleteStaticRoute($pNet);
         if ($routeResult !== TRUE) {
-            $smarty->assign("mb_title", _tr("ERROR"));
-            $smarty->assign("mb_message", $routeResult);
-        } else {
-            header("Location: index.php?menu=$module_name");
-            return NULL;
+            networkSetAlert($smarty, $routeResult);
+            return renderNetworkPage($smarty, $module_name, $local_templates_dir, $pNet,
+                $arrFormNetwork, $vlan_dictionary, 'view', networkConfigData($pNet));
         }
+        header("Location: index.php?menu=$module_name");
+        return NULL;
     } else if(isset($_POST['cancel_route'])) {
         header("Location: index.php?menu=$module_name");
         return NULL;
@@ -258,17 +273,7 @@ function _moduleContent(&$smarty, $module_name)
 
     if(isset($_POST['edit'])) {
 
-        $arrNetworkData = array();
-        $arrNetwork = $pNet->obtener_configuracion_red();
-        if(is_array($arrNetwork)) {
-            $arrNetworkData['dns1'] = isset($arrNetwork['dns'][0])?$arrNetwork['dns'][0]:'';
-            $arrNetworkData['dns2'] = isset($arrNetwork['dns'][1])?$arrNetwork['dns'][1]:'';
-            $arrNetworkData['dns6'] = isset($arrNetwork['dns6'][0])?$arrNetwork['dns6'][0]:'';
-            $arrNetworkData['host'] = isset($arrNetwork['host'])?$arrNetwork['host']:'';
-            $arrNetworkData['gateway'] = isset($arrNetwork['gateway'])?$arrNetwork['gateway']:'';
-        }
-
-        return renderNetworkPage($smarty, $module_name, $local_templates_dir, $pNet, $arrFormNetwork, $vlan_dictionary, 'input', $arrNetworkData);
+        return renderNetworkPage($smarty, $module_name, $local_templates_dir, $pNet, $arrFormNetwork, $vlan_dictionary, 'input', networkConfigData($pNet));
 
     } else if(isset($_POST['save_network_changes'])) {
 
@@ -387,17 +392,8 @@ function _moduleContent(&$smarty, $module_name)
             $arrInterfaseData, _tr('Edit Interface').' "'.(is_array($arrEth) ? $arrEth['Name'] : '').'"');
     } else {
         // SECCION NETWORK PARAMETERS
-        $arrNetwork = $pNet->obtener_configuracion_red();
-        if(is_array($arrNetwork)) {
-            $arrNetworkData['dns1'] = isset($arrNetwork['dns'][0])?$arrNetwork['dns'][0]:'';
-            $arrNetworkData['dns2'] = isset($arrNetwork['dns'][1])?$arrNetwork['dns'][1]:'';
-            $arrNetworkData['dns6'] = isset($arrNetwork['dns6'][0])?$arrNetwork['dns6'][0]:'';
-            $arrNetworkData['host'] = isset($arrNetwork['host'])?$arrNetwork['host']:'';
-            $arrNetworkData['gateway'] = isset($arrNetwork['gateway'])?$arrNetwork['gateway']:'';
-        }
-
         // DISPLAY
-        $strReturn = renderNetworkPage($smarty, $module_name, $local_templates_dir, $pNet, $arrFormNetwork, $vlan_dictionary, 'view', $arrNetworkData);
+        $strReturn = renderNetworkPage($smarty, $module_name, $local_templates_dir, $pNet, $arrFormNetwork, $vlan_dictionary, 'view', networkConfigData($pNet));
     }
 
     return $strReturn;
@@ -435,6 +431,36 @@ function validIpv6Cidr($cidr)
 function validHostname($host)
 {
     return preg_match('/^(([[:alnum:]-]+)\.)+([[:alnum:]])+$/i', $host) === 1;
+}
+
+// Datos del formulario de parámetros generales, tal como los consume la
+// plantilla (vista o edición).
+function networkConfigData(&$pNet)
+{
+    $data = array('host' => '', 'dns1' => '', 'dns2' => '', 'dns6' => '', 'gateway' => '');
+    $arr = $pNet->obtener_configuracion_red();
+    if (is_array($arr)) {
+        $data['dns1']    = isset($arr['dns'][0])   ? $arr['dns'][0]   : '';
+        $data['dns2']    = isset($arr['dns'][1])   ? $arr['dns'][1]   : '';
+        $data['dns6']    = isset($arr['dns6'][0])  ? $arr['dns6'][0]  : '';
+        $data['host']    = isset($arr['host'])     ? $arr['host']     : '';
+        $data['gateway'] = isset($arr['gateway'])  ? $arr['gateway']  : '';
+    }
+    return $data;
+}
+
+// Aviso visible dentro de la página del módulo. Bajo el layout de pestañas el
+// error debe salir en la propia plantilla: mb_message solo lo pinta la shell.
+function networkSetAlert(&$smarty, $sMessage, $sTitle = NULL)
+{
+    // Siempre hay recuadro: si el helper no dejó ningún mensaje, uno genérico.
+    if (trim((string)$sMessage) === '') $sMessage = _tr('The operation could not be completed.');
+    if ($sTitle === NULL) $sTitle = _tr('ERROR');
+    $html = '<div class="iss-alert-error">'
+        .'<div class="iss-alert-error__title"><b>&nbsp;'.htmlspecialchars($sTitle, ENT_COMPAT, 'UTF-8').'</b></div>'
+        .'<div class="iss-alert-error__content">'.nl2br(htmlspecialchars((string)$sMessage, ENT_COMPAT, 'UTF-8')).'</div>'
+        .'</div>';
+    $smarty->assign("NETWORK_ALERT", $html);
 }
 
 function renderNetworkPage($smarty, $module_name, $local_templates_dir, &$pNet, $arrFormNetwork, $vlan_dictionary, $mode, $data, $errors = array())
@@ -477,15 +503,26 @@ function renderNetworkPage($smarty, $module_name, $local_templates_dir, &$pNet, 
     $arrData = array();
     $arrEths = $pNet->obtener_interfases_red_fisicas();
     $end = count($arrEths);
+    // Método IPv4/IPv6 configurado por interfaz: permite ver en la grilla que
+    // una interfaz tiene IPv6 deshabilitado (antes la celda quedaba vacía y el
+    // cambio aplicado parecía no haber hecho nada).
+    $metodos = $pNet->obtenerMetodosInterfases();
+    if (!is_array($metodos)) $metodos = array();
 
     foreach ($arrEths as $idEth => $arrEth) {
+
         $nicname = isset($vlan_dictionary[$arrEth['Name']]) ? $vlan_dictionary[$arrEth['Name']] : $arrEth['Name'];
         $arrTmp    = array();
         $arrTmp[0] = "&nbsp;<a href='?menu=$module_name&action=editInterfase&id=$idEth'>" . $nicname . "</a>";
         $arrTmp[1] = strtoupper($arrEth['Type']);
         $arrTmp[2] = $arrEth['Inet Addr'];
         $arrTmp[3] = $arrEth['Mask'];
-        $arrTmp[4] = isset($arrEth['Inet6 Addr'], $arrEth['Mask6']) ? htmlspecialchars($arrEth['Inet6 Addr'].'/'.$arrEth['Mask6'], ENT_COMPAT, 'UTF-8') : '';
+        $addr6 = isset($arrEth['Inet6 Addr'], $arrEth['Mask6']) ? $arrEth['Inet6 Addr'].'/'.$arrEth['Mask6'] : '';
+        if ($addr6 === '' && isset($metodos[$arrEth['Name']]['ipv6']) && $metodos[$arrEth['Name']]['ipv6'] !== ''
+            && $metodos[$arrEth['Name']]['ipv6'] !== 'auto') {
+            $addr6 = $metodos[$arrEth['Name']]['ipv6'];
+        }
+        $arrTmp[4] = htmlspecialchars($addr6, ENT_COMPAT, 'UTF-8');
         $arrTmp[5] = $arrEth['HWaddr'];
         $arrTmp[6] = isset($arrEth['HW_info']) ? $arrEth['HW_info'] : '';
         $arrTmp[7] = ($arrEth['Running'] == "Yes" ? "<font color=green>"._tr("Connected")."</font>" : "<font color=red>"._tr("Not Connected")."</font>");

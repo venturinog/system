@@ -1,4 +1,7 @@
 <form method="POST">
+{if $NETWORK_ALERT}
+{$NETWORK_ALERT}
+{/if}
 {if $PENDING_CHANGE eq 'yes'}
 <div style="border:1px solid #d9a000;background:#fff6d9;padding:8px 12px;margin-bottom:10px;">
     <div style="margin-bottom:6px;"><strong>{$PENDING_WARNING}</strong><br>{$PENDING_SUMMARY} &mdash; {$PENDING_REMAINING}s</div>
