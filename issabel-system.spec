@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 30
+Release: 31
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,12 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-31
+- Network Parameters: show the general parameters as a single compact card of
+  read-only values in the default view so the interfaces and static routes
+  grids stay visible without scrolling, and reveal the General/IPv4/IPv6 edit
+  cards with the .iss-reveal animation only in edit mode.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-30
 - Network Parameters: split the general parameters form into General, IPv4 and
   IPv6 cards and add live field validation (client and server) with inline

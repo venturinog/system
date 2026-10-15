@@ -527,6 +527,9 @@ function renderNetworkPage($smarty, $module_name, $local_templates_dir, &$pNet, 
     $smarty->assign("SAVE", _tr("Save"));
     $smarty->assign("CANCEL", _tr("Cancel"));
     $smarty->assign("GENERAL", _tr("General"));
+    $smarty->assign("NETWORK_VIEW", array_merge(
+        array('host' => '', 'dns1' => '', 'dns2' => '', 'dns6' => '', 'gateway' => ''),
+        is_array($data) ? $data : array()));
     $smarty->assign("NETWORK_ERRORS", array_merge(
         array('host' => '', 'dns1' => '', 'dns2' => '', 'dns6' => '', 'gateway' => ''), $errors));
     $smarty->assign("icon", "modules/network_parameters/images/system_network_network_parameters.png");

@@ -31,11 +31,13 @@
         </div>
     </div>
 
+    {if $mode eq 'input'}
+    <div class="iss-reveal">
     <section class="iss-card">
         <div class="iss-card__header"><i class="ti ti-settings"></i> {$GENERAL}</div>
         <div class="iss-card__body iss-formgrid">
             <div class="iss-field">
-                <span class="iss-field__label">{$host.LABEL}{if $mode eq 'input'}&nbsp;<span class="iss-required">*</span>{/if}</span>
+                <span class="iss-field__label">{$host.LABEL}&nbsp;<span class="iss-required">*</span></span>
                 <span class="iss-field__control">{$host.INPUT}</span>
                 {if $NETWORK_ERRORS.host}<div class="invalid-feedback d-block">{$NETWORK_ERRORS.host}</div>{/if}
             </div>
@@ -46,7 +48,7 @@
         <div class="iss-card__header"><i class="ti ti-network"></i> IPv4</div>
         <div class="iss-card__body iss-formgrid">
             <div class="iss-field">
-                <span class="iss-field__label">{$dns1.LABEL}{if $mode eq 'input'}&nbsp;<span class="iss-required">*</span>{/if}</span>
+                <span class="iss-field__label">{$dns1.LABEL}&nbsp;<span class="iss-required">*</span></span>
                 <span class="iss-field__control">{$dns1.INPUT}</span>
                 {if $NETWORK_ERRORS.dns1}<div class="invalid-feedback d-block">{$NETWORK_ERRORS.dns1}</div>{/if}
             </div>
@@ -56,7 +58,7 @@
                 {if $NETWORK_ERRORS.dns2}<div class="invalid-feedback d-block">{$NETWORK_ERRORS.dns2}</div>{/if}
             </div>
             <div class="iss-field">
-                <span class="iss-field__label">{$gateway.LABEL}{if $mode eq 'input'}&nbsp;<span class="iss-required">*</span>{/if}</span>
+                <span class="iss-field__label">{$gateway.LABEL}&nbsp;<span class="iss-required">*</span></span>
                 <span class="iss-field__control">{$gateway.INPUT}</span>
                 {if $NETWORK_ERRORS.gateway}<div class="invalid-feedback d-block">{$NETWORK_ERRORS.gateway}</div>{/if}
             </div>
@@ -73,6 +75,33 @@
             </div>
         </div>
     </section>
+    </div>
+    {else}
+    <section class="iss-card">
+        <div class="iss-card__body iss-formgrid iss-formgrid--3col">
+            <div class="iss-field">
+                <span class="iss-field__label">{$host.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $NETWORK_VIEW.host eq ''} iss-field__value--empty{/if}">{if $NETWORK_VIEW.host eq ''}&mdash;{else}{$NETWORK_VIEW.host|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$dns1.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $NETWORK_VIEW.dns1 eq ''} iss-field__value--empty{/if}">{if $NETWORK_VIEW.dns1 eq ''}&mdash;{else}{$NETWORK_VIEW.dns1|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$dns2.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $NETWORK_VIEW.dns2 eq ''} iss-field__value--empty{/if}">{if $NETWORK_VIEW.dns2 eq ''}&mdash;{else}{$NETWORK_VIEW.dns2|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$gateway.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $NETWORK_VIEW.gateway eq ''} iss-field__value--empty{/if}">{if $NETWORK_VIEW.gateway eq ''}&mdash;{else}{$NETWORK_VIEW.gateway|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$dns6.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $NETWORK_VIEW.dns6 eq ''} iss-field__value--empty{/if}">{if $NETWORK_VIEW.dns6 eq ''}&mdash;{else}{$NETWORK_VIEW.dns6|escape}{/if}</span>
+            </div>
+        </div>
+    </section>
+    {/if}
 </div>
 </form>
 {$ETHERNET_INTERFASES_LIST}
