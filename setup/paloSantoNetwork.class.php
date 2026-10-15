@@ -519,6 +519,31 @@ class paloNetwork
     }
 
     /**
+     * Aplica un change set (JSON) de forma atómica (interfaz + gateway + rutas).
+     * Si el cambio es bloqueante, queda pendiente de confirmación.
+     *
+     * @param string $changeJson   Conjunto de cambios en JSON
+     * @param string $clientIp     IP del cliente (para clasificar la de gestión)
+     *
+     * @return bool   VERDADERO en éxito, FALSO en error
+     */
+    function aplicarCambioRed($changeJson, $clientIp = '')
+    {
+        $this->errMsg = '';
+        $sComando = '/usr/bin/issabel-helper netconfig --apply'
+            .' --change '.escapeshellarg($changeJson)
+            .($clientIp === '' ? '' : ' --client-ip '.escapeshellarg($clientIp))
+            .' 2>&1';
+        $output = $ret = NULL;
+        exec($sComando, $output, $ret);
+        if ($ret != 0) {
+            $this->errMsg = implode('', $output);
+            return FALSE;
+        }
+        return TRUE;
+    }
+
+    /**
      * Compute IPv4 network address given IPv4 host address and bits in netmask.
      * Function that returns the network address of the given ip for the given mask
      *

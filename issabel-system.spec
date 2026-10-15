@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 20
+Release: 21
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -194,6 +194,15 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-21
+- Network Parameters: apply network changes atomically. A new netconfig --apply
+  takes a change set (interface + gateway + DNS + static routes) and applies it
+  as one transaction: properties are grouped per connection into a single
+  con mod and a single activation, under one snapshot and one confirmation. The
+  module stages changes in the session ("Pending changes") and applies them with
+  a single "Apply changes"; confirmation is only requested when the change can
+  cut the management interface.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-20
 - Network Parameters: IPv6 support. Show IPv6 addresses in the interface list
   and edit them: per-interface method (auto/manual/dhcp/disabled), static

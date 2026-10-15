@@ -6,6 +6,18 @@
     <input class="button" type="submit" name="revert_network_change" value="{$REVERT_CHANGE}">
 </div>
 {/if}
+{if $DRAFT_COUNT > 0}
+<div id="issabel_draft" style="border:1px solid #6aa84f;background:#eef7e6;padding:8px 12px;margin-bottom:10px;">
+    <strong>{$PENDING_CHANGES_TITLE}</strong>
+    <ul style="margin:6px 0 6px 18px;">
+    {foreach from=$DRAFT_CHANGES item=L}
+        <li>{$L}</li>
+    {/foreach}
+    </ul>
+    <input class="button" type="submit" name="apply_changes" value="{$APPLY_CHANGES}">
+    <input class="button" type="submit" name="discard_changes" value="{$DISCARD_CHANGES}">
+</div>
+{/if}
 <div class="iss-form">
     <div class="iss-form__toolbar">
         {if $mode eq 'input'}<span class="iss-form__hint"><span class="iss-required">*</span> {$REQUIRED_FIELD}</span>{/if}

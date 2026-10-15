@@ -66,6 +66,9 @@ $opt = Console_Getopt::getopt($argv, '', array(
     'getroutes',// Print the IPv4 static routes per interface as JSON
     'setroutes',// Set the IPv4 static routes of an interface
     'routespec=',// Route list in nmcli syntax (for --setroutes)
+    'apply',    // Apply an atomic change set (JSON)
+    'change=',  // Change set JSON (for --apply)
+    'client-ip=',// Client IP, to classify the management interface
 
     // General network configuration options
     'host=',        // New hostname
@@ -106,6 +109,8 @@ case '--getroutes':
     exit(action_getroutes() ? 0 : 1);
 case '--setroutes':
     exit(action_setroutes($opt) ? 0 : 1);
+case '--apply':
+    exit(action_apply($opt) ? 0 : 1);
 }
 error_exit("No action specified (--genconf, --ifconf, --confirm, --rollback or --pending)\n");
 
@@ -125,6 +130,16 @@ function validateOptions($opt)
     case '--recover':
     case '--getroutes':
     case '--setroutes':
+    case '--apply':
+        break;
+    case '--change':
+        // La estructura se valida en action_apply(); aquí solo se acepta JSON.
+        if (json_decode($option[1], TRUE) === NULL)
+            error_exit('Option '.$option[0].": Invalid JSON\n");
+        break;
+    case '--client-ip':
+        if (filter_var($option[1], FILTER_VALIDATE_IP) === false)
+            error_exit('Option '.$option[0].": Invalid IP address\n");
         break;
     case '--host':
         if (!preg_match('/^(([[:alnum:]-]+)\.)+([[:alnum:]])+$/', $option[1]))
@@ -352,6 +367,44 @@ function primaryConnection()
             return $name;
     }
     return NULL;
+}
+
+// Interfaz asociada a una conexión (connection.interface-name).
+function deviceForConnection($conn)
+{
+    $info = nmcliLines(array('-g', 'connection.interface-name', 'con', 'show', $conn));
+    return (count($info) > 0) ? trim($info[0]) : '';
+}
+
+// Interfaz cuya subred IPv4 contiene la IP dada (para clasificar la de gestión).
+function deviceSubnetContaining($ip)
+{
+    if (empty($ip) || filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) return NULL;
+    $client = ip2long($ip);
+    if ($client === FALSE) return NULL;
+    $ret = NULL; $out = array();
+    runCommand(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', '/sbin/ip', '-4', '-o', 'addr', 'show'), $ret, $out);
+    foreach ($out as $line) {
+        $m = NULL;
+        if (preg_match('/^\d+:\s+(\S+)\s+inet (\d+\.\d+\.\d+\.\d+)\/(\d+)/', $line, $m)) {
+            $net = ip2long($m[2]);
+            $mask = (int)$m[3];
+            if ($net === FALSE) continue;
+            $maskbits = ($mask === 0) ? 0 : ((0xFFFFFFFF << (32 - $mask)) & 0xFFFFFFFF);
+            if (($client & $maskbits) === ($net & $maskbits)) return $m[1];
+        }
+    }
+    return NULL;
+}
+
+// Interfaz de gestión: la que sirve la petición, o la de la ruta por defecto.
+function managementDevice($clientIp)
+{
+    if (!empty($clientIp)) {
+        $dev = deviceSubnetContaining($clientIp);
+        if ($dev !== NULL) return $dev;
+    }
+    return defaultRouteDevice();
 }
 
 // Máscara punteada -> longitud de prefijo.
@@ -849,6 +902,183 @@ function action_setroutes($opt)
         if (!nmcliMod($conn, array('ipv4.routes' => $sSpec))) return FALSE;
         return nmcliUp($conn);
     });
+}
+
+// Aplica un conjunto de cambios de forma atómica, con una sola confirmación si
+// es bloqueante. JSON:
+//   { "ifconf":[{"device","bootproto","ipaddr?","netmask?","ip6method?","ip6addr?","ip6gw?"}],
+//     "genconf":{"gateway?","dns1?","dns2?","dns6?","host?"},
+//     "routes":[{"device","routespec"}] }
+function action_apply($opt)
+{
+    $sChange = NULL;
+    $clientIp = NULL;
+    foreach ($opt[0] as $option) switch ($option[0]) {
+    case '--change':    $sChange  = $option[1]; break;
+    case '--client-ip': $clientIp = $option[1]; break;
+    }
+    if (is_null($sChange)) {
+        fwrite(STDERR, "ERR: --apply requires --change\n");
+        return FALSE;
+    }
+    $change = json_decode($sChange, TRUE);
+    if (!is_array($change)) {
+        fwrite(STDERR, "ERR: invalid change set\n");
+        return FALSE;
+    }
+
+    $mgmtDev  = managementDevice($clientIp);
+    $mgmtConn = ($mgmtDev !== NULL) ? connectionForDevice($mgmtDev) : NULL;
+
+    $props = array();     // conexión => propiedades (mod + up)
+    $modOnly = array();   // conexión => propiedades (solo mod)
+    $create = array();    // interfaces cuya conexión hay que crear
+    $host = NULL;
+    $blocking = FALSE;
+    $summaryParts = array();
+
+    // --- ifconf ---
+    if (isset($change['ifconf']) && is_array($change['ifconf'])) {
+        foreach ($change['ifconf'] as $op) {
+            if (!is_array($op) || empty($op['device'])) {
+                fwrite(STDERR, "ERR: ifconf requires device\n");
+                return FALSE;
+            }
+            $dev = $op['device'];
+            $conn = connectionForDevice($dev);
+            if ($conn === NULL) { $conn = $dev; $create[$dev] = TRUE; }
+
+            $p = array();
+            $bootproto = isset($op['bootproto']) ? $op['bootproto'] : NULL;
+            if ($bootproto === 'dhcp') {
+                $p['ipv4.method'] = 'auto';
+                $p['ipv4.addresses'] = '';
+                $p['ipv4.gateway'] = '';
+            } else if ($bootproto === 'static') {
+                if (empty($op['ipaddr']) || empty($op['netmask'])) {
+                    fwrite(STDERR, "ERR: static requires ipaddr and netmask\n");
+                    return FALSE;
+                }
+                $p['ipv4.method'] = 'manual';
+                $p['ipv4.addresses'] = $op['ipaddr'].'/'.netmaskToPrefix($op['netmask']);
+            }
+            if (!empty($op['ip6method']) || !empty($op['ip6addr']) || !empty($op['ip6gw'])) {
+                $m = !empty($op['ip6method']) ? $op['ip6method'] : (empty($op['ip6addr']) ? 'auto' : 'manual');
+                $p['ipv6.method'] = $m;
+                if ($m === 'manual') {
+                    if (empty($op['ip6addr'])) {
+                        fwrite(STDERR, "ERR: IPv6 method manual requires ip6addr\n");
+                        return FALSE;
+                    }
+                    $p['ipv6.addresses'] = $op['ip6addr'];
+                } else {
+                    $p['ipv6.addresses'] = '';
+                    if ($m === 'disabled') $p['ipv6.gateway'] = '';
+                }
+                if (!empty($op['ip6gw'])) $p['ipv6.gateway'] = $op['ip6gw'];
+            }
+            $props[$conn] = isset($props[$conn]) ? array_merge($props[$conn], $p) : $p;
+            $summaryParts[] = 'ifconf '.$dev;
+            if ($bootproto !== NULL && $dev === $mgmtDev) $blocking = TRUE;
+        }
+    }
+
+    // --- genconf ---
+    if (isset($change['genconf']) && is_array($change['genconf'])) {
+        $g = $change['genconf'];
+        $primary = primaryConnection();
+        if ((!empty($g['gateway']) || !empty($g['dns1']) || !empty($g['dns6'])) && $primary === NULL) {
+            fwrite(STDERR, "ERR: no primary connection\n");
+            return FALSE;
+        }
+        if (!empty($g['gateway'])) {
+            $add = array('ipv4.gateway' => $g['gateway']);
+            $props[$primary] = isset($props[$primary]) ? array_merge($props[$primary], $add) : $add;
+            foreach (activeConnectionNames() as $c) if ($c !== $primary) $modOnly[$c] = array('ipv4.never-default' => 'yes');
+            $pdev = deviceForConnection($primary);
+            if ($pdev !== '' && $pdev === $mgmtDev) $blocking = TRUE;
+            $summaryParts[] = 'gateway='.$g['gateway'];
+        }
+        if (!empty($g['dns1'])) {
+            $dns = $g['dns1'].(!empty($g['dns2']) ? ' '.$g['dns2'] : '');
+            $add = array('ipv4.dns' => $dns, 'ipv4.ignore-auto-dns' => 'yes');
+            $props[$primary] = isset($props[$primary]) ? array_merge($props[$primary], $add) : $add;
+            $summaryParts[] = 'dns='.$dns;
+        }
+        if (!empty($g['dns6'])) {
+            $add = array('ipv6.dns' => $g['dns6'], 'ipv6.ignore-auto-dns' => 'yes');
+            $props[$primary] = isset($props[$primary]) ? array_merge($props[$primary], $add) : $add;
+            $summaryParts[] = 'dns6='.$g['dns6'];
+        }
+        if (!empty($g['host'])) { $host = $g['host']; $summaryParts[] = 'host='.$host; }
+    }
+
+    // --- routes ---
+    if (isset($change['routes']) && is_array($change['routes'])) {
+        foreach ($change['routes'] as $op) {
+            if (!is_array($op) || empty($op['device']) || !array_key_exists('routespec', $op)) {
+                fwrite(STDERR, "ERR: routes requires device and routespec\n");
+                return FALSE;
+            }
+            $dev = $op['device'];
+            $conn = connectionForDevice($dev);
+            if ($conn === NULL) { $conn = $dev; $create[$dev] = TRUE; }
+            $add = array('ipv4.routes' => $op['routespec']);
+            $props[$conn] = isset($props[$conn]) ? array_merge($props[$conn], $add) : $add;
+            $summaryParts[] = 'routes '.$dev;
+            if ($dev === $mgmtDev) $blocking = TRUE;
+        }
+    }
+
+    if (empty($props) && empty($modOnly) && is_null($host)) {
+        fwrite(STDERR, "ERR: empty change set\n");
+        return FALSE;
+    }
+
+    $plan = array(
+        'props'   => $props,
+        'modOnly' => $modOnly,
+        'create'  => array_keys($create),
+        'host'    => $host,
+        'mgmt'    => $mgmtConn,
+    );
+    $summary = 'apply '.implode('; ', $summaryParts);
+
+    if ($blocking) {
+        return applySafely($summary, DEFAULT_TIMEOUT, function() use ($plan) {
+            return runChangeSet($plan);
+        });
+    }
+    // No bloqueante: se aplica sin ventana de confirmación.
+    $ok = runChangeSet($plan);
+    if ($ok) echo "applied\n";
+    return $ok;
+}
+
+// Ejecuta un plan de change set ya validado (props por conexión + activación).
+function runChangeSet($plan)
+{
+    foreach ($plan['create'] as $dev) {
+        if (connectionForDevice($dev) === NULL) {
+            if (createConnectionForDevice($dev) === NULL) return FALSE;
+        }
+    }
+    foreach ($plan['modOnly'] as $conn => $props) {
+        if (!nmcliMod($conn, $props)) return FALSE;
+    }
+    foreach ($plan['props'] as $conn => $props) {
+        if (!nmcliMod($conn, $props)) return FALSE;
+    }
+    // Activa primero las que no son de gestión; la de gestión al final.
+    foreach ($plan['props'] as $conn => $props) {
+        if ($plan['mgmt'] !== NULL && $conn === $plan['mgmt']) continue;
+        if (!nmcliUp($conn)) return FALSE;
+    }
+    if ($plan['mgmt'] !== NULL && isset($plan['props'][$plan['mgmt']])) {
+        if (!nmcliUp($plan['mgmt'])) return FALSE;
+    }
+    if ($plan['host'] !== NULL) setHostname($plan['host']);
+    return TRUE;
 }
 
 // Define el hostname del sistema y lo propaga a /etc/hosts y postfix.

@@ -76,5 +76,10 @@ $arrLangModule=array(
 "IPv6 Gateway"=>"IPv6 Gateway",
 "IPv6 DNS"=>"IPv6 DNS",
 "No change"=>"No change",
+"Pending changes (not applied)"=>"Pending changes (not applied)",
+"Apply changes"=>"Apply changes",
+"Discard changes"=>"Discard changes",
+"General"=>"General",
+"Routes"=>"Routes",
 );
 ?>

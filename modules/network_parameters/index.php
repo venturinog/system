@@ -47,6 +47,8 @@ function _moduleContent(&$smarty, $module_name)
 
     $pNet = new paloNetwork();
     $smarty->assign("PENDING_CHANGE", "no");
+    $smarty->assign("DRAFT_COUNT", 0);
+    $smarty->assign("DRAFT_CHANGES", array());
     $arrEths = $pNet->obtener_interfases_red_fisicas();
     $nics = array();
     foreach($arrEths as $iface=>$idata) {
@@ -186,7 +188,29 @@ function _moduleContent(&$smarty, $module_name)
         }
     }
 
-    if(isset($_POST['save_route'])) {
+    if(isset($_POST['apply_changes'])) {
+        // Aplica el borrador completo como un único change set atómico.
+        $draft = networkDraftGet();
+        if (networkDraftCount($draft) > 0) {
+            $changeJson = json_encode(networkDraftToChange($draft));
+            $clientIp = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+            if (!$pNet->aplicarCambioRed($changeJson, $clientIp)) {
+                $smarty->assign("mb_title", _tr("ERROR"));
+                $smarty->assign("mb_message", $pNet->errMsg);
+            } else {
+                networkDraftClear();
+                header("Location: index.php?menu=network");
+                return NULL;
+            }
+        } else {
+            header("Location: index.php?menu=network");
+            return NULL;
+        }
+    } else if(isset($_POST['discard_changes'])) {
+        networkDraftClear();
+        header("Location: index.php?menu=network");
+        return NULL;
+    } else if(isset($_POST['save_route'])) {
         $routeResult = saveStaticRoute($pNet);
         if ($routeResult !== TRUE) {
             $smarty->assign("mb_title", _tr("ERROR"));
@@ -248,17 +272,16 @@ function _moduleContent(&$smarty, $module_name)
         $oForm = new paloForm($smarty, $arrFormNetwork);
 
         if($oForm->validateForm($_POST)) {
-            $arrNetConf['host'] = $_POST['host'];
-            $arrNetConf['dns_ip_1'] = $_POST['dns1'];
-            $arrNetConf['dns_ip_2'] = $_POST['dns2'];
-            $arrNetConf['gateway_ip'] = $_POST['gateway'];
-            $arrNetConf['dns_ip_6'] = (string)getParameter('dns6');
-            $pNet->escribir_configuracion_red_sistema($arrNetConf);
-            if(!empty($pNet->errMsg)) {
-                $smarty->assign("mb_message", $pNet->errMsg);
-            } else {
-                header("Location: index.php?menu=network");
-            }
+            // Encola el cambio (no lo aplica): se aplicará con "Aplicar cambios".
+            networkDraftAddGenconf(array(
+                'host'    => $_POST['host'],
+                'gateway' => $_POST['gateway'],
+                'dns1'    => $_POST['dns1'],
+                'dns2'    => $_POST['dns2'],
+                'dns6'    => (string)getParameter('dns6'),
+            ));
+            header("Location: index.php?menu=network");
+            return NULL;
         } else {
             // Error
             $smarty->assign("mb_title", _tr("Validation Error"));
@@ -286,14 +309,18 @@ function _moduleContent(&$smarty, $module_name)
         $oForm = new paloForm($smarty, $arrFormInterfase);
 
         if($oForm->validateForm($_POST)) {
-	    $smarty->assign("icon","modules/network_parameters/images/system_network_network_parameters.png");
-            if($pNet->escribirConfiguracionInterfaseRed($_POST['dev_id'], $_POST['type'], $_POST['ip'], $_POST['mask'],
-                    (string)getParameter('ip6method'), (string)getParameter('ip6addr'), (string)getParameter('ip6gw'))) {
-                header("Location: index.php?menu=network");
-            } else {
-                $smarty->assign("mb_title", _tr("ERROR"));
-                $smarty->assign("mb_message", $pNet->errMsg);
-            }
+            // Encola el cambio de interfaz (no lo aplica).
+            networkDraftAddIfconf(array(
+                'device'    => $_POST['dev_id'],
+                'bootproto' => $_POST['type'],
+                'ipaddr'    => $_POST['ip'],
+                'netmask'   => $_POST['mask'],
+                'ip6method' => (string)getParameter('ip6method'),
+                'ip6addr'   => (string)getParameter('ip6addr'),
+                'ip6gw'     => (string)getParameter('ip6gw'),
+            ));
+            header("Location: index.php?menu=network");
+            return NULL;
         } else {
             // Error
             $smarty->assign("mb_title", _tr("Validation Error"));
@@ -362,6 +389,14 @@ function _moduleContent(&$smarty, $module_name)
         } else {
             $smarty->assign("PENDING_CHANGE", "no");
         }
+
+        // Cambios sin aplicar (borrador en sesión)
+        $draftLines = networkDraftSummary();
+        $smarty->assign("DRAFT_CHANGES", $draftLines);
+        $smarty->assign("DRAFT_COUNT", count($draftLines));
+        $smarty->assign("PENDING_CHANGES_TITLE", _tr("Pending changes (not applied)"));
+        $smarty->assign("APPLY_CHANGES", _tr("Apply changes"));
+        $smarty->assign("DISCARD_CHANGES", _tr("Discard changes"));
 
         // SECCION ETHERNET LIST
         $arrData = array();
@@ -502,17 +537,14 @@ function saveStaticRoute(&$pNet)
 
     $spec = $dest.($gw !== '' ? ' '.$gw : '').($metric !== '' ? ' '.$metric : '');
 
-    $routes = $pNet->obtenerRutasRed();
-    $list = (is_array($routes) && isset($routes[$dev]) && is_array($routes[$dev])) ? $routes[$dev] : array();
+    $list = routeBaseList($pNet, $dev);
     if (!is_null($orig) && $orig !== '') {
         $list = array_values(array_diff($list, array($orig)));
     }
     $list = array_values(array_diff($list, array($spec)));
     $list[] = $spec;
 
-    if (!$pNet->escribirRutasRed($dev, implode(', ', $list))) {
-        return $pNet->errMsg;
-    }
+    networkDraftAddRoutes($dev, implode(', ', $list));
     return TRUE;
 }
 
@@ -523,13 +555,106 @@ function deleteStaticRoute(&$pNet)
     if (is_null($sel) || strpos($sel, '|') === FALSE) return _tr("No route selected");
     list($dev, $spec) = explode('|', $sel, 2);
 
-    $routes = $pNet->obtenerRutasRed();
-    $list = (is_array($routes) && isset($routes[$dev]) && is_array($routes[$dev])) ? $routes[$dev] : array();
+    $list = routeBaseList($pNet, $dev);
     $list = array_values(array_diff($list, array($spec)));
 
-    if (!$pNet->escribirRutasRed($dev, implode(', ', $list))) {
-        return $pNet->errMsg;
-    }
+    networkDraftAddRoutes($dev, implode(', ', $list));
     return TRUE;
+}
+
+/* ------------------------------------------------------------------------- *
+ *  Borrador de cambios de red (staged, en $_SESSION)
+ * ------------------------------------------------------------------------- */
+
+function networkDraftGet()
+{
+    if (isset($_SESSION['network_draft']) && is_array($_SESSION['network_draft'])) {
+        $d = $_SESSION['network_draft'];
+        if (!isset($d['genconf'])) $d['genconf'] = array();
+        if (!isset($d['ifconf']))  $d['ifconf']  = array();
+        if (!isset($d['routes']))  $d['routes']  = array();
+        return $d;
+    }
+    return array('genconf' => array(), 'ifconf' => array(), 'routes' => array());
+}
+
+function networkDraftSet($d)   { $_SESSION['network_draft'] = $d; }
+function networkDraftClear()   { unset($_SESSION['network_draft']); }
+
+function networkDraftAddGenconf($g)
+{
+    $d = networkDraftGet();
+    $d['genconf'] = $g;
+    networkDraftSet($d);
+}
+
+function networkDraftAddIfconf($op)
+{
+    $d = networkDraftGet();
+    $d['ifconf'][$op['device']] = $op;
+    networkDraftSet($d);
+}
+
+function networkDraftAddRoutes($dev, $spec)
+{
+    $d = networkDraftGet();
+    $d['routes'][$dev] = $spec;
+    networkDraftSet($d);
+}
+
+function networkDraftCount($d = NULL)
+{
+    if (is_null($d)) $d = networkDraftGet();
+    return (empty($d['genconf']) ? 0 : 1) + count($d['ifconf']) + count($d['routes']);
+}
+
+function networkDraftToChange($d)
+{
+    $change = array();
+    if (!empty($d['genconf'])) $change['genconf'] = $d['genconf'];
+    if (!empty($d['ifconf']))  $change['ifconf']  = array_values($d['ifconf']);
+    if (!empty($d['routes'])) {
+        $change['routes'] = array();
+        foreach ($d['routes'] as $dev => $spec) $change['routes'][] = array('device' => $dev, 'routespec' => $spec);
+    }
+    return $change;
+}
+
+// Lista base de rutas de una interfaz: el borrador si existe, o lo aplicado.
+function routeBaseList(&$pNet, $dev)
+{
+    $d = networkDraftGet();
+    if (isset($d['routes'][$dev])) {
+        $spec = trim($d['routes'][$dev]);
+        return ($spec === '') ? array() : array_map('trim', explode(',', $spec));
+    }
+    $routes = $pNet->obtenerRutasRed();
+    if (is_array($routes) && isset($routes[$dev]) && is_array($routes[$dev])) return $routes[$dev];
+    return array();
+}
+
+// Texto de resumen del borrador, para el panel "cambios sin aplicar".
+function networkDraftSummary()
+{
+    $d = networkDraftGet();
+    $lines = array();
+    if (!empty($d['genconf'])) {
+        $g = $d['genconf'];
+        $parts = array();
+        foreach (array('host', 'gateway', 'dns1', 'dns2', 'dns6') as $k) {
+            if (!empty($g[$k])) $parts[] = $k.'='.htmlspecialchars($g[$k], ENT_COMPAT, 'UTF-8');
+        }
+        $lines[] = _tr('General').': '.implode(', ', $parts);
+    }
+    foreach ($d['ifconf'] as $dev => $op) {
+        $txt = $dev.': '.$op['bootproto'];
+        if ($op['bootproto'] == 'static') $txt .= ' '.$op['ipaddr'].'/'.$op['netmask'];
+        if (!empty($op['ip6method'])) $txt .= ' ipv6='.$op['ip6method'].(empty($op['ip6addr']) ? '' : ' '.$op['ip6addr']);
+        $lines[] = _tr('Interface').' '.htmlspecialchars($txt, ENT_COMPAT, 'UTF-8');
+    }
+    foreach ($d['routes'] as $dev => $spec) {
+        $lines[] = _tr('Routes').' '.htmlspecialchars($dev, ENT_COMPAT, 'UTF-8').': '.htmlspecialchars($spec, ENT_COMPAT, 'UTF-8');
+    }
+    return $lines;
 }
 ?>
