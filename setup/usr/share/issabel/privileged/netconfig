@@ -78,6 +78,12 @@ $opt = Console_Getopt::getopt($argv, '', array(
     'bootproto=',   // Either 'dhcp' or 'static'
     'ipaddr=',      // IP address for the interface
     'netmask=',     // Network mask for interface
+    'ip6method=',   // IPv6 method: auto | manual | dhcp | disabled
+    'ip6addr=',     // Static IPv6 address with prefix (addr/prefix)
+    'ip6gw=',       // IPv6 gateway
+
+    // General network configuration (IPv6 DNS)
+    'dns6=',        // IPv6 DNS server
 
     'timeout=',     // Seconds before the automatic rollback
 ));
@@ -146,6 +152,22 @@ function validateOptions($opt)
     case '--rollback':
         if (!preg_match('/^[[:alnum:]_-]+$/', $option[1]))
             error_exit('Option '.$option[0].": Invalid token\n");
+        break;
+    case '--ip6method':
+        if (!in_array($option[1], array('auto', 'manual', 'dhcp', 'disabled')))
+            error_exit('Option '.$option[0].": Invalid IPv6 method\n");
+        break;
+    case '--ip6addr':
+        $p6 = explode('/', $option[1], 2);
+        if (count($p6) != 2
+            || filter_var($p6[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false
+            || !ctype_digit($p6[1]) || intval($p6[1]) > 128)
+            error_exit('Option '.$option[0].": Invalid IPv6 address\n");
+        break;
+    case '--ip6gw':
+    case '--dns6':
+        if (filter_var($option[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false)
+            error_exit('Option '.$option[0].": Invalid IPv6 address\n");
         break;
     case '--dns1':
     case '--dns2':
@@ -220,8 +242,9 @@ function nmcliMod($conn, $props)
 // Activa una conexión (con espera acotada). Devuelve TRUE si queda activa.
 function nmcliUp($conn, $wait = 30)
 {
-    $args = array('con', 'up', $conn, '--wait', (string)$wait);
-    $argv = array_merge(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI), $args);
+    // --wait es una opción global de nmcli: va antes del objeto/verbo.
+    $argv = array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI,
+        '--wait', (string)$wait, 'con', 'up', $conn);
     $ret = NULL; $output = array();
     runCommand($argv, $ret, $output);
     if ($ret != 0) {
@@ -456,8 +479,8 @@ function restoreProfiles($token)
     if (is_array($meta) && isset($meta['connections'])) {
         foreach ($meta['connections'] as $conn) {
             $ret = NULL; $out = array();
-            $argv = array_merge(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI),
-                array('con', 'up', $conn, '--wait', '30'));
+            $argv = array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI,
+                '--wait', '30', 'con', 'up', $conn);
             runCommand($argv, $ret, $out);
         }
     }
@@ -560,13 +583,14 @@ function applySafely($summary, $timeout, $applyFn)
 // Ejecuta la configuración general (hostname, DNS, gateway).
 function action_generalConfiguration($opt)
 {
-    $sHostname = $sGateway = $sDNS1 = $sDNS2 = NULL;
+    $sHostname = $sGateway = $sDNS1 = $sDNS2 = $sDNS6 = NULL;
     $timeout = 180;
     foreach ($opt[0] as $option) switch ($option[0]) {
     case '--host':      $sHostname = $option[1]; break;
     case '--gateway':   $sGateway  = $option[1]; break;
     case '--dns1':      $sDNS1     = $option[1]; break;
     case '--dns2':      $sDNS2     = $option[1]; break;
+    case '--dns6':      $sDNS6     = $option[1]; break;
     case '--timeout':   $timeout   = intval($option[1]); break;
     }
 
@@ -583,8 +607,9 @@ function action_generalConfiguration($opt)
     if (!is_null($sHostname)) $summary .= ' host='.$sHostname;
     if (!is_null($sGateway))  $summary .= ' gateway='.$sGateway;
     if (!is_null($sDNS1))     $summary .= ' dns='.$sDNS1.(is_null($sDNS2)?'':' '.$sDNS2);
+    if (!is_null($sDNS6))     $summary .= ' dns6='.$sDNS6;
 
-    return applySafely($summary, $timeout, function() use ($sHostname, $sGateway, $sDNS1, $sDNS2) {
+    return applySafely($summary, $timeout, function() use ($sHostname, $sGateway, $sDNS1, $sDNS2, $sDNS6) {
         $primary = primaryConnection();
 
         if (!is_null($sGateway)) {
@@ -612,6 +637,16 @@ function action_generalConfiguration($opt)
 
         if (!is_null($sHostname)) setHostname($sHostname);
 
+        if (!is_null($sDNS6)) {
+            if (is_null($primary)) {
+                fwrite(STDERR, "ERR: no NetworkManager connection to set IPv6 DNS on\n");
+                return FALSE;
+            }
+            if (!nmcliMod($primary, array('ipv6.dns' => $sDNS6, 'ipv6.ignore-auto-dns' => 'yes')))
+                return FALSE;
+            if (!nmcliUp($primary)) return FALSE;
+        }
+
         return TRUE;
     });
 }
@@ -620,12 +655,16 @@ function action_generalConfiguration($opt)
 function action_interfaceConfiguration($opt)
 {
     $sDevice = $sBootproto = $sIpAddr = $sNetMask = NULL;
+    $sIp6Method = $sIp6Addr = $sIp6Gw = NULL;
     $timeout = DEFAULT_TIMEOUT;
     foreach ($opt[0] as $option) switch ($option[0]) {
     case '--device':    $sDevice    = $option[1]; break;
     case '--bootproto': $sBootproto = $option[1]; break;
     case '--ipaddr':    $sIpAddr    = $option[1]; break;
     case '--netmask':   $sNetMask   = $option[1]; break;
+    case '--ip6method': $sIp6Method = $option[1]; break;
+    case '--ip6addr':   $sIp6Addr   = $option[1]; break;
+    case '--ip6gw':     $sIp6Gw     = $option[1]; break;
     case '--timeout':   $timeout    = intval($option[1]); break;
     }
 
@@ -666,8 +705,27 @@ function action_interfaceConfiguration($opt)
         );
     }
 
+    // IPv6 (opcional): método auto/dhcp/disabled o dirección estática + gateway.
+    if (!is_null($sIp6Method) || !is_null($sIp6Addr) || !is_null($sIp6Gw)) {
+        if (is_null($sIp6Method)) $sIp6Method = is_null($sIp6Addr) ? 'auto' : 'manual';
+        $props['ipv6.method'] = $sIp6Method;
+        if ($sIp6Method === 'manual') {
+            if (is_null($sIp6Addr)) {
+                fwrite(STDERR, "ERR: IPv6 method manual requires --ip6addr\n");
+                return FALSE;
+            }
+            $props['ipv6.addresses'] = $sIp6Addr;
+        } else {
+            // Limpia direcciones estáticas previas al pasar a auto/dhcp/disabled.
+            $props['ipv6.addresses'] = '';
+            if ($sIp6Method === 'disabled') $props['ipv6.gateway'] = '';
+        }
+        if (!is_null($sIp6Gw)) $props['ipv6.gateway'] = $sIp6Gw;
+    }
+
     $summary = 'ifconf device='.$sDevice.' bootproto='.$sBootproto
-        .($sBootproto == 'static' ? ' addr='.$sIpAddr.'/'.netmaskToPrefix($sNetMask) : '');
+        .($sBootproto == 'static' ? ' addr='.$sIpAddr.'/'.netmaskToPrefix($sNetMask) : '')
+        .($sIp6Method !== NULL ? ' ipv6='.$sIp6Method.(is_null($sIp6Addr) ? '' : ' '.$sIp6Addr) : '');
 
     return applySafely($summary, $timeout, function() use ($sDevice, $conn, $props) {
         $connection = $conn;

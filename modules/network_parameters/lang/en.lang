@@ -70,5 +70,11 @@ $arrLangModule=array(
 "Invalid metric"=>"Invalid metric",
 "Invalid interface"=>"Invalid interface",
 "No route selected"=>"No route selected",
+"IPv6"=>"IPv6",
+"IPv6 Method"=>"IPv6 Method",
+"IPv6 Address"=>"IPv6 Address",
+"IPv6 Gateway"=>"IPv6 Gateway",
+"IPv6 DNS"=>"IPv6 DNS",
+"No change"=>"No change",
 );
 ?>

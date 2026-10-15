@@ -230,6 +230,13 @@ class paloNetwork
                             'Running'       =>  $interfases[$if_orig]['Running'],
                         );
                     }
+                } else if (preg_match('|^\s*inet6 ([0-9a-fA-F:]+)/(\d+) scope (global|link)|', trim($s), $regs6)) {
+                    // Se expone la primera dirección global (o link-local) IPv6
+                    if (empty($interfases[$if_actual]['Inet6 Addr'])) {
+                        $interfases[$if_actual]['Inet6 Addr'] = $regs6[1];
+                        $interfases[$if_actual]['Mask6'] = $regs6[2];
+                        $interfases[$if_actual]['Inet6 Scope'] = $regs6[3];
+                    }
                 }
             }
         }
@@ -283,17 +290,21 @@ class paloNetwork
         $archivoResolv = "/etc/resolv.conf";
         $arrResult = array(
             'dns'         =>  array(),
+            'dns6'        =>  array(),
             'host'        =>  NULL,
             'gateway'     =>  NULL,
             'gateway_dev' =>  NULL,
         );
 
         //- Obtengo los dnss (NetworkManager; /etc/resolv.conf como respaldo)
-        foreach (self::nmcliLines(array('-t', '-e', 'yes', '-f', 'IP4.DNS', 'device', 'show')) as $linea) {
+        foreach (self::nmcliLines(array('-t', '-e', 'yes', '-f', 'IP4.DNS,IP6.DNS', 'device', 'show')) as $linea) {
             $regs = NULL;
             if (preg_match('/^IP4\.DNS(\[\d+\])?:(.+)$/', $linea, $regs)) {
                 $dns = trim($regs[2]);
                 if ($dns !== '' && !in_array($dns, $arrResult['dns'])) $arrResult['dns'][] = $dns;
+            } else if (preg_match('/^IP6\.DNS(\[\d+\])?:(.+)$/', $linea, $regs)) {
+                $dns = trim($regs[2]);
+                if ($dns !== '' && !in_array($dns, $arrResult['dns6'])) $arrResult['dns6'][] = $dns;
             }
         }
         if (count($arrResult['dns']) == 0 && ($fh = fopen($archivoResolv, "r"))) {
@@ -368,6 +379,7 @@ class paloNetwork
             ' --gateway '.escapeshellarg($config_red['gateway_ip']).
             ' --dns1 '.escapeshellarg($config_red['dns_ip_1']).
             ($config_red['dns_ip_2'] == '' ? '' : ' --dns2 '.escapeshellarg($config_red['dns_ip_2'])).
+            (empty($config_red['dns_ip_6']) ? '' : ' --dns6 '.escapeshellarg($config_red['dns_ip_6'])).
             ' 2>&1';
         $output = $ret = NULL;
         exec($sComando, $output, $ret);
@@ -386,10 +398,13 @@ class paloNetwork
      * @param   string  $tipo   Una de las cadenas: static dhcp
      * @param   string  $ip     (opcional)  IP a asignar en caso static
      * @param   string  $mask   (opcional)  Máscara a asignar en caso static
+     * @param   string  $ip6method (opcional) auto|manual|dhcp|disabled
+     * @param   string  $ip6addr   (opcional) IPv6 estática (addr/prefijo)
+     * @param   string  $ip6gw     (opcional) Gateway IPv6
      *
      * @return  bool    VERDADERO en éxito, FALSO en error
      */
-    function escribirConfiguracionInterfaseRed($dev, $tipo, $ip="", $mask="")
+    function escribirConfiguracionInterfaseRed($dev, $tipo, $ip="", $mask="", $ip6method="", $ip6addr="", $ip6gw="")
     {
         $this->errMsg = '';
         $sComando = '/usr/bin/issabel-helper netconfig --ifconf'.
@@ -397,6 +412,9 @@ class paloNetwork
             ' --bootproto '.escapeshellarg($tipo).
             (($ip == '') ? '' : ' --ipaddr '.escapeshellarg($ip)).
             (($mask == '') ? '' : ' --netmask '.escapeshellarg($mask)).
+            (($ip6method == '') ? '' : ' --ip6method '.escapeshellarg($ip6method)).
+            (($ip6addr == '') ? '' : ' --ip6addr '.escapeshellarg($ip6addr)).
+            (($ip6gw == '') ? '' : ' --ip6gw '.escapeshellarg($ip6gw)).
             ' 2>&1';
         $output = $ret = NULL;
         exec($sComando, $output, $ret);

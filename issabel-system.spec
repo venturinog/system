@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 19
+Release: 20
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -194,6 +194,13 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-20
+- Network Parameters: IPv6 support. Show IPv6 addresses in the interface list
+  and edit them: per-interface method (auto/manual/dhcp/disabled), static
+  address with prefix and gateway, plus an optional IPv6 DNS in the general
+  form. The netconfig helper applies them with nmcli (ipv6.method/addresses/
+  gateway/dns) inside the safe apply.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-19
 - Network Parameters: drop the net-tools requirement; the network module no
   longer uses 'route' (nmcli and 'ip route' only).

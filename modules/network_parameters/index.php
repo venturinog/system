@@ -72,6 +72,12 @@ function _moduleContent(&$smarty, $module_name)
                                                      "INPUT_EXTRA_PARAM"      => "",
                                                      "VALIDATION_TYPE"        => "ip",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
+                             "dns6"         => array("LABEL"                  => _tr("IPv6 DNS"),
+                                                     "REQUIRED"               => "no",
+                                                     "INPUT_TYPE"             => "TEXT",
+                                                     "INPUT_EXTRA_PARAM"      => "",
+                                                     "VALIDATION_TYPE"        => "ipv6",
+                                                     "VALIDATION_EXTRA_PARAM" => ""),
                              "gateway"      => array("LABEL"                  => _tr("Default Gateway"),
                                                      "REQUIRED"               => "yes",
                                                      "INPUT_TYPE"             => "TEXT",
@@ -98,6 +104,24 @@ function _moduleContent(&$smarty, $module_name)
                                                      "INPUT_TYPE"             => "RADIO",
                                                      "INPUT_EXTRA_PARAM"      => array("static" => "Static", "dhcp" => "DHCP"),
                                                      "VALIDATION_TYPE"        => "text",
+                                                     "VALIDATION_EXTRA_PARAM" => ""),
+                             "ip6method"    => array("LABEL"                  => _tr("IPv6 Method"),
+                                                     "REQUIRED"               => "no",
+                                                     "INPUT_TYPE"             => "SELECT",
+                                                     "INPUT_EXTRA_PARAM"      => array("" => _tr("No change"), "auto" => "auto (SLAAC)", "dhcp" => "dhcp", "manual" => "manual", "disabled" => "disabled"),
+                                                     "VALIDATION_TYPE"        => "text",
+                                                     "VALIDATION_EXTRA_PARAM" => ""),
+                             "ip6addr"      => array("LABEL"                  => _tr("IPv6 Address"),
+                                                     "REQUIRED"               => "no",
+                                                     "INPUT_TYPE"             => "TEXT",
+                                                     "INPUT_EXTRA_PARAM"      => array("style" => "width:200px"),
+                                                     "VALIDATION_TYPE"        => "ipv6/mask",
+                                                     "VALIDATION_EXTRA_PARAM" => ""),
+                             "ip6gw"        => array("LABEL"                  => _tr("IPv6 Gateway"),
+                                                     "REQUIRED"               => "no",
+                                                     "INPUT_TYPE"             => "TEXT",
+                                                     "INPUT_EXTRA_PARAM"      => array("style" => "width:200px"),
+                                                     "VALIDATION_TYPE"        => "ipv6",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
                              "dev_id"       => array("LABEL"                  => _tr("Device"),
                                                      "REQUIRED"               => "yes",
@@ -206,6 +230,7 @@ function _moduleContent(&$smarty, $module_name)
         if(is_array($arrNetwork)) {
             $arrNetworkData['dns1'] = isset($arrNetwork['dns'][0])?$arrNetwork['dns'][0]:'';
             $arrNetworkData['dns2'] = isset($arrNetwork['dns'][1])?$arrNetwork['dns'][1]:'';
+            $arrNetworkData['dns6'] = isset($arrNetwork['dns6'][0])?$arrNetwork['dns6'][0]:'';
             $arrNetworkData['host'] = isset($arrNetwork['host'])?$arrNetwork['host']:'';
             $arrNetworkData['gateway'] = isset($arrNetwork['gateway'])?$arrNetwork['gateway']:'';
         }
@@ -227,6 +252,7 @@ function _moduleContent(&$smarty, $module_name)
             $arrNetConf['dns_ip_1'] = $_POST['dns1'];
             $arrNetConf['dns_ip_2'] = $_POST['dns2'];
             $arrNetConf['gateway_ip'] = $_POST['gateway'];
+            $arrNetConf['dns_ip_6'] = (string)getParameter('dns6');
             $pNet->escribir_configuracion_red_sistema($arrNetConf);
             if(!empty($pNet->errMsg)) {
                 $smarty->assign("mb_message", $pNet->errMsg);
@@ -261,7 +287,8 @@ function _moduleContent(&$smarty, $module_name)
 
         if($oForm->validateForm($_POST)) {
 	    $smarty->assign("icon","modules/network_parameters/images/system_network_network_parameters.png");
-            if($pNet->escribirConfiguracionInterfaseRed($_POST['dev_id'], $_POST['type'], $_POST['ip'], $_POST['mask'])) {
+            if($pNet->escribirConfiguracionInterfaseRed($_POST['dev_id'], $_POST['type'], $_POST['ip'], $_POST['mask'],
+                    (string)getParameter('ip6method'), (string)getParameter('ip6addr'), (string)getParameter('ip6gw'))) {
                 header("Location: index.php?menu=network");
             } else {
                 $smarty->assign("mb_title", _tr("ERROR"));
@@ -296,6 +323,9 @@ function _moduleContent(&$smarty, $module_name)
             $arrInterfaseData['mask'] = $arrEth['Mask'];
             $arrInterfaseData['type'] = $arrEth['Type'];
             $arrInterfaseData['dev_id'] = $_GET['id'];
+            $arrInterfaseData['ip6method'] = '';
+            $arrInterfaseData['ip6addr'] = isset($arrEth['Inet6 Addr'], $arrEth['Mask6']) ? $arrEth['Inet6 Addr'].'/'.$arrEth['Mask6'] : '';
+            $arrInterfaseData['ip6gw'] = '';
         }
 
         $oForm = new paloForm($smarty, $arrFormInterfase);
@@ -312,6 +342,7 @@ function _moduleContent(&$smarty, $module_name)
         if(is_array($arrNetwork)) {
             $arrNetworkData['dns1'] = isset($arrNetwork['dns'][0])?$arrNetwork['dns'][0]:'';
             $arrNetworkData['dns2'] = isset($arrNetwork['dns'][1])?$arrNetwork['dns'][1]:'';
+            $arrNetworkData['dns6'] = isset($arrNetwork['dns6'][0])?$arrNetwork['dns6'][0]:'';
             $arrNetworkData['host'] = isset($arrNetwork['host'])?$arrNetwork['host']:'';
             $arrNetworkData['gateway'] = isset($arrNetwork['gateway'])?$arrNetwork['gateway']:'';
         }
@@ -345,9 +376,10 @@ function _moduleContent(&$smarty, $module_name)
             $arrTmp[1] = strtoupper($arrEth['Type']);
             $arrTmp[2] = $arrEth['Inet Addr'];
             $arrTmp[3] = $arrEth['Mask'];
-            $arrTmp[4] = $arrEth['HWaddr'];
-            $arrTmp[5] = isset($arrEth['HW_info'])?$arrEth['HW_info']:''; //- Deberia acotar este campo pues puede ser muy largo
-            $arrTmp[6] = ($arrEth['Running']=="Yes" ? "<font color=green>"._tr("Connected")."</font>" : "<font color=red>"._tr("Not Connected")."</font>");
+            $arrTmp[4] = isset($arrEth['Inet6 Addr'], $arrEth['Mask6']) ? htmlspecialchars($arrEth['Inet6 Addr'].'/'.$arrEth['Mask6'], ENT_COMPAT, 'UTF-8') : '';
+            $arrTmp[5] = $arrEth['HWaddr'];
+            $arrTmp[6] = isset($arrEth['HW_info'])?$arrEth['HW_info']:''; //- Deberia acotar este campo pues puede ser muy largo
+            $arrTmp[7] = ($arrEth['Running']=="Yes" ? "<font color=green>"._tr("Connected")."</font>" : "<font color=red>"._tr("Not Connected")."</font>");
             $arrData[] = $arrTmp;
         }
 
@@ -368,11 +400,13 @@ function _moduleContent(&$smarty, $module_name)
                                                         "property1" => ""),
                                              3 => array("name"      => _tr("Mask"),
                                                         "property1" => ""),
-                                             4 => array("name"      => _tr("MAC Address"),
+                                             4 => array("name"      => _tr("IPv6"),
                                                         "property1" => ""),
-                                             5 => array("name"      => _tr("HW Info"),
+                                             5 => array("name"      => _tr("MAC Address"),
                                                         "property1" => ""),
-                                             6 => array("name"      => _tr("Status"),
+                                             6 => array("name"      => _tr("HW Info"),
+                                                        "property1" => ""),
+                                             7 => array("name"      => _tr("Status"),
                                                         "property1" => "")
                                             ));
 

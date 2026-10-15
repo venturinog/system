@@ -26,6 +26,18 @@
                 <span class="iss-field__label">{$mask.LABEL}&nbsp;<span class="iss-required">*</span></span>
                 <span class="iss-field__control">{$mask.INPUT}</span>
             </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$ip6method.LABEL}</span>
+                <span class="iss-field__control">{$ip6method.INPUT}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$ip6addr.LABEL}</span>
+                <span class="iss-field__control">{$ip6addr.INPUT}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$ip6gw.LABEL}</span>
+                <span class="iss-field__control">{$ip6gw.INPUT}</span>
+            </div>
         </div>
     </section>
     {$dev_id.INPUT}

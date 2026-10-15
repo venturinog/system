@@ -36,6 +36,10 @@
                 <span class="iss-field__label">{$dns2.LABEL}</span>
                 <span class="iss-field__control">{$dns2.INPUT}</span>
             </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$dns6.LABEL}</span>
+                <span class="iss-field__control">{$dns6.INPUT}</span>
+            </div>
         </div>
     </section>
 </div>
