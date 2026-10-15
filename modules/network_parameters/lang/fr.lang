@@ -83,5 +83,8 @@ $arrLangModule=array(
 "The default route is set with the Default Gateway field" => "La route par défaut est définie avec le champ Passerelle par défaut",
 "Gateway" => "Passerelle",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "La passerelle est obligatoire (utilisez 0.0.0.0 pour une route on-link)",
+"IPv4" => "IPv4",
+"%s is required" => "%s est obligatoire",
+"%s is invalid" => "%s nʼest pas valide",
 );
 ?>

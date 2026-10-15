@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 28
+Release: 29
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-29
+- Network Parameters: split the interface edit form into IPv4 and IPv6 cards and
+  add live field validation (client and server) with inline ok/fail feedback.
+  IP address and network mask are only required for static configuration
+  (disabled for DHCP) and the IPv6 address is only required for the manual
+  method; added example placeholders and dropped the fixed field widths.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-28
 - Network Parameters: drop the fixed widths of the Destination and Gateway
   fields in the static route form so they use the standard form width (up to

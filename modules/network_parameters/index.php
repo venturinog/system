@@ -90,16 +90,16 @@ function _moduleContent(&$smarty, $module_name)
 );
 
     $arrFormInterfase = array("ip"          => array("LABEL"                  => _tr("IP Address"),
-                                                     "REQUIRED"               => "yes",
+                                                     "REQUIRED"               => "no",
                                                      "INPUT_TYPE"             => "TEXT",
-                                                     "INPUT_EXTRA_PARAM"      => "",
-                                                     "VALIDATION_TYPE"        => "ip",
+                                                     "INPUT_EXTRA_PARAM"      => array("placeholder" => "192.168.1.10"),
+                                                     "VALIDATION_TYPE"        => "text",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
                              "mask"         => array("LABEL"                  => _tr("Network Mask"),
-                                                     "REQUIRED"               => "yes",
+                                                     "REQUIRED"               => "no",
                                                      "INPUT_TYPE"             => "TEXT",
-                                                     "INPUT_EXTRA_PARAM"      => "",
-                                                     "VALIDATION_TYPE"        => "mask",
+                                                     "INPUT_EXTRA_PARAM"      => array("placeholder" => "255.255.255.0"),
+                                                     "VALIDATION_TYPE"        => "text",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
                              "type"         => array("LABEL"                  => _tr("Interface Type"),
                                                      "REQUIRED"               => "yes",
@@ -116,14 +116,14 @@ function _moduleContent(&$smarty, $module_name)
                              "ip6addr"      => array("LABEL"                  => _tr("IPv6 Address"),
                                                      "REQUIRED"               => "no",
                                                      "INPUT_TYPE"             => "TEXT",
-                                                     "INPUT_EXTRA_PARAM"      => array("style" => "width:200px"),
-                                                     "VALIDATION_TYPE"        => "ipv6/mask",
+                                                     "INPUT_EXTRA_PARAM"      => array("placeholder" => "2001:db8::10/64"),
+                                                     "VALIDATION_TYPE"        => "text",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
                              "ip6gw"        => array("LABEL"                  => _tr("IPv6 Gateway"),
                                                      "REQUIRED"               => "no",
                                                      "INPUT_TYPE"             => "TEXT",
-                                                     "INPUT_EXTRA_PARAM"      => array("style" => "width:200px"),
-                                                     "VALIDATION_TYPE"        => "ipv6",
+                                                     "INPUT_EXTRA_PARAM"      => array("placeholder" => "2001:db8::1"),
+                                                     "VALIDATION_TYPE"        => "text",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
                              "dev_id"       => array("LABEL"                  => _tr("Device"),
                                                      "REQUIRED"               => "yes",
@@ -315,45 +315,64 @@ function _moduleContent(&$smarty, $module_name)
 
     } else if(isset($_POST['save_interfase_changes'])) {
 
-        $oForm = new paloForm($smarty, $arrFormInterfase);
+        $type      = (string)getParameter('type');
+        $ip        = trim((string)getParameter('ip'));
+        $mask      = trim((string)getParameter('mask'));
+        $ip6method = (string)getParameter('ip6method');
+        $ip6addr   = trim((string)getParameter('ip6addr'));
+        $ip6gw     = trim((string)getParameter('ip6gw'));
 
-        if($oForm->validateForm($_POST)) {
-            // Encola el cambio de interfaz (no lo aplica).
-            networkDraftAddIfconf(array(
-                'device'    => $_POST['dev_id'],
-                'bootproto' => $_POST['type'],
-                'ipaddr'    => $_POST['ip'],
-                'netmask'   => $_POST['mask'],
-                'ip6method' => (string)getParameter('ip6method'),
-                'ip6addr'   => (string)getParameter('ip6addr'),
-                'ip6gw'     => (string)getParameter('ip6gw'),
-            ));
-            header("Location: index.php?menu=$module_name");
-            return NULL;
-        } else {
-            // Error
-            $smarty->assign("mb_title", _tr("Validation Error"));
-            $arrErrores=$oForm->arrErroresValidacion;
-            $strErrorMsg = "<b>"._tr('The following fields contain errors').":</b><br>";
-            foreach($arrErrores as $k=>$v) {
-                $strErrorMsg .= "$k, ";
-            }
-            $strErrorMsg .= "";
-            $smarty->assign("mb_message", $strErrorMsg);
-            $smarty->assign("CANCEL", _tr("Cancel"));
-            $smarty->assign("APPLY_CHANGES", _tr("Apply Changes"));
-            $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
-            $smarty->assign("EDIT_PARAMETERS", _tr("Edit Network Parameters"));
-	    $smarty->assign("icon","/modules/$module_name/images/system_hardware_detector.png");
-            $smarty->assign("CONFIRM_EDIT", _tr("Are you sure you want to edit network parameters?"));
-            $strReturn=$oForm->fetchForm("$local_templates_dir/network_edit_interfase.tpl", ""._tr('Edit Interface')." \"Ethernet ??\"", $_POST);
+        $errors = array();
+        if ($type === 'static') {
+            if ($ip === '')                    $errors['ip'] = sprintf(_tr('%s is required'), _tr('IP Address'));
+            else if (!validIpv4($ip))          $errors['ip'] = sprintf(_tr('%s is invalid'), _tr('IP Address'));
+            if ($mask === '')                  $errors['mask'] = sprintf(_tr('%s is required'), _tr('Network Mask'));
+            else if (!validNetmask($mask))     $errors['mask'] = sprintf(_tr('%s is invalid'), _tr('Network Mask'));
         }
+        if ($ip6method === 'manual') {
+            if ($ip6addr === '')               $errors['ip6addr'] = sprintf(_tr('%s is required'), _tr('IPv6 Address'));
+            else if (!validIpv6Cidr($ip6addr)) $errors['ip6addr'] = sprintf(_tr('%s is invalid'), _tr('IPv6 Address'));
+        } else if ($ip6addr !== '' && !validIpv6Cidr($ip6addr)) {
+            $errors['ip6addr'] = sprintf(_tr('%s is invalid'), _tr('IPv6 Address'));
+        }
+        if ($ip6gw !== '' && !validIpv6($ip6gw)) {
+            $errors['ip6gw'] = sprintf(_tr('%s is invalid'), _tr('IPv6 Gateway'));
+        }
+
+        if (count($errors) > 0) {
+            // Errores por campo: re-render del formulario marcando los campos.
+            return constructInterfaseForm($smarty, $module_name, $local_templates_dir, $arrFormInterfase,
+                array(
+                    'ip'        => (string)getParameter('ip'),
+                    'mask'      => (string)getParameter('mask'),
+                    'type'      => $type,
+                    'ip6method' => $ip6method,
+                    'ip6addr'   => (string)getParameter('ip6addr'),
+                    'ip6gw'     => (string)getParameter('ip6gw'),
+                    'dev_id'    => (string)getParameter('dev_id'),
+                ),
+                _tr('Edit Interface'), $errors);
+        }
+
+        // Encola el cambio de interfaz (no lo aplica).
+        networkDraftAddIfconf(array(
+            'device'    => (string)getParameter('dev_id'),
+            'bootproto' => $type,
+            'ipaddr'    => $ip,
+            'netmask'   => $mask,
+            'ip6method' => $ip6method,
+            'ip6addr'   => $ip6addr,
+            'ip6gw'     => $ip6gw,
+        ));
+        header("Location: index.php?menu=$module_name");
+        return NULL;
     } else if(isset($_GET['action']) && $_GET['action'] == "editInterfase") {
 
         // TODO: Revisar si el $_GET['id'] contiene un id valido
         $arrEths = $pNet->obtener_interfases_red_fisicas();
         $arrEth = $arrEths[$_GET['id']];
 
+        $arrInterfaseData = array();
         if(is_array($arrEth)) {
             $arrInterfaseData['ip'] = $arrEth['Inet Addr'];
             $arrInterfaseData['mask'] = $arrEth['Mask'];
@@ -364,14 +383,8 @@ function _moduleContent(&$smarty, $module_name)
             $arrInterfaseData['ip6gw'] = '';
         }
 
-        $oForm = new paloForm($smarty, $arrFormInterfase);
-        $smarty->assign("CANCEL", _tr("Cancel"));
-        $smarty->assign("APPLY_CHANGES", _tr("Apply Changes"));
-        $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
-        $smarty->assign("EDIT_PARAMETERS", _tr("Edit Network Parameters"));
-	$smarty->assign("icon","/modules/$module_name/images/system_hardware_detector.png");
-        $smarty->assign("CONFIRM_EDIT", _tr("Are you sure you want to edit network parameters?"));
-        $strReturn = $oForm->fetchForm("$local_templates_dir/network_edit_interfase.tpl", ""._tr('Edit Interface')." \"" . $arrEth['Name'] . "\"", $arrInterfaseData);
+        return constructInterfaseForm($smarty, $module_name, $local_templates_dir, $arrFormInterfase,
+            $arrInterfaseData, _tr('Edit Interface').' "'.(is_array($arrEth) ? $arrEth['Name'] : '').'"');
     } else {
         // SECCION NETWORK PARAMETERS
         $arrNetwork = $pNet->obtener_configuracion_red();
@@ -465,6 +478,56 @@ function _moduleContent(&$smarty, $module_name)
     }
 
     return $strReturn;
+}
+
+function validIpv4($ip)
+{
+    $m = NULL;
+    if (!preg_match('/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/', $ip, $m)) return FALSE;
+    for ($i = 1; $i <= 4; $i++) if ($m[$i] > 255) return FALSE;
+    return TRUE;
+}
+
+function validNetmask($mask)
+{
+    if (!validIpv4($mask)) return FALSE;
+    $o = array_map('intval', explode('.', $mask));
+    $n = ($o[0] << 24) | ($o[1] << 16) | ($o[2] << 8) | $o[3];
+    $inv = (~$n) & 0xFFFFFFFF;
+    return (($inv + 1) & $inv) == 0;   // bits altos contiguos
+}
+
+function validIpv6($ip)
+{
+    return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== FALSE;
+}
+
+function validIpv6Cidr($cidr)
+{
+    $p = explode('/', $cidr, 2);
+    return count($p) == 2 && validIpv6($p[0]) && ctype_digit($p[1]) && intval($p[1]) <= 128;
+}
+
+function constructInterfaseForm($smarty, $module_name, $local_templates_dir, $arrFormInterfase, $data, $title, $errors = array())
+{
+    foreach (array('ip', 'mask', 'ip6addr', 'ip6gw') as $f) {
+        if (!isset($errors[$f])) continue;
+        if (!isset($arrFormInterfase[$f]['INPUT_EXTRA_PARAM']) || !is_array($arrFormInterfase[$f]['INPUT_EXTRA_PARAM']))
+            $arrFormInterfase[$f]['INPUT_EXTRA_PARAM'] = array();
+        $cls = isset($arrFormInterfase[$f]['INPUT_EXTRA_PARAM']['class'])
+            ? $arrFormInterfase[$f]['INPUT_EXTRA_PARAM']['class'].' ' : 'form-control ';
+        $arrFormInterfase[$f]['INPUT_EXTRA_PARAM']['class'] = $cls.'is-invalid';
+    }
+    $oForm = new paloForm($smarty, $arrFormInterfase);
+    $smarty->assign("INTERFASE_ERRORS", array_merge(
+        array('ip' => '', 'mask' => '', 'ip6addr' => '', 'ip6gw' => ''), $errors));
+    $smarty->assign("CANCEL", _tr("Cancel"));
+    $smarty->assign("APPLY_CHANGES", _tr("Apply Changes"));
+    $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
+    $smarty->assign("EDIT_PARAMETERS", _tr("Edit Network Parameters"));
+    $smarty->assign("icon", "/modules/$module_name/images/system_hardware_detector.png");
+    $smarty->assign("CONFIRM_EDIT", _tr("Are you sure you want to edit network parameters?"));
+    return $oForm->fetchForm("$local_templates_dir/network_edit_interfase.tpl", $title, $data);
 }
 
 function constructRouteForm($smarty, $module_name, $local_templates_dir, $arrFormRoute, $data, $action, $errors = array())
