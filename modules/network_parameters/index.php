@@ -332,7 +332,7 @@ function _moduleContent(&$smarty, $module_name)
             $strErrorMsg .= "";
             $smarty->assign("mb_message", $strErrorMsg);
             $smarty->assign("CANCEL", _tr("Cancel"));
-            $smarty->assign("APPLY_CHANGES", _tr("Apply changes"));
+            $smarty->assign("APPLY_CHANGES", _tr("Apply Changes"));
             $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
             $smarty->assign("EDIT_PARAMETERS", _tr("Edit Network Parameters"));
 	    $smarty->assign("icon","/modules/$module_name/images/system_hardware_detector.png");
@@ -357,7 +357,7 @@ function _moduleContent(&$smarty, $module_name)
 
         $oForm = new paloForm($smarty, $arrFormInterfase);
         $smarty->assign("CANCEL", _tr("Cancel"));
-        $smarty->assign("APPLY_CHANGES", _tr("Apply changes"));
+        $smarty->assign("APPLY_CHANGES", _tr("Apply Changes"));
         $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
         $smarty->assign("EDIT_PARAMETERS", _tr("Edit Network Parameters"));
 	$smarty->assign("icon","/modules/$module_name/images/system_hardware_detector.png");
@@ -384,8 +384,8 @@ function _moduleContent(&$smarty, $module_name)
             $smarty->assign("PENDING_SUMMARY", $pendingChange['summary']);
             $smarty->assign("PENDING_REMAINING", $pendingChange['remaining']);
             $smarty->assign("PENDING_WARNING", _tr("Network changes are pending confirmation. If not confirmed in time, they will be reverted automatically."));
-            $smarty->assign("CONFIRM_CHANGE", _tr("Confirm changes"));
-            $smarty->assign("REVERT_CHANGE", _tr("Revert now"));
+            $smarty->assign("CONFIRM_CHANGE", _tr("Confirm Changes"));
+            $smarty->assign("REVERT_CHANGE", _tr("Revert Now"));
         } else {
             $smarty->assign("PENDING_CHANGE", "no");
         }
@@ -395,8 +395,8 @@ function _moduleContent(&$smarty, $module_name)
         $smarty->assign("DRAFT_CHANGES", $draftLines);
         $smarty->assign("DRAFT_COUNT", count($draftLines));
         $smarty->assign("PENDING_CHANGES_TITLE", _tr("Pending changes (not applied)"));
-        $smarty->assign("APPLY_CHANGES", _tr("Apply changes"));
-        $smarty->assign("DISCARD_CHANGES", _tr("Discard changes"));
+        $smarty->assign("APPLY_CHANGES", _tr("Apply Changes"));
+        $smarty->assign("DISCARD_CHANGES", _tr("Discard Changes"));
 
         // SECCION ETHERNET LIST
         $arrData = array();
@@ -507,8 +507,8 @@ function renderRoutesGrid($smarty, $module_name, &$pNet)
     $oGrid->setIcon("modules/$module_name/images/system_network_network_parameters.png");
     $oGrid->setURL(array('menu' => $module_name));
     $oGrid->setColumns(array('', _tr('Interface'), _tr('Destination'), _tr('Gateway'), _tr('Metric'), _tr('Options')));
-    $oGrid->deleteList(_tr('Are you sure you wish to delete this route?'), 'delete_route', _tr('Delete route'));
     $oGrid->addNew("?menu=$module_name&amp;action=route_new", _tr('New Static Route'), true);
+    $oGrid->deleteList(_tr('Are you sure you wish to delete this route?'), 'delete_route', _tr('Delete Route'));
     $oGrid->pagingShow(false);
     $oGrid->setTotal(count($data));
     $oGrid->setLimit(count($data) > 0 ? count($data) : 1);
