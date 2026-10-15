@@ -22,6 +22,10 @@ global $arrLangModule;
 $arrLangModule=array(
 "Ping"=> "Ping",
 "Trace"=> "Trace",
-"Results"=> "Resultados"
+"Results"=> "Resultados",
+"Host name or IP"=> "Nombre de host o IP",
+"Required field"=> "Campo obligatorio",
+"%s is required"=> "%s es obligatorio",
+"%s is invalid"=> "%s no es válido"
 );
 ?>

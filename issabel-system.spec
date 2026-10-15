@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 36
+Release: 40
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -55,6 +55,10 @@ Requires: mariadb
 Requires: /usr/sbin/pidof
 Requires: /usr/bin/hostname
 Requires: /usr/sbin/shutdown
+
+# commands: /usr/sbin/ping /usr/sbin/tracepath (módulo Ping & Traceroute)
+Requires: /usr/sbin/ping
+Requires: /usr/sbin/tracepath
 
 %description
 Issabel System Module
@@ -197,6 +201,32 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-40
+- Ping & Traceroute: disable the clicked button for one second on submit so the
+  click is acknowledged while the page reloads and the command starts.
+
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-39
+- Ping & Traceroute: show a blinking cursor in the Results console from the
+  click until the first output line arrives, so the user gets immediate
+  feedback while the command runs. The caret lives inside the console document
+  (removed on the first line) and the results card is revealed on submit with a
+  pending cursor for the brief POST round-trip.
+
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-38
+- Ping & Traceroute: fix the host argument so ping/tracepath stop failing with
+  "'<host>': Name or service not known". index.php no longer wraps the host in
+  literal single quotes and URL-encodes it, and generate.php validates the
+  target (IPv4/IPv6/host name) and uses escapeshellarg() instead of
+  escapeshellcmd(htmlspecialchars()), which double-escaped the value under PHP
+  8. Apply the style guide: CSRF field, server and client validation with
+  inline errors, translated labels, and a .iss-console results panel that is
+  readable in light and dark modes. Require the iputils binaries explicitly.
+
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-37
+- Ping and Backup/Restore migration: replace the removed Smarty {php} tags with
+  values assigned from PHP, so the templates compile under Smarty 4 and no
+  longer return a 500 error.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-36
 - Assign IP Address to Host: apply the style guide to the add/edit/view form:
   render the view mode as plain text, re-render per-field validation errors
