@@ -1,0 +1,15 @@
+[Unit]
+Description=Issabel netconfig boot recovery
+Documentation=man:NetworkManager(8)
+# Revertir un cambio de red no confirmado antes de que arranque nada que
+# dependa de la red (p. ej. Asterisk, httpd).
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/issabel/privileged/netconfig --recover
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

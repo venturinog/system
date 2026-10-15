@@ -2,12 +2,11 @@
 <?php
 /*
   vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
-  Codificación: UTF-8
   +----------------------------------------------------------------------+
-  | Issabel version 4.0                                                  |
+  | Issabel version 6.0                                                  |
   | http://www.issabel.org                                               |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2018 Issabel Foundation                                |
+  | Copyright (c) 2021 Issabel Foundation                                |
   | Copyright (c) 2006 Palosanto Solutions S. A.                         |
   +----------------------------------------------------------------------+
   | The contents of this file are subject to the General Public License  |
@@ -22,27 +21,65 @@
   +----------------------------------------------------------------------+
   | The Initial Developer of the Original Code is PaloSanto Solutions    |
   +----------------------------------------------------------------------+
-  $Id: netconfig.php, Thu 15 Nov 2018 09:20:41 AM EST, nicolas@issabel.com
 */
+
+/*
+ * Configuración de red sobre NetworkManager (nmcli).
+ *
+ * Reemplaza la escritura legacy de /etc/sysconfig/network-scripts/ifcfg-*,
+ * /etc/sysconfig/network, /etc/resolv.conf y 'route', que ya no existen o no se
+ * usan en EL10. La fuente de verdad es NetworkManager.
+ *
+ * Todo cambio se aplica en modo seguro (commit-confirm): se toma un snapshot de
+ * los perfiles, se aplica el cambio y se programa una reversión automática con
+ * un timer de systemd. El admin confirma (--confirm <token>) para cancelarla; si
+ * no confirma, se revierte (--rollback <token>). El estado pendiente se guarda
+ * en un directorio persistente para poder recuperar tras un reboot.
+ *
+ * Acciones:
+ *   --genconf   hostname / DNS / gateway
+ *   --ifconf    dirección de una interfaz (static o dhcp)
+ *   --confirm   cancela la reversión de un cambio pendiente
+ *   --rollback  aplica el snapshot de un cambio (lo invoca el timer)
+ *   --pending   imprime el cambio pendiente como JSON (para la GUI)
+ */
+
 require_once 'Console/Getopt.php';
+
+define('STATE_DIR',       '/var/lib/issabel/netconfig-rollback');
+define('PENDING_FILE',    STATE_DIR.'/pending.json');
+define('LOCK_FILE',       STATE_DIR.'/.lock');
+define('NMCLI',           '/usr/bin/nmcli');
+define('SELF',            '/usr/share/issabel/privileged/netconfig');
+define('DEFAULT_TIMEOUT', 600);
+
+$LOCK_HANDLE = NULL;
 
 // Parse command-line options
 $opt = Console_Getopt::getopt($argv, '', array(
     'genconf',  // General network configuration
     'ifconf',   // Interface-specific configuration
+    'confirm=', // Cancel the rollback of a pending change (token)
+    'rollback=',// Apply the snapshot of a pending change (token)
+    'pending',  // Print the pending change as JSON
+    'recover',  // Revert a pending change at boot (used by the systemd unit)
+    'getroutes',// Print the IPv4 static routes per interface as JSON
+    'setroutes',// Set the IPv4 static routes of an interface
+    'routespec=',// Route list in nmcli syntax (for --setroutes)
 
     // General network configuration options
     'host=',        // New hostname
     'dns1=',        // DNS 1
     'dns2=',        // DNS 2
     'gateway=',     // Network gateway
-    'gateway-dev=',     // Network gateway device
 
     // Interface configuration options
     'device=',      // ethN
     'bootproto=',   // Either 'dhcp' or 'static'
     'ipaddr=',      // IP address for the interface
     'netmask=',     // Network mask for interface
+
+    'timeout=',     // Seconds before the automatic rollback
 ));
 if (PEAR::isError($opt)) error_exit($opt->getMessage()."\n");
 validateOptions($opt);
@@ -51,8 +88,20 @@ case '--genconf':
     exit(action_generalConfiguration($opt) ? 0 : 1);
 case '--ifconf':
     exit(action_interfaceConfiguration($opt) ? 0 : 1);
+case '--confirm':
+    exit(action_confirm($option[1]) ? 0 : 1);
+case '--rollback':
+    exit(action_rollback($option[1]) ? 0 : 1);
+case '--pending':
+    exit(action_pending() ? 0 : 1);
+case '--recover':
+    exit(action_recover() ? 0 : 1);
+case '--getroutes':
+    exit(action_getroutes() ? 0 : 1);
+case '--setroutes':
+    exit(action_setroutes($opt) ? 0 : 1);
 }
-error_exit("No action specified (--genconf or --ifconf)\n");
+error_exit("No action specified (--genconf, --ifconf, --confirm, --rollback or --pending)\n");
 
 function error_exit($sMsg, $errorcode = 1)
 {
@@ -64,10 +113,12 @@ function error_exit($sMsg, $errorcode = 1)
 function validateOptions($opt)
 {
     foreach ($opt[0] as $option) switch ($option[0]) {
-    case 'genconf':
-    case '--gateway-dev':
-        break;
-    case 'ifconf':
+    case '--genconf':
+    case '--ifconf':
+    case '--pending':
+    case '--recover':
+    case '--getroutes':
+    case '--setroutes':
         break;
     case '--host':
         if (!preg_match('/^(([[:alnum:]-]+)\.)+([[:alnum:]])+$/', $option[1]))
@@ -76,13 +127,25 @@ function validateOptions($opt)
             error_exit('Option '.$option[0].": Invalid hostname - domain-only not acceptable\n");
         break;
     case '--device':
-        // Only support ethernet for now
         if (!preg_match('/^[[:alnum:]\._-]+$/', $option[1]))
             error_exit('Option '.$option[0].": Invalid network device\n");
         break;
     case '--bootproto':
         if (!in_array($option[1], array('dhcp', 'static')))
             error_exit('Option '.$option[0].": Invalid bootproto\n");
+        break;
+    case '--timeout':
+        if (!ctype_digit($option[1]) || intval($option[1]) <= 0)
+            error_exit('Option '.$option[0].": Invalid timeout\n");
+        break;
+    case '--routespec':
+        if (!preg_match('/^[0-9a-fA-F:.\/,\s=_-]*$/', $option[1]))
+            error_exit('Option '.$option[0].": Invalid route specification\n");
+        break;
+    case '--confirm':
+    case '--rollback':
+        if (!preg_match('/^[[:alnum:]_-]+$/', $option[1]))
+            error_exit('Option '.$option[0].": Invalid token\n");
         break;
     case '--dns1':
     case '--dns2':
@@ -110,175 +173,634 @@ function validateOptions($opt)
     }
 }
 
-// Execute hostname/DNS/gateway configuration. Returns TRUE on success.
+/* ------------------------------------------------------------------------- *
+ *  nmcli helpers
+ * ------------------------------------------------------------------------- */
+
+// Ejecuta un comando y devuelve (por referencia) el código y la salida.
+function runCommand($argv, &$ret, &$output)
+{
+    $cmd = '';
+    foreach ($argv as $a) $cmd .= ($cmd === '' ? '' : ' ').escapeshellarg($a);
+    $output = array();
+    $ret = NULL;
+    exec($cmd.' 2>&1', $output, $ret);
+    return $ret;
+}
+
+// Ejecuta nmcli con locale fijo y devuelve la salida como arreglo de líneas.
+// Devuelve arreglo vacío si nmcli falla.
+function nmcliLines($args)
+{
+    $argv = array_merge(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI), $args);
+    $ret = NULL; $output = array();
+    runCommand($argv, $ret, $output);
+    if ($ret != 0) return array();
+    return $output;
+}
+
+// Aplica propiedades a una conexión. $props = array(clave => valor).
+function nmcliMod($conn, $props)
+{
+    $args = array('con', 'mod', $conn);
+    foreach ($props as $k => $v) {
+        $args[] = $k;
+        $args[] = $v;
+    }
+    $ret = NULL; $output = array();
+    $argv = array_merge(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI), $args);
+    runCommand($argv, $ret, $output);
+    if ($ret != 0) {
+        fwrite(STDERR, "ERR: nmcli con mod failed - ".implode(' ', $output)."\n");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+// Activa una conexión (con espera acotada). Devuelve TRUE si queda activa.
+function nmcliUp($conn, $wait = 30)
+{
+    $args = array('con', 'up', $conn, '--wait', (string)$wait);
+    $argv = array_merge(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI), $args);
+    $ret = NULL; $output = array();
+    runCommand($argv, $ret, $output);
+    if ($ret != 0) {
+        fwrite(STDERR, "ERR: nmcli con up failed - ".implode(' ', $output)."\n");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+function listConnectionNames()
+{
+    $names = array();
+    foreach (nmcliLines(array('-g', 'NAME', 'con', 'show')) as $n) {
+        $n = trim($n);
+        if ($n !== '') $names[] = $n;
+    }
+    return $names;
+}
+
+function activeConnectionNames()
+{
+    $names = array();
+    foreach (nmcliLines(array('-t', '-e', 'yes', '-f', 'NAME', 'con', 'show', '--active')) as $n) {
+        $n = trim($n);
+        if ($n !== '') $names[] = $n;
+    }
+    return $names;
+}
+
+// Conexión asociada a una interfaz (prefiere la activa).
+function connectionForDevice($dev)
+{
+    foreach (nmcliLines(array('-t', '-e', 'yes', '-f', 'NAME,DEVICE', 'con', 'show', '--active')) as $l) {
+        $p = explode(':', $l, 2);
+        if (isset($p[1]) && $p[1] === $dev) return $p[0];
+    }
+    foreach (listConnectionNames() as $name) {
+        $info = nmcliLines(array('-g', 'connection.interface-name', 'con', 'show', $name));
+        if (count($info) > 0 && trim($info[0]) === $dev) return $name;
+    }
+    return NULL;
+}
+
+// Crea una conexión de NetworkManager para una interfaz que no la tiene.
+// Devuelve el nombre de la conexión o NULL. VLAN (eth0.100) y ethernet; macvlan
+// (mv-*) queda diferido (best-effort, ver NETWORKtodo.md §3.7).
+function createConnectionForDevice($dev)
+{
+    $ret = NULL; $out = array();
+
+    if (preg_match('/^(.+)\.(\d+)$/', $dev, $m)) {
+        // VLAN: eth0.100 -> padre eth0, id 100
+        $argv = array_merge(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI),
+            array('con', 'add', 'type', 'vlan', 'con-name', $dev, 'ifname', $dev,
+                  'dev', $m[1], 'id', $m[2]));
+        runCommand($argv, $ret, $out);
+        if ($ret != 0) {
+            fwrite(STDERR, "ERR: cannot create VLAN connection - ".implode(' ', $out)."\n");
+            return NULL;
+        }
+        return $dev;
+    }
+
+    if (strpos($dev, 'mv-') === 0) {
+        fwrite(STDERR, "ERR: creating macvlan (mv-*) connections from the GUI is not supported yet\n");
+        return NULL;
+    }
+
+    $argv = array_merge(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI),
+        array('con', 'add', 'type', 'ethernet', 'con-name', $dev, 'ifname', $dev));
+    runCommand($argv, $ret, $out);
+    if ($ret != 0) {
+        fwrite(STDERR, "ERR: cannot create connection - ".implode(' ', $out)."\n");
+        return NULL;
+    }
+    return $dev;
+}
+
+// Interfaz que lleva la ruta por defecto, según NetworkManager.
+function defaultRouteDevice()
+{
+    $dev = NULL;
+    foreach (nmcliLines(array('-t', '-e', 'yes', '-f', 'GENERAL.DEVICE,IP4.GATEWAY', 'device', 'show')) as $l) {
+        $m = NULL;
+        if (preg_match('/^GENERAL\.DEVICE:(.*)$/', $l, $m)) {
+            $dev = trim($m[1]);
+        } else if (preg_match('/^IP4\.GATEWAY:(.+)$/', $l, $m) && trim($m[1]) !== '') {
+            return $dev;
+        }
+    }
+    return NULL;
+}
+
+// Conexión "principal": la de la ruta por defecto; si no, la primera ethernet.
+function primaryConnection()
+{
+    $dev = defaultRouteDevice();
+    if ($dev !== NULL) {
+        $conn = connectionForDevice($dev);
+        if ($conn !== NULL) return $conn;
+    }
+    foreach (activeConnectionNames() as $name) {
+        $type = nmcliLines(array('-g', 'connection.type', 'con', 'show', $name));
+        if (count($type) > 0 && in_array(trim($type[0]), array('802-3-ethernet', 'vlan')))
+            return $name;
+    }
+    return NULL;
+}
+
+// Máscara punteada -> longitud de prefijo.
+function netmaskToPrefix($mask)
+{
+    $bits = 0;
+    foreach (explode('.', $mask) as $octeto) {
+        $o = (int)$octeto & 0xFF;
+        while (($o & 0x80) != 0) { $bits++; $o = ($o << 1) & 0xFF; }
+    }
+    return $bits;
+}
+
+/* ------------------------------------------------------------------------- *
+ *  Aplicación segura (commit-confirm)
+ * ------------------------------------------------------------------------- */
+
+function acquireLock()
+{
+    global $LOCK_HANDLE;
+    if (!is_dir(STATE_DIR)) @mkdir(STATE_DIR, 0700, TRUE);
+    $LOCK_HANDLE = @fopen(LOCK_FILE, 'c');
+    if ($LOCK_HANDLE === FALSE) return FALSE;
+    if (!flock($LOCK_HANDLE, LOCK_EX)) return FALSE;
+    @chmod(LOCK_FILE, 0600);
+    return TRUE;
+}
+
+function releaseLock()
+{
+    global $LOCK_HANDLE;
+    if ($LOCK_HANDLE) { flock($LOCK_HANDLE, LOCK_UN); fclose($LOCK_HANDLE); $LOCK_HANDLE = NULL; }
+}
+
+function stateDir($token) { return STATE_DIR.'/'.$token; }
+
+function readPending()
+{
+    if (!is_file(PENDING_FILE)) return NULL;
+    $data = json_decode(file_get_contents(PENDING_FILE), TRUE);
+    return is_array($data) ? $data : NULL;
+}
+
+// Copia todos los perfiles de NetworkManager al snapshot del token.
+// Devuelve la lista de perfiles copiados, o FALSE si no pudo crear el snapshot.
+function snapshotProfiles($token)
+{
+    $dir = stateDir($token);
+    if (!is_dir($dir) && !@mkdir($dir, 0700, TRUE)) return FALSE;
+    if (!is_dir($dir.'/profiles') && !@mkdir($dir.'/profiles', 0700, TRUE)) return FALSE;
+
+    $files = array();
+    foreach (glob('/etc/NetworkManager/system-connections/*') as $f) {
+        if (is_file($f)) {
+            $base = basename($f);
+            if (copy($f, $dir.'/profiles/'.$base)) {
+                @chmod($dir.'/profiles/'.$base, 0600);
+                $files[] = $base;
+            }
+        }
+    }
+    return $files;
+}
+
+// Escribe el estado inicial del snapshot (conexiones, activas y perfiles).
+function writeMeta($token, $connections, $active, $profiles)
+{
+    $dir = stateDir($token);
+    $meta = array(
+        'token'       => $token,
+        'connections' => $connections,
+        'active'      => $active,
+        'profiles'    => $profiles,
+    );
+    file_put_contents($dir.'/meta.json', json_encode($meta)."\n");
+    @chmod($dir.'/meta.json', 0600);
+}
+
+function writePending($token, $summary, $timeout, $expires)
+{
+    $data = array(
+        'token'    => $token,
+        'summary'  => $summary,
+        'created'  => time(),
+        'expires'  => $expires,
+        'timeout'  => $timeout,
+    );
+    file_put_contents(PENDING_FILE, json_encode($data)."\n");
+    @chmod(PENDING_FILE, 0600);
+
+    // Estado legible por la GUI (sin token) para el aviso global del framework.
+    $status = array(
+        'summary' => $summary,
+        'expires' => $expires,
+    );
+    file_put_contents(STATE_DIR.'/status.json', json_encode($status)."\n");
+    @chmod(STATE_DIR.'/status.json', 0644);
+}
+
+// Restaura los perfiles del snapshot y reactiva las conexiones que lo estaban.
+function restoreProfiles($token)
+{
+    $dir = stateDir($token);
+    if (!is_dir($dir.'/profiles')) return FALSE;
+
+    $meta = NULL;
+    if (is_file($dir.'/meta.json')) $meta = json_decode(file_get_contents($dir.'/meta.json'), TRUE);
+
+    // Borra las conexiones creadas después del snapshot.
+    if (is_array($meta) && isset($meta['profiles']) && is_array($meta['profiles'])) {
+        foreach (glob('/etc/NetworkManager/system-connections/*') as $f) {
+            if (is_file($f) && !in_array(basename($f), $meta['profiles']))
+                @unlink($f);
+        }
+    }
+
+    // Restaura los perfiles guardados.
+    foreach (glob($dir.'/profiles/*') as $f) {
+        $dst = '/etc/NetworkManager/system-connections/'.basename($f);
+        copy($f, $dst);
+        @chmod($dst, 0600);
+    }
+    nmcliLines(array('con', 'reload'));
+
+    if (is_array($meta) && isset($meta['connections'])) {
+        foreach ($meta['connections'] as $conn) {
+            $ret = NULL; $out = array();
+            $argv = array_merge(array('/usr/bin/env', 'LC_ALL=C', 'LANG=C', NMCLI),
+                array('con', 'up', $conn, '--wait', '30'));
+            runCommand($argv, $ret, $out);
+        }
+    }
+    return TRUE;
+}
+
+function cleanupState($token)
+{
+    $dir = stateDir($token);
+    if (is_dir($dir)) {
+        foreach (glob($dir.'/profiles/*') as $f) @unlink($f);
+        @unlink($dir.'/meta.json');
+        @rmdir($dir.'/profiles');
+        @rmdir($dir);
+    }
+    if (is_file(PENDING_FILE)) @unlink(PENDING_FILE);
+    if (is_file(STATE_DIR.'/status.json')) @unlink(STATE_DIR.'/status.json');
+}
+
+function scheduleRollback($token, $seconds)
+{
+    $unit = 'issabel-netconfig-rollback-'.$token;
+    $ret = NULL; $out = array();
+    runCommand(array(
+        '/usr/bin/systemd-run',
+        '--collect',
+        '--on-active='.$seconds,
+        '--unit='.$unit,
+        SELF, '--rollback', $token,
+    ), $ret, $out);
+    if ($ret != 0) {
+        fwrite(STDERR, "ERR: failed to schedule rollback - ".implode(' ', $out)."\n");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+function cancelRollback($token)
+{
+    $unit = 'issabel-netconfig-rollback-'.$token;
+    foreach (array($unit.'.timer', $unit.'.service') as $u) {
+        $ret = NULL; $out = array();
+        runCommand(array('/usr/bin/systemctl', 'stop', $u), $ret, $out);
+    }
+    $ret = NULL; $out = array();
+    runCommand(array('/usr/bin/systemctl', 'reset-failed', $unit.'.timer', $unit.'.service'), $ret, $out);
+}
+
+// Aplica un cambio de forma segura. $applyFn debe devolver TRUE/FALSE.
+function applySafely($summary, $timeout, $applyFn)
+{
+    if (!acquireLock()) {
+        fwrite(STDERR, "ERR: unable to acquire state lock\n");
+        return FALSE;
+    }
+    if (readPending() !== NULL) {
+        fwrite(STDERR, "ERR: there is a pending network change; confirm or roll it back first\n");
+        releaseLock();
+        return FALSE;
+    }
+
+    $token = bin2hex(random_bytes(8));
+    $connections = listConnectionNames();
+    $active = activeConnectionNames();
+    $profiles = snapshotProfiles($token);
+    if ($profiles === FALSE) {
+        fwrite(STDERR, "ERR: unable to snapshot NetworkManager profiles\n");
+        releaseLock();
+        return FALSE;
+    }
+    writeMeta($token, $connections, $active, $profiles);
+
+    if (!call_user_func($applyFn)) {
+        fwrite(STDERR, "ERR: applying the change failed; rolling back\n");
+        restoreProfiles($token);
+        cleanupState($token);
+        releaseLock();
+        return FALSE;
+    }
+
+    $expires = time() + $timeout;
+    writePending($token, $summary, $timeout, $expires);
+    if (!scheduleRollback($token, $timeout)) {
+        // Sin timer no hay red de seguridad: revertir de inmediato.
+        restoreProfiles($token);
+        cleanupState($token);
+        releaseLock();
+        return FALSE;
+    }
+    releaseLock();
+
+    printf("pending token=%s expires=%d timeout=%d\n", $token, $expires, $timeout);
+    return TRUE;
+}
+
+/* ------------------------------------------------------------------------- *
+ *  Acciones
+ * ------------------------------------------------------------------------- */
+
+// Ejecuta la configuración general (hostname, DNS, gateway).
 function action_generalConfiguration($opt)
 {
-    /* In order to update the general network configuration, the following
-     * actions are taken:
-     * - All references to GATEWAY are removed from /etc/sysconfig/network-scripts/ifcfg-eth*
-     * - If a new hostname is given, it is set with the hostname command, and
-     *   replaced in /etc/postfix/main.cf, and in /etc/sysconfig/network
-     * - If a new gateway is given, it is set in /etc/sysconfig/network, and
-     *   also used to run a route command to set the gateway.
-     * - If there are new DNS servers, they are set in /etc/resolv.conf
-     * - After all changes, service network restart
-     * - If hostname changed, service postfix restart
-     */
-    $bExito = TRUE;
-
-    $sHostname = $sGateway = $sDNS1 = $sDNS2 = $sGatewayDev = NULL;
+    $sHostname = $sGateway = $sDNS1 = $sDNS2 = NULL;
+    $timeout = 180;
     foreach ($opt[0] as $option) switch ($option[0]) {
-    case '--host':
-        $sHostname = $option[1];
-        break;
-    case '--gateway':
-        $sGateway = $option[1];
-        break;
-    case '--gateway-dev':
-        $sGatewayDev = $option[1];
-        break;
-    case '--dns1':
-        $sDNS1 = $option[1];
-        break;
-    case '--dns2':
-        $sDNS2 = $option[1];
-        break;
+    case '--host':      $sHostname = $option[1]; break;
+    case '--gateway':   $sGateway  = $option[1]; break;
+    case '--dns1':      $sDNS1     = $option[1]; break;
+    case '--dns2':      $sDNS2     = $option[1]; break;
+    case '--timeout':   $timeout   = intval($option[1]); break;
     }
 
     if (is_null($sDNS1) && !is_null($sDNS2)) {
-        $bExito = FALSE;
-        fprintf(STDERR, "ERR: DNS 2 requires DNS 1 to be set\n");
+        fwrite(STDERR, "ERR: DNS 2 requires DNS 1 to be set\n");
+        return FALSE;
+    }
+    if (!is_null($sGateway) || !is_null($sDNS1)) {
+        // Cambiar gateway/DNS puede cortar la administración remota.
+        $timeout = ($timeout == 180) ? DEFAULT_TIMEOUT : $timeout;
     }
 
-    // Change default gateway
-    if ($bExito && !is_null($sGateway)) setDefaultGateway($sGateway, $sGatewayDev);
+    $summary = 'genconf';
+    if (!is_null($sHostname)) $summary .= ' host='.$sHostname;
+    if (!is_null($sGateway))  $summary .= ' gateway='.$sGateway;
+    if (!is_null($sDNS1))     $summary .= ' dns='.$sDNS1.(is_null($sDNS2)?'':' '.$sDNS2);
 
-    // Change hostname
-    if ($bExito && !is_null($sHostname)) setHostname($sHostname);
+    return applySafely($summary, $timeout, function() use ($sHostname, $sGateway, $sDNS1, $sDNS2) {
+        $primary = primaryConnection();
 
-    // Change DNS servers
-    if ($bExito && !is_null($sDNS1)) setDNS($sDNS1, $sDNS2);
-
-    // Restart affected services
-    if ($bExito) {
-        $output = $ret = NULL;
-        $srv='network.service';
-        if(is_readable('/etc/redhat-release')) {
-            $ver = explode(" ",trim(file_get_contents('/etc/redhat-release')));
-            $partes = preg_split("/\./",$ver[3]);
-            if(intval($partes[0]>=8)) {
-                $srv="NetworkManager.service";
+        if (!is_null($sGateway)) {
+            if (is_null($primary)) {
+                fwrite(STDERR, "ERR: no NetworkManager connection to set the gateway on\n");
+                return FALSE;
             }
+            if (!nmcliMod($primary, array('ipv4.gateway' => $sGateway))) return FALSE;
+            foreach (activeConnectionNames() as $c) {
+                if ($c !== $primary) nmcliMod($c, array('ipv4.never-default' => 'yes'));
+            }
+            if (!nmcliUp($primary)) return FALSE;
         }
-        exec("/usr/bin/systemctl restart $srv 2>&1", $output, $ret);
-        if ($ret != 0) {
-            fputs(STDERR, "ERR: failed to restart network service. Output follows:\n");
-            fputs(STDERR, implode('', $output));
-            $bExito = FALSE;
-        }
-        exec("/usr/bin/systemctl restart postfix 2>&1", $output, $ret);
-        if ($ret != 0) {
-            fputs(STDERR, "ERR: failed to restart postfix service. Output follows:\n");
-            fputs(STDERR, implode('', $output));
-            $bExito = FALSE;
-        }
-    }
 
-    return $bExito;
+        if (!is_null($sDNS1)) {
+            if (is_null($primary)) {
+                fwrite(STDERR, "ERR: no NetworkManager connection to set DNS on\n");
+                return FALSE;
+            }
+            $dns = is_null($sDNS2) ? $sDNS1 : $sDNS1.' '.$sDNS2;
+            if (!nmcliMod($primary, array('ipv4.dns' => $dns, 'ipv4.ignore-auto-dns' => 'yes')))
+                return FALSE;
+            if (!nmcliUp($primary)) return FALSE;
+        }
+
+        if (!is_null($sHostname)) setHostname($sHostname);
+
+        return TRUE;
+    });
 }
 
-// Set default gateway. Gateway already assumed to be in a.b.c.d format.
-function setDefaultGateway($sGateway, $sGatewayDev='')
+// Configura una interfaz concreta (static o dhcp).
+function action_interfaceConfiguration($opt)
 {
-    $interfaces = listEthernetInterfaces();
+    $sDevice = $sBootproto = $sIpAddr = $sNetMask = NULL;
+    $timeout = DEFAULT_TIMEOUT;
+    foreach ($opt[0] as $option) switch ($option[0]) {
+    case '--device':    $sDevice    = $option[1]; break;
+    case '--bootproto': $sBootproto = $option[1]; break;
+    case '--ipaddr':    $sIpAddr    = $option[1]; break;
+    case '--netmask':   $sNetMask   = $option[1]; break;
+    case '--timeout':   $timeout    = intval($option[1]); break;
+    }
 
-    // Remove all mention of GATEWAY from files in network-scripts
-    foreach ($interfaces as $sInterface) {
-        $sArchivo = '/etc/sysconfig/network-scripts/ifcfg-'.$sInterface;
-        if (file_exists($sArchivo)) {
-            $bClavePresente = FALSE;
-            $contenidoNuevo = array();
-            foreach (file($sArchivo) as $sLinea) {
-                if (!preg_match('/^GATEWAY\s*=/', $sLinea))
-                    $contenidoNuevo[] = $sLinea;
-                else $bClavePresente = TRUE;
-            }
-            if ($bClavePresente) file_put_contents($sArchivo, $contenidoNuevo);
+    if (is_null($sDevice)) {
+        fwrite(STDERR, "ERR: network device must be specified\n");
+        return FALSE;
+    }
+    if (is_null($sBootproto)) {
+        fwrite(STDERR, "ERR: bootproto must be either dhcp or static\n");
+        return FALSE;
+    }
+    if ($sBootproto == 'static') {
+        if (is_null($sIpAddr)) {
+            fwrite(STDERR, "ERR: --bootproto static requires --ipaddr\n");
+            return FALSE;
+        }
+        if (is_null($sNetMask)) {
+            fwrite(STDERR, "ERR: --bootproto static requires --netmask\n");
+            return FALSE;
         }
     }
 
-    // In /etc/sysconfig/network replace GATEWAY or add it if absent
-    $bGatewayPresente = FALSE;
-    $bGatewayDevPresente = FALSE;
-    $contenidoNuevo = array();
-    foreach (file('/etc/sysconfig/network') as $sLinea) {
-        if (preg_match('/^GATEWAY\s*=/', $sLinea)) {
-            $bGatewayPresente=TRUE;
-            $contenidoNuevo[] = "GATEWAY=$sGateway\n";
-        } else if(preg_match('/^GATEWAYDEV\s*=/', $sLinea)) {
-            if($sGatewayDev<>'') {
-                $bGatewayDevPresente=TRUE;
-                $contenidoNuevo[] = "GATEWAYDEV=$sGatewayDev\n";
-            }
-        } else {
-            $contenidoNuevo[] = $sLinea;
-        }
+    $conn = connectionForDevice($sDevice);
+    // Si no existe la conexión, createConnectionForDevice() la crea dentro del
+    // apply seguro (así la reversión la elimina si el cambio no se confirma).
 
+    if ($sBootproto == 'dhcp') {
+        $props = array(
+            'ipv4.method'    => 'auto',
+            'ipv4.addresses' => '',
+            'ipv4.gateway'   => '',
+        );
+    } else {
+        $prefix = netmaskToPrefix($sNetMask);
+        $props = array(
+            'ipv4.method'    => 'manual',
+            'ipv4.addresses' => $sIpAddr.'/'.$prefix,
+        );
     }
-    if (!$bGatewayPresente) $contenidoNuevo[] = "GATEWAY=$sGateway\n";
-    if (!$bGatewayDevPresente) $contenidoNuevo[] = "GATEWAYDEV=$sGatewayDev\n";
-    file_put_contents('/etc/sysconfig/network', $contenidoNuevo);
 
-    // Set default gateway with route commands
-    $output = NULL; $sOldGateway = NULL;
-    exec('/sbin/route -n', $output);
-    if (is_array($output)) {
-        foreach ($output as $sLinea) {
-            $regs = NULL;
-            if (preg_match('/^0.0.0.0\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $sLinea, $regs)) {
-                $sOldGateway = $regs[1];
-            }
+    $summary = 'ifconf device='.$sDevice.' bootproto='.$sBootproto
+        .($sBootproto == 'static' ? ' addr='.$sIpAddr.'/'.netmaskToPrefix($sNetMask) : '');
+
+    return applySafely($summary, $timeout, function() use ($sDevice, $conn, $props) {
+        $connection = $conn;
+        if (is_null($connection)) {
+            $connection = createConnectionForDevice($sDevice);
+            if (is_null($connection)) return FALSE;
         }
-    }
-    if (!is_null($sOldGateway))
-        exec("/sbin/route del -net default gw $sOldGateway");
-    exec("/sbin/route add -net default gw $sGateway");
+        if (!nmcliMod($connection, $props)) return FALSE;
+        return nmcliUp($connection);
+    });
 }
 
-// List all ethernet interfaces from the output of /proc/net/dev
-function listEthernetInterfaces()
+// Cancela la reversión de un cambio pendiente.
+function action_confirm($token)
 {
-    $interfaces = array();
-    foreach (file('/proc/net/dev') as $s) {
-        $regs = NULL;
-        if (preg_match('/^\s*([[:alnum:]_-]+):/', $s, $regs)) $interfaces[] = $regs[1];
+    if (!acquireLock()) { fwrite(STDERR, "ERR: unable to acquire state lock\n"); return FALSE; }
+    $pending = readPending();
+    if ($pending === NULL || !isset($pending['token']) || $pending['token'] !== $token) {
+        fwrite(STDERR, "ERR: no such pending change\n");
+        releaseLock();
+        return FALSE;
     }
-    return $interfaces;
+    cancelRollback($token);
+    cleanupState($token);
+    releaseLock();
+    echo "confirmed $token\n";
+    return TRUE;
 }
 
-// Set the hostname for the machine to the specified string
+// Aplica el snapshot de un cambio (invocado por el timer, o a mano).
+function action_rollback($token)
+{
+    if (!acquireLock()) { fwrite(STDERR, "ERR: unable to acquire state lock\n"); return FALSE; }
+    if (!is_dir(stateDir($token))) {
+        fwrite(STDERR, "ERR: no snapshot for token $token\n");
+        releaseLock();
+        return FALSE;
+    }
+    $ok = restoreProfiles($token);
+    cleanupState($token);
+    releaseLock();
+    echo "rolled back $token\n";
+    return $ok;
+}
+
+// Imprime el cambio pendiente (JSON) para que la GUI pueda avisar.
+function action_pending()
+{
+    $pending = readPending();
+    if ($pending === NULL) {
+        echo json_encode(array('pending' => FALSE))."\n";
+        return TRUE;
+    }
+    $pending['pending'] = TRUE;
+    $pending['remaining'] = max(0, intval($pending['expires']) - time());
+    echo json_encode($pending)."\n";
+    return TRUE;
+}
+
+// Revierte un cambio pendiente al arrancar (lo invoca issabel-netconfig-recover).
+function action_recover()
+{
+    $pending = readPending();
+    if ($pending === NULL || !isset($pending['token'])) return TRUE; // nada que hacer
+    $token = $pending['token'];
+    cancelRollback($token);
+    return action_rollback($token);
+}
+
+// Imprime las rutas estáticas IPv4 por interfaz (JSON) para la grilla de la GUI.
+function action_getroutes()
+{
+    $result = array();
+    foreach (listConnectionNames() as $name) {
+        $dev = nmcliLines(array('-g', 'connection.interface-name', 'con', 'show', $name));
+        $dev = (count($dev) > 0) ? trim($dev[0]) : '';
+        if ($dev === '') continue;
+        $type = nmcliLines(array('-g', 'connection.type', 'con', 'show', $name));
+        $type = (count($type) > 0) ? trim($type[0]) : '';
+        if (!in_array($type, array('802-3-ethernet', 'vlan'))) continue;
+
+        $specs = array();
+        foreach (nmcliLines(array('-g', 'ipv4.routes', 'con', 'show', $name)) as $line) {
+            foreach (explode(',', $line) as $s) {
+                $s = trim($s);
+                if ($s !== '') $specs[] = $s;
+            }
+        }
+        $result[$dev] = $specs;
+    }
+    echo json_encode($result)."\n";
+    return TRUE;
+}
+
+// Fija la lista completa de rutas estáticas IPv4 de una interfaz (apply seguro).
+function action_setroutes($opt)
+{
+    $sDevice = NULL;
+    $sSpec = '';
+    $timeout = DEFAULT_TIMEOUT;
+    foreach ($opt[0] as $option) switch ($option[0]) {
+    case '--device':    $sDevice  = $option[1]; break;
+    case '--routespec': $sSpec    = $option[1]; break;
+    case '--timeout':   $timeout  = intval($option[1]); break;
+    }
+
+    if (is_null($sDevice)) {
+        fwrite(STDERR, "ERR: --setroutes requires --device\n");
+        return FALSE;
+    }
+
+    $conn = connectionForDevice($sDevice);
+    if (is_null($conn)) {
+        fwrite(STDERR, "ERR: no NetworkManager connection bound to device $sDevice\n");
+        return FALSE;
+    }
+
+    $summary = 'routes device='.$sDevice.' ['.$sSpec.']';
+
+    return applySafely($summary, $timeout, function() use ($conn, $sSpec) {
+        if (!nmcliMod($conn, array('ipv4.routes' => $sSpec))) return FALSE;
+        return nmcliUp($conn);
+    });
+}
+
+// Define el hostname del sistema y lo propaga a /etc/hosts y postfix.
 function setHostname($sHostname)
 {
-    // In /etc/sysconfig/network, replace HOSTNAME or add it if absent
-    $bClavePresente = FALSE;
-    $contenidoNuevo = array();
-    foreach (file('/etc/sysconfig/network') as $sLinea) {
-        if (preg_match('/^HOSTNAME\s*=/', $sLinea)) {
-            $bClavePresente = TRUE;
-            $contenidoNuevo[] = "HOSTNAME=$sHostname\n";
-        } else {
-            $contenidoNuevo[] = $sLinea;
-        }
-    }
-    if (!$bClavePresente) $contenidoNuevo[] = "HOSTNAME=$sHostname\n";
-    file_put_contents('/etc/sysconfig/network', $contenidoNuevo);
-
-    // Create or overwrite /etc/hostname with the new hostname as content.
-    // This is a noop in CentOS 5 but required in Fedora for hostname to persist
+    exec('/usr/bin/hostnamectl set-hostname '.escapeshellarg($sHostname));
     file_put_contents('/etc/hostname', "$sHostname\n");
     chmod('/etc/hostname', 0644);
 
-    // In /etc/hosts, replace hostname for 127.0.0.1
+    // En /etc/hosts, reemplaza el hostname de 127.0.0.1
     $bClavePresente = FALSE;
     $contenidoNuevo = array();
     foreach (file('/etc/hosts') as $sLinea) {
@@ -291,17 +813,12 @@ function setHostname($sHostname)
     }
     if ($bClavePresente) file_put_contents('/etc/hosts', $contenidoNuevo);
 
-    // Figure out a domain for the hostname
+    // Figura un dominio para el hostname
     $partes = explode('.', $sHostname, 2);
     $sDomain = array_pop($partes);
 
-    // Set the hostname for the current session
-    exec("/bin/hostname $sHostname");
-
     if (file_exists('/etc/postfix/main.cf')) {
-        // In /etc/postfix/main.cf, replace myhostname and mydomain or add if absent
-        $bClavePresente = array();
-        $bClavePresente['myhostname'] = $bClavePresente['mydomain'] = FALSE;
+        $bClavePresente = array('myhostname' => FALSE, 'mydomain' => FALSE);
         $contenidoNuevo = array();
         foreach (file('/etc/postfix/main.cf') as $sLinea) {
             if (preg_match('/^myhostname\s*=/', $sLinea)) {
@@ -317,163 +834,7 @@ function setHostname($sHostname)
         if (!$bClavePresente['myhostname']) $contenidoNuevo[] = "myhostname = $sHostname\n";
         if (!$bClavePresente['mydomain']) $contenidoNuevo[] = "mydomain = $sDomain\n";
         file_put_contents('/etc/postfix/main.cf', $contenidoNuevo);
+        exec('/usr/bin/systemctl restart postfix 2>/dev/null');
     }
 }
-
-// Set DNS servers in /etc/resolv.conf. DNS 1 is mandatory. DNS 2 is optional
-function setDNS($sDNS1, $sDNS2 = NULL)
-{
-    $content = array(
-        "; generated by /usr/share/issabel/privileged/netconfig\n",
-        "nameserver $sDNS1\n"
-    );
-    if (!is_null($sDNS2)) $content[] = "nameserver $sDNS2\n";
-    file_put_contents('/etc/resolv.conf', $content);
-}
-
-// Execute interface configuration. Returns TRUE on success.
-function action_interfaceConfiguration($opt)
-{
-    $bExito = TRUE;
-
-    $sDevice = $sBootproto = $sIpAddr = $sNetMask = NULL;
-    foreach ($opt[0] as $option) switch ($option[0]) {
-    case '--device':
-        $sDevice = $option[1];
-        break;
-    case '--bootproto':
-        $sBootproto = $option[1];
-        break;
-    case '--ipaddr':
-        $sIpAddr = $option[1];
-        break;
-    case '--netmask':
-        $sNetMask = $option[1];
-        break;
-    }
-
-    // Check required parameters
-    if ($bExito && is_null($sDevice)) {
-        $bExito = FALSE;
-        fprintf(STDERR, "ERR: network device must be specified\n");
-    }
-    if ($bExito && is_null($sBootproto)) {
-        $bExito = FALSE;
-        fprintf(STDERR, "ERR: bootproto must be either dhcp or static\n");
-    }
-    if ($bExito && $sBootproto == 'static') {
-        if ($bExito && is_null($sIpAddr)) {
-            $bExito = FALSE;
-            fprintf(STDERR, "ERR: --bootproto static requires --ipaddr\n");
-        }
-        if ($bExito && is_null($sNetMask)) {
-            $bExito = FALSE;
-            fprintf(STDERR, "ERR: --bootproto static requires --netmask\n");
-        }
-    }
-
-    if ($bExito) {
-        $sPath = '/etc/sysconfig/network-scripts/ifcfg-'.$sDevice;
-        $contenido = array();
-        if (file_exists($sPath)) $contenido = file($sPath);
-        $settings = array(
-            'DEVICE'    =>  $sDevice,
-            'BOOTPROTO' =>  $sBootproto,
-            'ONBOOT'    =>  'yes',
-            'TYPE'      =>  'Ethernet',
-            'IPADDR'    =>  '',
-            'NETMASK'   =>  '',
-            'NOZEROCONF'=>  'yes',
-        );
-        if(preg_match("/\./",$sDevice)) {
-            $settings = array(
-                'DEVICE'    =>  $sDevice,
-                'BOOTPROTO' =>  $sBootproto,
-                'ONBOOT'    =>  'yes',
-                'VLAN'      =>  'yes',
-                'IPADDR'    =>  '',
-                'NETMASK'   =>  '',
-                'NOZEROCONF'=>  'yes',
-            );
-        }
-
-        if ($sBootproto == 'static') {
-            $settings['IPADDR']     = $sIpAddr;
-            $settings['NETMASK']    = $sNetMask;
-            $settings['BROADCAST']  = construir_ip_broadcast($sIpAddr, $sNetMask);
-            $settings['NETWORK']    = construir_ip_red($sIpAddr, $sNetMask);;
-        }
-        
-        if (strpos($sDevice, 'mv-') === 0 && count($contenido) <= 0) {
-            /* Looks like an attempt to initialize a macvlan interface from 
-             * scratch under systemd-nspawn. Special settings are needed. */
-            $settings['TYPE'] = 'macvlan';
-            $settings['REALDEVICE'] = $sDevice;
-        }
-
-        $contenidoNuevo = array();
-        foreach ($contenido as $sLinea) {
-            $regs = NULL;
-            if (preg_match('/^(\w+)\s*=\s*"?(.+?)"?$/', trim($sLinea), $regs)) {
-                if (isset($settings[$regs[1]])) {
-                    /* Special case: if the configuration contained TYPE=macvlan
-                     * then it must NOT be overwritten with TYPE=Ethernet in 
-                     * order to avoid breaking the container configuration. */
-                    if ($regs[1] == 'TYPE' && in_array($regs[2], array('macvlan'))) {
-                        $contenidoNuevo[] = $sLinea;
-                    } else {
-                        $contenidoNuevo[] = $regs[1]."=".$settings[$regs[1]]."\n";
-                    }
-                    unset($settings[$regs[1]]);
-                } else {
-                    // Unknown setting - pass thru
-                    $contenidoNuevo[] = $sLinea;
-                }
-            } else {
-                // Comment or whitespace - pass thru
-                $contenidoNuevo[] = $sLinea;
-            }
-        }
-        foreach ($settings as $key => $value) {
-            if($value<>'') {
-                $contenidoNuevo[] = "$key=$value\n";
-            }
-        }
-        file_put_contents($sPath, $contenidoNuevo);
-
-        $srv='network.service';
-        if(is_readable('/etc/redhat-release')) {
-            $ver = explode(" ",trim(file_get_contents('/etc/redhat-release')));
-            $partes = preg_split("/\./",$ver[3]);
-            if(intval($partes[0]>=8)) {
-                $srv="NetworkManager.service";
-            }
-        }
-        $output = $ret = NULL;
-        exec("/usr/bin/systemctl restart $srv 2>&1", $output, $ret);
-        if ($ret != 0) {
-            fputs(STDERR, "ERR: failed to restart network service. Output follows:\n");
-            fputs(STDERR, implode('', $output));
-            $bExito = FALSE;
-        }
-    }
-    return $bExito;
-}
-
-function construir_ip_broadcast($ip, $mascara)
-{
-    $ip = explode(".", $ip);
-    $mascara = explode(".", $mascara);
-    for ($i = 0; $i < 4; $i++) $ip[$i] = ((int)$ip[$i]) | (~((int)$mascara[$i])& 0xFF);
-    return implode(".", $ip);
-}
-
-function construir_ip_red($ip, $mascara)
-{
-    $ip = explode(".", $ip);
-    $mascara = explode(".", $mascara);
-    for ($i = 0; $i < 4; $i++) $ip[$i] = (int)$ip[$i] & (int)$mascara[$i];
-    return implode(".", $ip);
-}
-
 ?>

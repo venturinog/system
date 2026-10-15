@@ -1,4 +1,11 @@
 <form method="POST">
+{if $PENDING_CHANGE eq 'yes'}
+<div style="border:1px solid #d9a000;background:#fff6d9;padding:8px 12px;margin-bottom:10px;">
+    <div style="margin-bottom:6px;"><strong>{$PENDING_WARNING}</strong><br>{$PENDING_SUMMARY} &mdash; {$PENDING_REMAINING}s</div>
+    <input class="button" type="submit" name="confirm_network_change" value="{$CONFIRM_CHANGE}">
+    <input class="button" type="submit" name="revert_network_change" value="{$REVERT_CHANGE}">
+</div>
+{/if}
 <div class="iss-form">
     <div class="iss-form__toolbar">
         {if $mode eq 'input'}<span class="iss-form__hint"><span class="iss-required">*</span> {$REQUIRED_FIELD}</span>{/if}
@@ -29,12 +36,9 @@
                 <span class="iss-field__label">{$dns2.LABEL}</span>
                 <span class="iss-field__control">{$dns2.INPUT}</span>
             </div>
-            <div class="iss-field">
-                <span class="iss-field__label">{$gateway_dev.LABEL}{if $mode eq 'input'}&nbsp;<span class="iss-required">*</span>{/if}</span>
-                <span class="iss-field__control">{$gateway_dev.INPUT}</span>
-            </div>
         </div>
     </section>
 </div>
 </form>
 {$ETHERNET_INTERFASES_LIST}
+{$ROUTES_LIST}

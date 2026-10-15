@@ -33,40 +33,49 @@ class paloNetwork
         $this->errMsg = "";
     }
 
-    /* A partir de CentOS 7 no se puede asumir una correspondencia entre los
-     * nombres de una CONEXIÓN de red y una INTERFAZ de red. Las conexiones
-     * están definidas en /etc/sysconfig/network-scripts/ifcfg-* y hacen
-     * referencia a interfases en su propiedad DEVICE. Este método lista todas
-     * las INTERFASES para las cuales se define la manera de obtener una IP,
-     * como BOOTPROTO=dhcp para dinámica, o cualquier otra cosa (incluyendo la
-     * ausencia de BOOTPROTO) para estática. Si hay múltiples conexiones que
-     * referencian la misma interfaz, con maneras distintas, se reporta dinámica
-     * si una cualquiera de ellas define BOOTPROTO=dhcp.
+    /* Ejecuta nmcli y devuelve su salida como arreglo de líneas. Fuerza
+     * LC_ALL=C/LANG=C para que la salida sea estable (nmcli la localiza) y
+     * devuelve un arreglo vacío si nmcli falla o no está disponible. */
+    private static function nmcliLines($args)
+    {
+        $cmd = '/usr/bin/env LC_ALL=C LANG=C /usr/bin/nmcli';
+        foreach ($args as $arg) $cmd .= ' '.escapeshellarg($arg);
+        $output = array();
+        $ret = NULL;
+        exec($cmd.' 2>/dev/null', $output, $ret);
+        if ($ret != 0) return array();
+        return $output;
+    }
+
+    /* Lista las INTERFASES para las que NetworkManager tiene una conexión y si
+     * obtienen su IP de forma dinámica. Se reporta dinámica (dhcp) cuando
+     * ipv4.method es 'auto'; cualquier otro método ('manual', 'disabled',
+     * 'shared', 'link-local') se reporta como estática. Si varias conexiones
+     * referencian la misma interfaz, se reporta dinámica si una cualquiera lo
+     * es.
      *
-     * TODO: se requiere reescritura que distinga entre CONEXIÓN e INTERFAZ.
+     * Antes esto se leía de /etc/sysconfig/network-scripts/ifcfg-*; en EL10 ese
+     * directorio ya no existe, así que la fuente de verdad es NetworkManager
+     * (nmcli).
      */
     private static function listar_bootproto_interfases()
     {
         $iflist = array();
 
-        $dir = '/etc/sysconfig/network-scripts';
-        foreach (scandir($dir) as $fileIf) {
-            if (strpos($fileIf, 'ifcfg-') !== 0) continue;
+        foreach (self::nmcliLines(array('-g', 'NAME', 'con', 'show')) as $sName) {
+            $sName = trim($sName);
+            if ($sName === '') continue;
 
-            $if = NULL;
-            $type = 'none';
-            foreach (file($dir.'/'.$fileIf) as $lineaIfcfg) {
-                $regs = NULL;
-                if (preg_match('/^DEVICE\s*=\s*"?(\S+?)"?$/', trim($lineaIfcfg), $regs))
-                    $if = $regs[1];
-                $regs = NULL;
-                if (preg_match('/^BOOTPROTO\s*=\s*"?(\S+?)"?$/', trim($lineaIfcfg), $regs))
-                    $type = $regs[1];
-            }
-            if (!is_null($if)) {
-                if (!isset($iflist[$if])) $iflist[$if] = FALSE;
-                if (!$iflist[$if]) $iflist[$if] = ($type == 'dhcp');
-            }
+            $info = self::nmcliLines(array(
+                '-g', 'connection.interface-name,ipv4.method', 'con', 'show', $sName));
+            if (count($info) < 2) continue;
+
+            $if = trim($info[0]);
+            $method = trim($info[1]);
+            if ($if === '') continue;
+
+            if (!isset($iflist[$if])) $iflist[$if] = FALSE;
+            if (!$iflist[$if]) $iflist[$if] = ($method == 'auto');
         }
         return $iflist;
     }
@@ -225,7 +234,7 @@ class paloNetwork
             }
         }
 
-        // Tipo de interfaz de red configurada en /etc/sysconfig/network-scripts/
+        // Tipo de interfaz de red según NetworkManager (ipv4.method)
         $if_tipo = self::listar_bootproto_interfases();
         foreach (array_keys($interfases) as $if_actual) {
             $interfases[$if_actual]['Type'] = (isset($if_tipo[$if_actual]) && $if_tipo[$if_actual]) ? 'dhcp' : 'static';
@@ -279,32 +288,53 @@ class paloNetwork
             'gateway_dev' =>  NULL,
         );
 
-        //- Obtengo los dnss
-        if($fh=fopen($archivoResolv, "r")) {
+        //- Obtengo los dnss (NetworkManager; /etc/resolv.conf como respaldo)
+        foreach (self::nmcliLines(array('-t', '-e', 'yes', '-f', 'IP4.DNS', 'device', 'show')) as $linea) {
+            $regs = NULL;
+            if (preg_match('/^IP4\.DNS(\[\d+\])?:(.+)$/', $linea, $regs)) {
+                $dns = trim($regs[2]);
+                if ($dns !== '' && !in_array($dns, $arrResult['dns'])) $arrResult['dns'][] = $dns;
+            }
+        }
+        if (count($arrResult['dns']) == 0 && ($fh = fopen($archivoResolv, "r"))) {
             while(!feof($fh)) {
                 $linea = fgets($fh, 4048);
                 if(preg_match("/^nameserver[[:space:]]+(.*)$/", $linea, $arrReg)) {
-                    $arrResult['dns'][] = $arrReg[1];
+                    $arrResult['dns'][] = trim($arrReg[1]);
                 }
             }
-
-        } else {
-            // Error?
+            fclose($fh);
         }
 
         //- Obtengo el hostname
         $arrResult['host'] = trim(file_get_contents("/proc/sys/kernel/hostname"));
 
-        //- Obtengo el Default Gateway
-        $arrOutput = NULL;
-        exec("/sbin/route -n", $arrOutput);
-        if(is_array($arrOutput)) {
-            foreach($arrOutput as $linea) {
-                if(preg_match("/^0.0.0.0[[:space:]]+(([[:digit:]]{1,3})\.([[:digit:]]{1,3})\.([[:digit:]]{1,3})\.([[:digit:]]{1,3}))/", $linea, $arrReg)) {
-                    $arrResult['gateway'] = $arrReg[1];
-                    $gwdevparts = explode(" ",$linea);
-                    $gwdev = array_pop($gwdevparts); 
+        //- Obtengo el Default Gateway (NetworkManager)
+        $gwdev = NULL;
+        foreach (self::nmcliLines(array('-t', '-e', 'yes', '-f', 'GENERAL.DEVICE,IP4.GATEWAY', 'device', 'show')) as $linea) {
+            $regs = NULL;
+            if (preg_match('/^GENERAL\.DEVICE:(.*)$/', $linea, $regs)) {
+                $gwdev = trim($regs[1]);
+            } else if (preg_match('/^IP4\.GATEWAY:(.+)$/', $linea, $regs)) {
+                $gw = trim($regs[1]);
+                if ($gw !== '' && is_null($arrResult['gateway'])) {
+                    $arrResult['gateway'] = $gw;
                     $arrResult['gateway_dev'] = $gwdev;
+                }
+            }
+        }
+        if (is_null($arrResult['gateway'])) {
+            // Respaldo si NetworkManager no reporta el gateway
+            $arrOutput = NULL;
+            exec("/sbin/ip -4 route show default", $arrOutput);
+            if(is_array($arrOutput)) {
+                foreach($arrOutput as $linea) {
+                    $regs = NULL;
+                    if(preg_match("/^default via (\S+) dev (\S+)/", $linea, $regs)) {
+                        $arrResult['gateway'] = $regs[1];
+                        $arrResult['gateway_dev'] = $regs[2];
+                        break;
+                    }
                 }
             }
         }
@@ -331,11 +361,6 @@ class paloNetwork
         $this->errMsg = '';
         $sComando = '/usr/bin/issabel-helper netconfig --genconf';
 
-        if(isset($config_red['gateway_dev'])) {
-            if($config_red['gateway_dev']<>'') {
-                $sComando .= ' --gateway-dev '.escapeshellarg($config_red['gateway_dev']);
-            }
-        }
         if(!isset($config_red['dns_ip_2'])) {
             $config_red['dns_ip_2']='';
         }
@@ -373,6 +398,99 @@ class paloNetwork
             (($ip == '') ? '' : ' --ipaddr '.escapeshellarg($ip)).
             (($mask == '') ? '' : ' --netmask '.escapeshellarg($mask)).
             ' 2>&1';
+        $output = $ret = NULL;
+        exec($sComando, $output, $ret);
+        if ($ret != 0) {
+            $this->errMsg = implode('', $output);
+            return FALSE;
+        }
+        return TRUE;
+    }
+
+    /**
+     * Devuelve el cambio de red pendiente de confirmar, o NULL si no hay.
+     *
+     * @return array|NULL   Arreglo con 'token', 'summary', 'expires', 'remaining'
+     */
+    function obtenerCambioRedPendiente()
+    {
+        $this->errMsg = '';
+        $output = $ret = NULL;
+        exec('/usr/bin/issabel-helper netconfig --pending 2>&1', $output, $ret);
+        if ($ret != 0) {
+            $this->errMsg = implode('', $output);
+            return NULL;
+        }
+        $data = json_decode(implode('', $output), TRUE);
+        if (!is_array($data) || empty($data['pending'])) return NULL;
+        return $data;
+    }
+
+    /**
+     * Confirma (cancela la reversión de) un cambio de red pendiente.
+     */
+    function confirmarCambioRed($token)
+    {
+        $this->errMsg = '';
+        $sComando = '/usr/bin/issabel-helper netconfig --confirm '.escapeshellarg($token).' 2>&1';
+        $output = $ret = NULL;
+        exec($sComando, $output, $ret);
+        if ($ret != 0) {
+            $this->errMsg = implode('', $output);
+            return FALSE;
+        }
+        return TRUE;
+    }
+
+    /**
+     * Revierte (aplica el snapshot de) un cambio de red pendiente.
+     */
+    function revertirCambioRed($token)
+    {
+        $this->errMsg = '';
+        $sComando = '/usr/bin/issabel-helper netconfig --rollback '.escapeshellarg($token).' 2>&1';
+        $output = $ret = NULL;
+        exec($sComando, $output, $ret);
+        if ($ret != 0) {
+            $this->errMsg = implode('', $output);
+            return FALSE;
+        }
+        return TRUE;
+    }
+
+    /**
+     * Obtiene las rutas estáticas IPv4 por interfaz (NetworkManager).
+     *
+     * @return array   Arreglo interfaz => lista de especificaciones de ruta
+     */
+    function obtenerRutasRed()
+    {
+        $this->errMsg = '';
+        $output = $ret = NULL;
+        exec('/usr/bin/issabel-helper netconfig --getroutes 2>&1', $output, $ret);
+        if ($ret != 0) {
+            $this->errMsg = implode('', $output);
+            return array();
+        }
+        $data = json_decode(implode('', $output), TRUE);
+        return is_array($data) ? $data : array();
+    }
+
+    /**
+     * Fija la lista completa de rutas estáticas IPv4 de una interfaz.
+     *
+     * @param string $dev         Dispositivo de red
+     * @param string $routespec   Lista de rutas en sintaxis nmcli
+     *
+     * @return bool   VERDADERO en éxito, FALSO en error
+     */
+    function escribirRutasRed($dev, $routespec)
+    {
+        $this->errMsg = '';
+        $sComando = '/usr/bin/issabel-helper netconfig --setroutes'
+            .' --device '.escapeshellarg($dev)
+            .' --routespec '.escapeshellarg($routespec)
+            .' 2>&1';
         $output = $ret = NULL;
         exec($sComando, $output, $ret);
         if ($ret != 0) {

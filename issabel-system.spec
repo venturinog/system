@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 15
+Release: 19
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -33,8 +33,8 @@ Requires: yum
 # commands: /usr/sbin/ip
 Requires: iproute
 
-# commands: /usr/sbin/route
-Requires: net-tools
+# commands: /usr/bin/nmcli  (Network Parameters lee y escribe con NetworkManager)
+Requires: NetworkManager
 
 # netconfig assumes postfix service is present
 Requires: postfix
@@ -94,6 +94,11 @@ mv setup/usr/sbin/switch_wanpipe_media        $RPM_BUILD_ROOT/usr/sbin/
 mv setup/usr/sbin/issabel_migration.sh        $RPM_BUILD_ROOT/usr/sbin/
 mv setup/usr/sbin/issabel_migration_fpbx.sh   $RPM_BUILD_ROOT/usr/sbin/
 rmdir setup/usr/sbin
+
+# ** NetworkManager boot recovery unit ** #
+mkdir -p $RPM_BUILD_ROOT/usr/lib/systemd/system
+mv setup/usr/lib/systemd/system/issabel-netconfig-recover.service $RPM_BUILD_ROOT/usr/lib/systemd/system/
+rmdir setup/usr/lib/systemd/system setup/usr/lib/systemd setup/usr/lib
 
 rmdir setup/usr
 
@@ -155,6 +160,12 @@ chown -R asterisk.asterisk /tmp/new_module/%{modname}
 php /tmp/new_module/%{modname}/setup/installer.php
 rm -rf /tmp/new_module
 
+# Network Parameters (NetworkManager): state dir for pending changes + boot recovery
+mkdir -p /var/lib/issabel/netconfig-rollback
+chmod 700 /var/lib/issabel/netconfig-rollback
+systemctl daemon-reload &>/dev/null || :
+systemctl enable issabel-netconfig-recover.service &>/dev/null || :
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -179,7 +190,40 @@ fi
 /usr/sbin/issabel_migration_fpbx.sh
 /usr/share/issabel/privileged/*
 
+%defattr(644, root, root)
+/usr/lib/systemd/system/issabel-netconfig-recover.service
+
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-19
+- Network Parameters: drop the net-tools requirement; the network module no
+  longer uses 'route' (nmcli and 'ip route' only).
+
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-18
+- Network Parameters: netconfig now creates the NetworkManager connection when
+  the target interface has none: VLAN for 'parent.id' names (e.g. eth0.100) and
+  ethernet otherwise, inside the safe apply so a rollback removes a newly created
+  connection. Creating macvlan (mv-*) connections from the GUI is deferred.
+
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-17
+- Network Parameters: add a Static Routes grid below the interface list. Routes
+  are read from NetworkManager and written back as the full ipv4.routes list of
+  the connection (nmcli), through the safe commit-confirm apply. IPv4 only for
+  now.
+
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-16
+- Network Parameters: read the interface type (DHCP/static), the default
+  gateway and the DNS servers from NetworkManager (nmcli) instead of the
+  legacy ifcfg files, which no longer exist on EL10. Falls back to
+  /etc/resolv.conf and 'ip -4 route' when NM does not report them.
+- Network Parameters: rewrite the netconfig helper to configure interfaces,
+  gateway and DNS with nmcli (no ifcfg, no /etc/sysconfig/network, no route),
+  converting the dotted netmask to a prefix. The '--gateway-dev' option is
+  dropped.
+- Network Parameters: apply changes in safe mode (commit-confirm). The helper
+  snapshots the NetworkManager profiles, schedules an automatic rollback with a
+  transient systemd timer and requires a confirmation; a pending change is
+  reverted on boot by the new issabel-netconfig-recover.service.
+
 * Tue Oct 13 2026 Issabel Foundation <info@issabel.org> - 6.0.0-15
 - DHCP Server: widen the IPv4 octet inputs to 48px and trim their horizontal
   padding so three digits are visible; the 30px boxes had no usable content

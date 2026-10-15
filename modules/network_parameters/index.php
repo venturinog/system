@@ -46,6 +46,7 @@ function _moduleContent(&$smarty, $module_name)
     $vlan_dictionary['eth0.200']='LAN';
 
     $pNet = new paloNetwork();
+    $smarty->assign("PENDING_CHANGE", "no");
     $arrEths = $pNet->obtener_interfases_red_fisicas();
     $nics = array();
     foreach($arrEths as $iface=>$idata) {
@@ -77,12 +78,6 @@ function _moduleContent(&$smarty, $module_name)
                                                      "INPUT_EXTRA_PARAM"      => "",
                                                      "VALIDATION_TYPE"        => "ip",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
-                             "gateway_dev"  => array("LABEL"                  => _tr("Gateway Device"),
-                                                     "REQUIRED"               => "yes",
-                                                     "INPUT_TYPE"             => "SELECT",
-                                                     "INPUT_EXTRA_PARAM"      => $nics,
-                                                     "VALIDATION_TYPE"        => "text",
-                                                     "VALIDATION_EXTRA_PARAM" => ""),
 
 );
 
@@ -111,10 +106,98 @@ function _moduleContent(&$smarty, $module_name)
                                                      "VALIDATION_TYPE"        => "ereg",
                                                      "VALIDATION_EXTRA_PARAM" => "^[[:alnum:]\.-]+$"));
 
+    $arrFormRoute = array(
+        "route_dev"    => array("LABEL"                  => _tr("Interface"),
+                                "REQUIRED"               => "yes",
+                                "INPUT_TYPE"             => "SELECT",
+                                "INPUT_EXTRA_PARAM"      => $nics,
+                                "VALIDATION_TYPE"        => "text",
+                                "VALIDATION_EXTRA_PARAM" => ""),
+        "route_dest"   => array("LABEL"                  => _tr("Destination"),
+                                "REQUIRED"               => "yes",
+                                "INPUT_TYPE"             => "TEXT",
+                                "INPUT_EXTRA_PARAM"      => array("style" => "width:160px"),
+                                "VALIDATION_TYPE"        => "text",
+                                "VALIDATION_EXTRA_PARAM" => ""),
+        "route_gw"     => array("LABEL"                  => _tr("Gateway"),
+                                "REQUIRED"               => "no",
+                                "INPUT_TYPE"             => "TEXT",
+                                "INPUT_EXTRA_PARAM"      => array("style" => "width:130px"),
+                                "VALIDATION_TYPE"        => "text",
+                                "VALIDATION_EXTRA_PARAM" => ""),
+        "route_metric" => array("LABEL"                  => _tr("Metric"),
+                                "REQUIRED"               => "no",
+                                "INPUT_TYPE"             => "TEXT",
+                                "INPUT_EXTRA_PARAM"      => array("style" => "width:60px"),
+                                "VALIDATION_TYPE"        => "numeric",
+                                "VALIDATION_EXTRA_PARAM" => ""),
+        "route_orig"   => array("LABEL"                  => "route_orig",
+                                "REQUIRED"               => "no",
+                                "INPUT_TYPE"             => "HIDDEN",
+                                "INPUT_EXTRA_PARAM"      => "",
+                                "VALIDATION_TYPE"        => "text",
+                                "VALIDATION_EXTRA_PARAM" => ""),
+    );
+
     $strReturn ="";
 
 
     // MANEJO DE ACCIONES
+
+    if(isset($_POST['confirm_network_change']) || isset($_POST['revert_network_change'])) {
+        // Confirma o revierte el cambio de red pendiente (apply seguro).
+        $pending = $pNet->obtenerCambioRedPendiente();
+        $ok = TRUE;
+        if (!is_null($pending)) {
+            $ok = isset($_POST['confirm_network_change'])
+                ? $pNet->confirmarCambioRed($pending['token'])
+                : $pNet->revertirCambioRed($pending['token']);
+        }
+        if (!$ok) {
+            $smarty->assign("mb_title", _tr("ERROR"));
+            $smarty->assign("mb_message", $pNet->errMsg);
+        } else {
+            header("Location: index.php?menu=network");
+            return NULL;
+        }
+    }
+
+    if(isset($_POST['save_route'])) {
+        $routeResult = saveStaticRoute($pNet);
+        if ($routeResult !== TRUE) {
+            $smarty->assign("mb_title", _tr("ERROR"));
+            $smarty->assign("mb_message", $routeResult);
+        } else {
+            header("Location: index.php?menu=network");
+            return NULL;
+        }
+    } else if(isset($_POST['delete_route'])) {
+        $routeResult = deleteStaticRoute($pNet);
+        if ($routeResult !== TRUE) {
+            $smarty->assign("mb_title", _tr("ERROR"));
+            $smarty->assign("mb_message", $routeResult);
+        } else {
+            header("Location: index.php?menu=network");
+            return NULL;
+        }
+    } else if(isset($_POST['cancel_route'])) {
+        header("Location: index.php?menu=network");
+        return NULL;
+    } else if(isset($_GET['action']) && $_GET['action'] == "route_new") {
+        return constructRouteForm($smarty, $module_name, $local_templates_dir, $arrFormRoute, array(), "new");
+    } else if(isset($_GET['action']) && $_GET['action'] == "route_edit") {
+        $routeDev  = getParameter('dev');
+        $routeSpec = getParameter('spec');
+        $parts = preg_split('/\s+/', trim((string)$routeSpec));
+        $routeData = array(
+            'route_dev'    => $routeDev,
+            'route_orig'   => $routeSpec,
+            'route_dest'   => isset($parts[0]) ? $parts[0] : '',
+            'route_gw'     => isset($parts[1]) ? $parts[1] : '',
+            'route_metric' => isset($parts[2]) ? $parts[2] : '',
+        );
+        return constructRouteForm($smarty, $module_name, $local_templates_dir, $arrFormRoute, $routeData, "edit");
+    }
 
     if(isset($_POST['edit'])) {
 
@@ -125,7 +208,6 @@ function _moduleContent(&$smarty, $module_name)
             $arrNetworkData['dns2'] = isset($arrNetwork['dns'][1])?$arrNetwork['dns'][1]:'';
             $arrNetworkData['host'] = isset($arrNetwork['host'])?$arrNetwork['host']:'';
             $arrNetworkData['gateway'] = isset($arrNetwork['gateway'])?$arrNetwork['gateway']:'';
-            $arrNetworkData['gateway_dev'] = isset($arrNetwork['gateway_dev'])?$arrNetwork['gateway_dev']:'';
         }
 
         $oForm = new paloForm($smarty, $arrFormNetwork);
@@ -145,7 +227,6 @@ function _moduleContent(&$smarty, $module_name)
             $arrNetConf['dns_ip_1'] = $_POST['dns1'];
             $arrNetConf['dns_ip_2'] = $_POST['dns2'];
             $arrNetConf['gateway_ip'] = $_POST['gateway'];
-            $arrNetConf['gateway_dev'] = $_POST['gateway_dev'];
             $pNet->escribir_configuracion_red_sistema($arrNetConf);
             if(!empty($pNet->errMsg)) {
                 $smarty->assign("mb_message", $pNet->errMsg);
@@ -233,11 +314,23 @@ function _moduleContent(&$smarty, $module_name)
             $arrNetworkData['dns2'] = isset($arrNetwork['dns'][1])?$arrNetwork['dns'][1]:'';
             $arrNetworkData['host'] = isset($arrNetwork['host'])?$arrNetwork['host']:'';
             $arrNetworkData['gateway'] = isset($arrNetwork['gateway'])?$arrNetwork['gateway']:'';
-            $arrNetworkData['gateway_dev'] = isset($arrNetwork['gateway_dev'])?$arrNetwork['gateway_dev']:'';
         }
 
         $oForm = new paloForm($smarty, $arrFormNetwork);
         $oForm->setViewMode();
+
+        // Cambio de red pendiente de confirmar (apply seguro)
+        $pendingChange = $pNet->obtenerCambioRedPendiente();
+        if (!is_null($pendingChange)) {
+            $smarty->assign("PENDING_CHANGE", "yes");
+            $smarty->assign("PENDING_SUMMARY", $pendingChange['summary']);
+            $smarty->assign("PENDING_REMAINING", $pendingChange['remaining']);
+            $smarty->assign("PENDING_WARNING", _tr("Network changes are pending confirmation. If not confirmed in time, they will be reverted automatically."));
+            $smarty->assign("CONFIRM_CHANGE", _tr("Confirm changes"));
+            $smarty->assign("REVERT_CHANGE", _tr("Revert now"));
+        } else {
+            $smarty->assign("PENDING_CHANGE", "no");
+        }
 
         // SECCION ETHERNET LIST
         $arrData = array();
@@ -285,6 +378,7 @@ function _moduleContent(&$smarty, $module_name)
 
         $htmlGrid = $oGrid->fetchGrid($arrGrid, $arrData);
         $smarty->assign("ETHERNET_INTERFASES_LIST", $htmlGrid);
+        $smarty->assign("ROUTES_LIST", renderRoutesGrid($smarty, $module_name, $pNet));
         $smarty->assign("EDIT_PARAMETERS", _tr("Edit Network Parameters"));
         $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
 	$smarty->assign("icon","modules/network_parameters/images/system_network_network_parameters.png");
@@ -293,5 +387,115 @@ function _moduleContent(&$smarty, $module_name)
     }
 
     return $strReturn;
+}
+
+function constructRouteForm($smarty, $module_name, $local_templates_dir, $arrFormRoute, $data, $action)
+{
+    $oForm = new paloForm($smarty, $arrFormRoute);
+    $smarty->assign("SAVE", _tr("Save"));
+    $smarty->assign("CANCEL", _tr("Cancel"));
+    $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
+    $smarty->assign("icon", "modules/$module_name/images/system_network_network_parameters.png");
+    $title = ($action == "new") ? _tr("New Static Route") : _tr("Edit Static Route");
+    return $oForm->fetchForm("$local_templates_dir/route_edit.tpl", $title, $data);
+}
+
+// Separa una especificación de ruta de nmcli en destino / gateway / métrica.
+function parseRouteSpec($spec)
+{
+    $parts = preg_split('/\s+/', trim((string)$spec));
+    return array(
+        'dest'   => isset($parts[0]) ? $parts[0] : '',
+        'gw'     => isset($parts[1]) ? $parts[1] : '',
+        'metric' => isset($parts[2]) ? $parts[2] : '',
+    );
+}
+
+// Construye la grilla de rutas estáticas (debajo de las interfaces).
+function renderRoutesGrid($smarty, $module_name, &$pNet)
+{
+    $routes = $pNet->obtenerRutasRed();
+    $data = array();
+    if (is_array($routes)) {
+        foreach ($routes as $dev => $list) {
+            if (!is_array($list)) continue;
+            foreach ($list as $spec) {
+                $r = parseRouteSpec($spec);
+                $data[] = array(
+                    "<input type='radio' name='del_route' value='".htmlspecialchars($dev.'|'.$spec, ENT_COMPAT, 'UTF-8')."' />",
+                    htmlspecialchars($dev, ENT_COMPAT, 'UTF-8'),
+                    htmlspecialchars($r['dest'], ENT_COMPAT, 'UTF-8'),
+                    htmlspecialchars($r['gw'], ENT_COMPAT, 'UTF-8'),
+                    htmlspecialchars($r['metric'], ENT_COMPAT, 'UTF-8'),
+                    "<a href='?menu=".$module_name."&amp;action=route_edit&amp;dev=".urlencode($dev)."&amp;spec=".urlencode($spec)."'>["._tr('Edit')."]</a>",
+                );
+            }
+        }
+    }
+
+    $oGrid = new paloSantoGrid($smarty);
+    $oGrid->setTitle(_tr('Static Routes'));
+    $oGrid->setIcon("modules/$module_name/images/system_network_network_parameters.png");
+    $oGrid->setURL(array('menu' => $module_name));
+    $oGrid->setColumns(array('', _tr('Interface'), _tr('Destination'), _tr('Gateway'), _tr('Metric'), _tr('Options')));
+    $oGrid->deleteList(_tr('Are you sure you wish to delete this route?'), 'delete_route', _tr('Delete route'));
+    $oGrid->addNew("?menu=$module_name&amp;action=route_new", _tr('New Static Route'), true);
+    $oGrid->pagingShow(false);
+    $oGrid->setTotal(count($data));
+    $oGrid->setLimit(count($data) > 0 ? count($data) : 1);
+    $oGrid->setData($data);
+    return $oGrid->fetchGrid();
+}
+
+// Da de alta (o reemplaza) una ruta estática. Devuelve TRUE o el mensaje de error.
+function saveStaticRoute(&$pNet)
+{
+    $dev    = getParameter('route_dev');
+    $dest   = trim((string)getParameter('route_dest'));
+    $gw     = trim((string)getParameter('route_gw'));
+    $metric = trim((string)getParameter('route_metric'));
+    $orig   = getParameter('route_orig');
+
+    if (is_null($dev) || $dev === '') return _tr("Invalid interface");
+    if (!preg_match('/^\d{1,3}(\.\d{1,3}){3}\/\d{1,2}$/', $dest))
+        return _tr("Invalid destination (use CIDR, e.g. 10.0.0.0/8)");
+    if ($dest === '0.0.0.0/0')
+        return _tr("The default route is set with the Default Gateway field");
+    if ($gw !== '' && !preg_match('/^\d{1,3}(\.\d{1,3}){3}$/', $gw))
+        return _tr("Invalid gateway");
+    if ($metric !== '' && !ctype_digit($metric))
+        return _tr("Invalid metric");
+
+    $spec = $dest.($gw !== '' ? ' '.$gw : '').($metric !== '' ? ' '.$metric : '');
+
+    $routes = $pNet->obtenerRutasRed();
+    $list = (is_array($routes) && isset($routes[$dev]) && is_array($routes[$dev])) ? $routes[$dev] : array();
+    if (!is_null($orig) && $orig !== '') {
+        $list = array_values(array_diff($list, array($orig)));
+    }
+    $list = array_values(array_diff($list, array($spec)));
+    $list[] = $spec;
+
+    if (!$pNet->escribirRutasRed($dev, implode(', ', $list))) {
+        return $pNet->errMsg;
+    }
+    return TRUE;
+}
+
+// Borra una ruta estática. Devuelve TRUE o el mensaje de error.
+function deleteStaticRoute(&$pNet)
+{
+    $sel = getParameter('del_route');
+    if (is_null($sel) || strpos($sel, '|') === FALSE) return _tr("No route selected");
+    list($dev, $spec) = explode('|', $sel, 2);
+
+    $routes = $pNet->obtenerRutasRed();
+    $list = (is_array($routes) && isset($routes[$dev]) && is_array($routes[$dev])) ? $routes[$dev] : array();
+    $list = array_values(array_diff($list, array($spec)));
+
+    if (!$pNet->escribirRutasRed($dev, implode(', ', $list))) {
+        return $pNet->errMsg;
+    }
+    return TRUE;
 }
 ?>
