@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 29
+Release: 30
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,14 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-30
+- Network Parameters: split the general parameters form into General, IPv4 and
+  IPv6 cards and add live field validation (client and server) with inline
+  ok/fail feedback. Host must be a valid FQDN, Primary DNS and Default Gateway
+  are required IPv4 addresses, and Secondary DNS / IPv6 DNS are optional.
+  Factor out the page rendering so a validation error keeps the interfaces and
+  routes grids plus the pending changes panel visible, in edit mode.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-29
 - Network Parameters: split the interface edit form into IPv4 and IPv6 cards and
   add live field validation (client and server) with inline ok/fail feedback.

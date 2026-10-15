@@ -56,35 +56,35 @@ function _moduleContent(&$smarty, $module_name)
         $nics[$iface]=$nicname;
     }
 
-    $arrFormNetwork  = array("host"         => array("LABEL"                  => ""._tr('Host')." (Ex. host.example.com)",
+    $arrFormNetwork  = array("host"         => array("LABEL"                  => _tr('Host'),
                                                      "REQUIRED"               => "yes",
                                                      "INPUT_TYPE"             => "TEXT",
-                                                     "INPUT_EXTRA_PARAM"      => "",
-                                                     "VALIDATION_TYPE"        => "domain",
+                                                     "INPUT_EXTRA_PARAM"      => array("placeholder" => "host.example.com"),
+                                                     "VALIDATION_TYPE"        => "text",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
                              "dns1"         => array("LABEL"                  => _tr("Primary DNS"),
                                                      "REQUIRED"               => "yes",
                                                      "INPUT_TYPE"             => "TEXT",
-                                                     "INPUT_EXTRA_PARAM"      => "",
-                                                     "VALIDATION_TYPE"        => "ip",
+                                                     "INPUT_EXTRA_PARAM"      => array("placeholder" => "192.168.1.1"),
+                                                     "VALIDATION_TYPE"        => "text",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
                              "dns2"         => array("LABEL"                  => _tr("Secondary DNS"),
                                                      "REQUIRED"               => "no",
                                                      "INPUT_TYPE"             => "TEXT",
-                                                     "INPUT_EXTRA_PARAM"      => "",
-                                                     "VALIDATION_TYPE"        => "ip",
+                                                     "INPUT_EXTRA_PARAM"      => array("placeholder" => "8.8.8.8"),
+                                                     "VALIDATION_TYPE"        => "text",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
                              "dns6"         => array("LABEL"                  => _tr("IPv6 DNS"),
                                                      "REQUIRED"               => "no",
                                                      "INPUT_TYPE"             => "TEXT",
-                                                     "INPUT_EXTRA_PARAM"      => "",
-                                                     "VALIDATION_TYPE"        => "ipv6",
+                                                     "INPUT_EXTRA_PARAM"      => array("placeholder" => "2001:db8::1"),
+                                                     "VALIDATION_TYPE"        => "text",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
                              "gateway"      => array("LABEL"                  => _tr("Default Gateway"),
                                                      "REQUIRED"               => "yes",
                                                      "INPUT_TYPE"             => "TEXT",
-                                                     "INPUT_EXTRA_PARAM"      => "",
-                                                     "VALIDATION_TYPE"        => "ip",
+                                                     "INPUT_EXTRA_PARAM"      => array("placeholder" => "192.168.1.1"),
+                                                     "VALIDATION_TYPE"        => "text",
                                                      "VALIDATION_EXTRA_PARAM" => ""),
 
 );
@@ -258,8 +258,8 @@ function _moduleContent(&$smarty, $module_name)
 
     if(isset($_POST['edit'])) {
 
+        $arrNetworkData = array();
         $arrNetwork = $pNet->obtener_configuracion_red();
-
         if(is_array($arrNetwork)) {
             $arrNetworkData['dns1'] = isset($arrNetwork['dns'][0])?$arrNetwork['dns'][0]:'';
             $arrNetworkData['dns2'] = isset($arrNetwork['dns'][1])?$arrNetwork['dns'][1]:'';
@@ -268,46 +268,46 @@ function _moduleContent(&$smarty, $module_name)
             $arrNetworkData['gateway'] = isset($arrNetwork['gateway'])?$arrNetwork['gateway']:'';
         }
 
-        $oForm = new paloForm($smarty, $arrFormNetwork);
-        $smarty->assign("ETHERNET_INTERFASES_LIST", "");
-        $smarty->assign("CANCEL", _tr("Cancel"));
-        $smarty->assign("SAVE", _tr("Save"));
-        $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
-	$smarty->assign("icon","modules/network_parameters/images/system_network_network_parameters.png");
-        $strReturn = $oForm->fetchForm("$local_templates_dir/network.tpl", _tr("Network Parameters"), $arrNetworkData);
+        return renderNetworkPage($smarty, $module_name, $local_templates_dir, $pNet, $arrFormNetwork, $vlan_dictionary, 'input', $arrNetworkData);
 
     } else if(isset($_POST['save_network_changes'])) {
 
-        $oForm = new paloForm($smarty, $arrFormNetwork);
+        $host    = trim((string)getParameter('host'));
+        $dns1    = trim((string)getParameter('dns1'));
+        $dns2    = trim((string)getParameter('dns2'));
+        $dns6    = trim((string)getParameter('dns6'));
+        $gateway = trim((string)getParameter('gateway'));
 
-        if($oForm->validateForm($_POST)) {
-            // Encola el cambio (no lo aplica): se aplicará con "Aplicar cambios".
-            networkDraftAddGenconf(array(
-                'host'    => $_POST['host'],
-                'gateway' => $_POST['gateway'],
-                'dns1'    => $_POST['dns1'],
-                'dns2'    => $_POST['dns2'],
-                'dns6'    => (string)getParameter('dns6'),
-            ));
-            header("Location: index.php?menu=$module_name");
-            return NULL;
-        } else {
-            // Error
-            $smarty->assign("mb_title", _tr("Validation Error"));
-            $arrErrores=$oForm->arrErroresValidacion;
-            $strErrorMsg = "<b>"._tr('The following fields contain errors').":</b><br>";
-            foreach($arrErrores as $k=>$v) {
-                $strErrorMsg .= "$k, ";
-            }
-            $strErrorMsg .= "";
-            $smarty->assign("mb_message", $strErrorMsg);
-            $smarty->assign("CANCEL", _tr("Cancel"));
-            $smarty->assign("SAVE", _tr("Save"));
-            $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
-            $strReturn=$oForm->fetchForm("$local_templates_dir/network.tpl", _tr("Network Parameters"), $_POST);
+        $errors = array();
+        if ($host === '')                $errors['host'] = sprintf(_tr('%s is required'), _tr('Host'));
+        else if (!validHostname($host))  $errors['host'] = sprintf(_tr('%s is invalid'), _tr('Host'));
+        if ($dns1 === '')                $errors['dns1'] = sprintf(_tr('%s is required'), _tr('Primary DNS'));
+        else if (!validIpv4($dns1))      $errors['dns1'] = sprintf(_tr('%s is invalid'), _tr('Primary DNS'));
+        if ($dns2 !== '' && !validIpv4($dns2))
+                                         $errors['dns2'] = sprintf(_tr('%s is invalid'), _tr('Secondary DNS'));
+        if ($gateway === '')             $errors['gateway'] = sprintf(_tr('%s is required'), _tr('Default Gateway'));
+        else if (!validIpv4($gateway))   $errors['gateway'] = sprintf(_tr('%s is invalid'), _tr('Default Gateway'));
+        if ($dns6 !== '' && !validIpv6($dns6))
+                                         $errors['dns6'] = sprintf(_tr('%s is invalid'), _tr('IPv6 DNS'));
+
+        if (count($errors) > 0) {
+            // Errores por campo: re-render de la página en modo edición, conservando
+            // las grillas y el panel de cambios pendientes.
+            return renderNetworkPage($smarty, $module_name, $local_templates_dir, $pNet, $arrFormNetwork, $vlan_dictionary, 'input',
+                array('host' => $host, 'dns1' => $dns1, 'dns2' => $dns2, 'dns6' => $dns6, 'gateway' => $gateway),
+                $errors);
         }
-	$smarty->assign("icon","modules/network_parameters/images/system_network_network_parameters.png");
-        // Se aplasto el boton de grabar los cambios en la red
+
+        // Encola el cambio (no lo aplica): se aplicará con "Aplicar cambios".
+        networkDraftAddGenconf(array(
+            'host'    => $host,
+            'gateway' => $gateway,
+            'dns1'    => $dns1,
+            'dns2'    => $dns2,
+            'dns6'    => $dns6,
+        ));
+        header("Location: index.php?menu=$module_name");
+        return NULL;
 
     } else if(isset($_POST['cancel_interfase_edit'])) {
 
@@ -396,85 +396,8 @@ function _moduleContent(&$smarty, $module_name)
             $arrNetworkData['gateway'] = isset($arrNetwork['gateway'])?$arrNetwork['gateway']:'';
         }
 
-        $oForm = new paloForm($smarty, $arrFormNetwork);
-        $oForm->setViewMode();
-
-        // Cambio de red pendiente de confirmar (apply seguro)
-        $pendingChange = $pNet->obtenerCambioRedPendiente();
-        if (!is_null($pendingChange)) {
-            $smarty->assign("PENDING_CHANGE", "yes");
-            $smarty->assign("PENDING_SUMMARY", $pendingChange['summary']);
-            $smarty->assign("PENDING_REMAINING", $pendingChange['remaining']);
-            $smarty->assign("PENDING_WARNING", _tr("Network changes are pending confirmation. If not confirmed in time, they will be reverted automatically."));
-            $smarty->assign("CONFIRM_CHANGE", _tr("Confirm Changes"));
-            $smarty->assign("REVERT_CHANGE", _tr("Revert Now"));
-        } else {
-            $smarty->assign("PENDING_CHANGE", "no");
-        }
-
-        // Cambios sin aplicar (borrador en sesión)
-        $draftLines = networkDraftSummary();
-        $smarty->assign("DRAFT_CHANGES", $draftLines);
-        $smarty->assign("DRAFT_COUNT", count($draftLines));
-        $smarty->assign("PENDING_CHANGES_TITLE", _tr("Pending changes (not applied)"));
-        $smarty->assign("APPLY_CHANGES", _tr("Apply Changes"));
-        $smarty->assign("DISCARD_CHANGES", _tr("Discard Changes"));
-
-        // SECCION ETHERNET LIST
-        $arrData = array();
-        $arrEths = $pNet->obtener_interfases_red_fisicas();
-        $end = count($arrEths);
-
-        foreach($arrEths as $idEth=>$arrEth) {
-
-            $nicname = isset($vlan_dictionary[$arrEth['Name']])?$vlan_dictionary[$arrEth['Name']]:$arrEth['Name'];
-            $arrTmp    = array();
-            $arrTmp[0] = "&nbsp;<a href='?menu=$module_name&action=editInterfase&id=$idEth'>" . $nicname . "</a>";
-            $arrTmp[1] = strtoupper($arrEth['Type']);
-            $arrTmp[2] = $arrEth['Inet Addr'];
-            $arrTmp[3] = $arrEth['Mask'];
-            $arrTmp[4] = isset($arrEth['Inet6 Addr'], $arrEth['Mask6']) ? htmlspecialchars($arrEth['Inet6 Addr'].'/'.$arrEth['Mask6'], ENT_COMPAT, 'UTF-8') : '';
-            $arrTmp[5] = $arrEth['HWaddr'];
-            $arrTmp[6] = isset($arrEth['HW_info'])?$arrEth['HW_info']:''; //- Deberia acotar este campo pues puede ser muy largo
-            $arrTmp[7] = ($arrEth['Running']=="Yes" ? "<font color=green>"._tr("Connected")."</font>" : "<font color=red>"._tr("Not Connected")."</font>");
-            $arrData[] = $arrTmp;
-        }
-
-        $oGrid = new paloSantoGrid($smarty);
-        $oGrid->pagingShow(false);
-
-        $arrGrid = array("title"    => _tr("Ethernet Interfaces List"),
-                         "icon"     => "/modules/$module_name/images/system_hardware_detector.png",
-                         "width"    => "99%",
-                         "start"    => "1",
-                         "end"      => $end,
-                         "total"    => $end,
-                         "columns"  => array(0 => array("name"      => _tr("Device"),
-                                                        "property1" => ""),
-                                             1 => array("name"      => _tr("Type"),
-                                                        "property1" => ""),
-                                             2 => array("name"      => _tr("IP"),
-                                                        "property1" => ""),
-                                             3 => array("name"      => _tr("Mask"),
-                                                        "property1" => ""),
-                                             4 => array("name"      => _tr("IPv6"),
-                                                        "property1" => ""),
-                                             5 => array("name"      => _tr("MAC Address"),
-                                                        "property1" => ""),
-                                             6 => array("name"      => _tr("HW Info"),
-                                                        "property1" => ""),
-                                             7 => array("name"      => _tr("Status"),
-                                                        "property1" => "")
-                                            ));
-
-        $htmlGrid = $oGrid->fetchGrid($arrGrid, $arrData);
-        $smarty->assign("ETHERNET_INTERFASES_LIST", $htmlGrid);
-        $smarty->assign("ROUTES_LIST", renderRoutesGrid($smarty, $module_name, $pNet));
-        $smarty->assign("EDIT_PARAMETERS", _tr("Edit Network Parameters"));
-        $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
-	$smarty->assign("icon","modules/network_parameters/images/system_network_network_parameters.png");
         // DISPLAY
-        $strReturn = $oForm->fetchForm("$local_templates_dir/network.tpl", _tr("Network Parameters"), $arrNetworkData);
+        $strReturn = renderNetworkPage($smarty, $module_name, $local_templates_dir, $pNet, $arrFormNetwork, $vlan_dictionary, 'view', $arrNetworkData);
     }
 
     return $strReturn;
@@ -506,6 +429,109 @@ function validIpv6Cidr($cidr)
 {
     $p = explode('/', $cidr, 2);
     return count($p) == 2 && validIpv6($p[0]) && ctype_digit($p[1]) && intval($p[1]) <= 128;
+}
+
+// Mismo criterio que el validador "domain" de paloForm.
+function validHostname($host)
+{
+    return preg_match('/^(([[:alnum:]-]+)\.)+([[:alnum:]])+$/i', $host) === 1;
+}
+
+function renderNetworkPage($smarty, $module_name, $local_templates_dir, &$pNet, $arrFormNetwork, $vlan_dictionary, $mode, $data, $errors = array())
+{
+    // Marca los campos con error (recuadro rojo).
+    foreach (array('host', 'dns1', 'dns2', 'dns6', 'gateway') as $f) {
+        if (!isset($errors[$f])) continue;
+        if (!isset($arrFormNetwork[$f]['INPUT_EXTRA_PARAM']) || !is_array($arrFormNetwork[$f]['INPUT_EXTRA_PARAM']))
+            $arrFormNetwork[$f]['INPUT_EXTRA_PARAM'] = array();
+        $cls = isset($arrFormNetwork[$f]['INPUT_EXTRA_PARAM']['class'])
+            ? $arrFormNetwork[$f]['INPUT_EXTRA_PARAM']['class'].' ' : 'form-control ';
+        $arrFormNetwork[$f]['INPUT_EXTRA_PARAM']['class'] = $cls.'is-invalid';
+    }
+
+    $oForm = new paloForm($smarty, $arrFormNetwork);
+    if ($mode !== 'input') $oForm->setViewMode();
+
+    // Cambio de red pendiente de confirmar (apply seguro)
+    $pendingChange = $pNet->obtenerCambioRedPendiente();
+    if (!is_null($pendingChange)) {
+        $smarty->assign("PENDING_CHANGE", "yes");
+        $smarty->assign("PENDING_SUMMARY", $pendingChange['summary']);
+        $smarty->assign("PENDING_REMAINING", $pendingChange['remaining']);
+        $smarty->assign("PENDING_WARNING", _tr("Network changes are pending confirmation. If not confirmed in time, they will be reverted automatically."));
+        $smarty->assign("CONFIRM_CHANGE", _tr("Confirm Changes"));
+        $smarty->assign("REVERT_CHANGE", _tr("Revert Now"));
+    } else {
+        $smarty->assign("PENDING_CHANGE", "no");
+    }
+
+    // Cambios sin aplicar (borrador en sesión)
+    $draftLines = networkDraftSummary();
+    $smarty->assign("DRAFT_CHANGES", $draftLines);
+    $smarty->assign("DRAFT_COUNT", count($draftLines));
+    $smarty->assign("PENDING_CHANGES_TITLE", _tr("Pending changes (not applied)"));
+    $smarty->assign("APPLY_CHANGES", _tr("Apply Changes"));
+    $smarty->assign("DISCARD_CHANGES", _tr("Discard Changes"));
+
+    // SECCION ETHERNET LIST
+    $arrData = array();
+    $arrEths = $pNet->obtener_interfases_red_fisicas();
+    $end = count($arrEths);
+
+    foreach ($arrEths as $idEth => $arrEth) {
+        $nicname = isset($vlan_dictionary[$arrEth['Name']]) ? $vlan_dictionary[$arrEth['Name']] : $arrEth['Name'];
+        $arrTmp    = array();
+        $arrTmp[0] = "&nbsp;<a href='?menu=$module_name&action=editInterfase&id=$idEth'>" . $nicname . "</a>";
+        $arrTmp[1] = strtoupper($arrEth['Type']);
+        $arrTmp[2] = $arrEth['Inet Addr'];
+        $arrTmp[3] = $arrEth['Mask'];
+        $arrTmp[4] = isset($arrEth['Inet6 Addr'], $arrEth['Mask6']) ? htmlspecialchars($arrEth['Inet6 Addr'].'/'.$arrEth['Mask6'], ENT_COMPAT, 'UTF-8') : '';
+        $arrTmp[5] = $arrEth['HWaddr'];
+        $arrTmp[6] = isset($arrEth['HW_info']) ? $arrEth['HW_info'] : '';
+        $arrTmp[7] = ($arrEth['Running'] == "Yes" ? "<font color=green>"._tr("Connected")."</font>" : "<font color=red>"._tr("Not Connected")."</font>");
+        $arrData[] = $arrTmp;
+    }
+
+    $oGrid = new paloSantoGrid($smarty);
+    $oGrid->pagingShow(false);
+
+    $arrGrid = array("title"    => _tr("Ethernet Interfaces List"),
+                     "icon"     => "/modules/$module_name/images/system_hardware_detector.png",
+                     "width"    => "99%",
+                     "start"    => "1",
+                     "end"      => $end,
+                     "total"    => $end,
+                     "columns"  => array(0 => array("name"      => _tr("Device"),
+                                                    "property1" => ""),
+                                         1 => array("name"      => _tr("Type"),
+                                                    "property1" => ""),
+                                         2 => array("name"      => _tr("IP"),
+                                                    "property1" => ""),
+                                         3 => array("name"      => _tr("Mask"),
+                                                    "property1" => ""),
+                                         4 => array("name"      => _tr("IPv6"),
+                                                    "property1" => ""),
+                                         5 => array("name"      => _tr("MAC Address"),
+                                                    "property1" => ""),
+                                         6 => array("name"      => _tr("HW Info"),
+                                                    "property1" => ""),
+                                         7 => array("name"      => _tr("Status"),
+                                                    "property1" => "")
+                                        ));
+
+    $htmlGrid = $oGrid->fetchGrid($arrGrid, $arrData);
+    $smarty->assign("ETHERNET_INTERFASES_LIST", $htmlGrid);
+    $smarty->assign("ROUTES_LIST", renderRoutesGrid($smarty, $module_name, $pNet));
+    $smarty->assign("EDIT_PARAMETERS", _tr("Edit Network Parameters"));
+    $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
+    $smarty->assign("SAVE", _tr("Save"));
+    $smarty->assign("CANCEL", _tr("Cancel"));
+    $smarty->assign("GENERAL", _tr("General"));
+    $smarty->assign("NETWORK_ERRORS", array_merge(
+        array('host' => '', 'dns1' => '', 'dns2' => '', 'dns6' => '', 'gateway' => ''), $errors));
+    $smarty->assign("icon", "modules/network_parameters/images/system_network_network_parameters.png");
+
+    return $oForm->fetchForm("$local_templates_dir/network.tpl", _tr("Network Parameters"), $data);
 }
 
 function constructInterfaseForm($smarty, $module_name, $local_templates_dir, $arrFormInterfase, $data, $title, $errors = array())

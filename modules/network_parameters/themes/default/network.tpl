@@ -30,27 +30,46 @@
             {/if}
         </div>
     </div>
+
     <section class="iss-card">
+        <div class="iss-card__header"><i class="ti ti-settings"></i> {$GENERAL}</div>
         <div class="iss-card__body iss-formgrid">
             <div class="iss-field">
                 <span class="iss-field__label">{$host.LABEL}{if $mode eq 'input'}&nbsp;<span class="iss-required">*</span>{/if}</span>
                 <span class="iss-field__control">{$host.INPUT}</span>
+                {if $NETWORK_ERRORS.host}<div class="invalid-feedback d-block">{$NETWORK_ERRORS.host}</div>{/if}
             </div>
+        </div>
+    </section>
+
+    <section class="iss-card">
+        <div class="iss-card__header"><i class="ti ti-network"></i> IPv4</div>
+        <div class="iss-card__body iss-formgrid">
             <div class="iss-field">
                 <span class="iss-field__label">{$dns1.LABEL}{if $mode eq 'input'}&nbsp;<span class="iss-required">*</span>{/if}</span>
                 <span class="iss-field__control">{$dns1.INPUT}</span>
-            </div>
-            <div class="iss-field">
-                <span class="iss-field__label">{$gateway.LABEL}{if $mode eq 'input'}&nbsp;<span class="iss-required">*</span>{/if}</span>
-                <span class="iss-field__control">{$gateway.INPUT}</span>
+                {if $NETWORK_ERRORS.dns1}<div class="invalid-feedback d-block">{$NETWORK_ERRORS.dns1}</div>{/if}
             </div>
             <div class="iss-field">
                 <span class="iss-field__label">{$dns2.LABEL}</span>
                 <span class="iss-field__control">{$dns2.INPUT}</span>
+                {if $NETWORK_ERRORS.dns2}<div class="invalid-feedback d-block">{$NETWORK_ERRORS.dns2}</div>{/if}
             </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$gateway.LABEL}{if $mode eq 'input'}&nbsp;<span class="iss-required">*</span>{/if}</span>
+                <span class="iss-field__control">{$gateway.INPUT}</span>
+                {if $NETWORK_ERRORS.gateway}<div class="invalid-feedback d-block">{$NETWORK_ERRORS.gateway}</div>{/if}
+            </div>
+        </div>
+    </section>
+
+    <section class="iss-card">
+        <div class="iss-card__header"><i class="ti ti-world"></i> IPv6</div>
+        <div class="iss-card__body iss-formgrid">
             <div class="iss-field">
                 <span class="iss-field__label">{$dns6.LABEL}</span>
                 <span class="iss-field__control">{$dns6.INPUT}</span>
+                {if $NETWORK_ERRORS.dns6}<div class="invalid-feedback d-block">{$NETWORK_ERRORS.dns6}</div>{/if}
             </div>
         </div>
     </section>
@@ -58,3 +77,81 @@
 </form>
 {$ETHERNET_INTERFASES_LIST}
 {$ROUTES_LIST}
+{if $mode eq 'input'}
+<script>
+{literal}
+(function () {
+    'use strict';
+
+    function q(name) { return document.querySelector('[name="' + name + '"]'); }
+    function validV4(v) {
+        var m = (v || '').trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+        if (!m) return false;
+        for (var i = 1; i <= 4; i++) if (parseInt(m[i], 10) > 255) return false;
+        return true;
+    }
+    function validV6(v) {
+        v = (v || '').trim();
+        if (v.indexOf(':') === -1) return false;
+        try { return !!new URL('http://[' + v + ']/'); }
+        catch (e) { return /^[0-9a-fA-F:]+$/.test(v); }
+    }
+    function validHost(v) { return /^([A-Za-z0-9-]+\.)+[A-Za-z0-9]+$/.test(v); }
+    function mark(el, ok) {
+        if (!el) return;
+        el.classList.remove('is-valid', 'is-invalid');
+        el.classList.add(ok ? 'is-valid' : 'is-invalid');
+    }
+
+    var host = q('host'), dns1 = q('dns1'), dns2 = q('dns2'), dns6 = q('dns6'), gw = q('gateway');
+    var first = host || dns1 || dns2 || dns6 || gw;
+    if (!first) return;
+    var form = first.form;
+    if (!form) return;
+
+    function checkAll(touched) {
+        var ok = true;
+
+        var vh = !!host && host.value.trim() !== '' && validHost(host.value.trim());
+        if (touched || (host && host.value.trim() !== '')) mark(host, vh);
+        ok = vh && ok;
+
+        var v1 = !!dns1 && dns1.value.trim() !== '' && validV4(dns1.value.trim());
+        if (touched || (dns1 && dns1.value.trim() !== '')) mark(dns1, v1);
+        ok = v1 && ok;
+
+        if (dns2 && dns2.value.trim() !== '') {
+            var v2 = validV4(dns2.value.trim());
+            mark(dns2, v2);
+            ok = v2 && ok;
+        }
+
+        var vg = !!gw && gw.value.trim() !== '' && validV4(gw.value.trim());
+        if (touched || (gw && gw.value.trim() !== '')) mark(gw, vg);
+        ok = vg && ok;
+
+        if (dns6 && dns6.value.trim() !== '') {
+            var v6 = validV6(dns6.value.trim());
+            mark(dns6, v6);
+            ok = v6 && ok;
+        }
+
+        return ok;
+    }
+
+    [host, dns1, dns2, dns6, gw].forEach(function (el) {
+        if (!el) return;
+        el.addEventListener('input', function () { checkAll(true); });
+        el.addEventListener('blur', function () { checkAll(true); });
+    });
+
+    form.addEventListener('submit', function (e) {
+        if (e.submitter && (e.submitter.name === 'cancel' || e.submitter.name === 'cancel_interfase_edit')) return;
+        if (!checkAll(true)) { e.preventDefault(); return false; }
+    });
+
+    checkAll(false);
+})();
+{/literal}
+</script>
+{/if}
