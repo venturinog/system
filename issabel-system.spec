@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 21
+Release: 22
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -194,6 +194,10 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-22
+- Network Parameters: add the new strings (static routes, IPv6, staged changes
+  and pending confirmation) to all shipped languages.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-21
 - Network Parameters: apply network changes atomically. A new netconfig --apply
   takes a change set (interface + gateway + DNS + static routes) and applies it
