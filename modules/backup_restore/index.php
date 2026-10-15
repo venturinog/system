@@ -430,6 +430,7 @@ function migrate_form($smarty, $local_templates_dir, $path_backup, $module_name)
     $filename = $filename; 
     $frame_url=$_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST']."/modules/backup_restore/restore.php?filename=".$filename;
     $smarty->assign("frame_url", $frame_url);    
+    $smarty->assign("PROGRESS", _tr('Progress'));
     return $smarty->fetch("$local_templates_dir/migration.tpl");
 }
 
