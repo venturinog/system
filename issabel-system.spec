@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 27
+Release: 28
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,12 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-28
+- Network Parameters: drop the fixed widths of the Destination and Gateway
+  fields in the static route form so they use the standard form width (up to
+  430px) and the validation icon no longer overlaps the value; keep the metric
+  narrow with max-width.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-27
 - Network Parameters: wrap the static route form JavaScript in {literal} so
   Smarty does not try to parse the JS regex quantifiers ({1,3}), which made the
