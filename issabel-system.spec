@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 31
+Release: 32
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,11 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-32
+- Network Parameters: render the labels of the read-only summary card as
+  uppercase micro-labels so they read clearly different from their values
+  (iss-formgrid--readonly).
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-31
 - Network Parameters: show the general parameters as a single compact card of
   read-only values in the default view so the interfaces and static routes

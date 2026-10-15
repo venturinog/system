@@ -78,7 +78,7 @@
     </div>
     {else}
     <section class="iss-card">
-        <div class="iss-card__body iss-formgrid iss-formgrid--3col">
+        <div class="iss-card__body iss-formgrid iss-formgrid--3col iss-formgrid--readonly">
             <div class="iss-field">
                 <span class="iss-field__label">{$host.LABEL}</span>
                 <span class="iss-field__control iss-field__value{if $NETWORK_VIEW.host eq ''} iss-field__value--empty{/if}">{if $NETWORK_VIEW.host eq ''}&mdash;{else}{$NETWORK_VIEW.host|escape}{/if}</span>
