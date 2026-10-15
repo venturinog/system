@@ -35,6 +35,7 @@
 {$route_orig.INPUT}
 </form>
 <script>
+{literal}
 (function () {
     'use strict';
 
@@ -105,4 +106,5 @@
         }
     });
 })();
+{/literal}
 </script>

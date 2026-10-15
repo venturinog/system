@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 26
+Release: 27
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -166,6 +166,9 @@ chmod 700 /var/lib/issabel/netconfig-rollback
 systemctl daemon-reload &>/dev/null || :
 systemctl enable issabel-netconfig-recover.service &>/dev/null || :
 
+# Pick up PHP code changes from this update without needing a manual restart.
+systemctl reload php-fpm &>/dev/null || :
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -194,6 +197,13 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-27
+- Network Parameters: wrap the static route form JavaScript in {literal} so
+  Smarty does not try to parse the JS regex quantifiers ({1,3}), which made the
+  New/Edit route form fail with a 500 error.
+- Reload php-fpm on install/update so PHP code and php.d changes are picked up
+  without a manual restart.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-26
 - Network Parameters: the static route form gets example placeholders and
   per-field validation with inline ok/fail feedback (red outline on error),

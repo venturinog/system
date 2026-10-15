@@ -480,7 +480,9 @@ function constructRouteForm($smarty, $module_name, $local_templates_dir, $arrFor
     }
 
     $oForm = new paloForm($smarty, $arrFormRoute);
-    $smarty->assign("ROUTE_ERRORS", $errors);
+    $smarty->assign("ROUTE_ERRORS", array_merge(
+        array('route_dev' => '', 'route_dest' => '', 'route_gw' => '', 'route_metric' => ''),
+        $errors));
     $smarty->assign("SAVE", _tr("Save"));
     $smarty->assign("CANCEL", _tr("Cancel"));
     $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
