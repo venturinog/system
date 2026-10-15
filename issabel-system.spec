@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 22
+Release: 23
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -194,6 +194,11 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-23
+- Network Parameters: redirect to the module id (network_parameters) instead of
+  the parent menu (network) after saving, cancelling or applying changes, so the
+  breadcrumb, tab and menu marker stay on the module.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-22
 - Network Parameters: add the new strings (static routes, IPv6, staged changes
   and pending confirmation) to all shipped languages.

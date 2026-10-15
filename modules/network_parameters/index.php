@@ -183,7 +183,7 @@ function _moduleContent(&$smarty, $module_name)
             $smarty->assign("mb_title", _tr("ERROR"));
             $smarty->assign("mb_message", $pNet->errMsg);
         } else {
-            header("Location: index.php?menu=network");
+            header("Location: index.php?menu=$module_name");
             return NULL;
         }
     }
@@ -199,16 +199,16 @@ function _moduleContent(&$smarty, $module_name)
                 $smarty->assign("mb_message", $pNet->errMsg);
             } else {
                 networkDraftClear();
-                header("Location: index.php?menu=network");
+                header("Location: index.php?menu=$module_name");
                 return NULL;
             }
         } else {
-            header("Location: index.php?menu=network");
+            header("Location: index.php?menu=$module_name");
             return NULL;
         }
     } else if(isset($_POST['discard_changes'])) {
         networkDraftClear();
-        header("Location: index.php?menu=network");
+        header("Location: index.php?menu=$module_name");
         return NULL;
     } else if(isset($_POST['save_route'])) {
         $routeResult = saveStaticRoute($pNet);
@@ -216,7 +216,7 @@ function _moduleContent(&$smarty, $module_name)
             $smarty->assign("mb_title", _tr("ERROR"));
             $smarty->assign("mb_message", $routeResult);
         } else {
-            header("Location: index.php?menu=network");
+            header("Location: index.php?menu=$module_name");
             return NULL;
         }
     } else if(isset($_POST['delete_route'])) {
@@ -225,11 +225,11 @@ function _moduleContent(&$smarty, $module_name)
             $smarty->assign("mb_title", _tr("ERROR"));
             $smarty->assign("mb_message", $routeResult);
         } else {
-            header("Location: index.php?menu=network");
+            header("Location: index.php?menu=$module_name");
             return NULL;
         }
     } else if(isset($_POST['cancel_route'])) {
-        header("Location: index.php?menu=network");
+        header("Location: index.php?menu=$module_name");
         return NULL;
     } else if(isset($_GET['action']) && $_GET['action'] == "route_new") {
         return constructRouteForm($smarty, $module_name, $local_templates_dir, $arrFormRoute, array(), "new");
@@ -280,7 +280,7 @@ function _moduleContent(&$smarty, $module_name)
                 'dns2'    => $_POST['dns2'],
                 'dns6'    => (string)getParameter('dns6'),
             ));
-            header("Location: index.php?menu=network");
+            header("Location: index.php?menu=$module_name");
             return NULL;
         } else {
             // Error
@@ -302,7 +302,7 @@ function _moduleContent(&$smarty, $module_name)
 
     } else if(isset($_POST['cancel_interfase_edit'])) {
 
-        header("Location: index.php?menu=network");
+        header("Location: index.php?menu=$module_name");
 
     } else if(isset($_POST['save_interfase_changes'])) {
 
@@ -319,7 +319,7 @@ function _moduleContent(&$smarty, $module_name)
                 'ip6addr'   => (string)getParameter('ip6addr'),
                 'ip6gw'     => (string)getParameter('ip6gw'),
             ));
-            header("Location: index.php?menu=network");
+            header("Location: index.php?menu=$module_name");
             return NULL;
         } else {
             // Error
@@ -407,7 +407,7 @@ function _moduleContent(&$smarty, $module_name)
 
             $nicname = isset($vlan_dictionary[$arrEth['Name']])?$vlan_dictionary[$arrEth['Name']]:$arrEth['Name'];
             $arrTmp    = array();
-            $arrTmp[0] = "&nbsp;<a href='?menu=network&action=editInterfase&id=$idEth'>" . $nicname . "</a>";
+            $arrTmp[0] = "&nbsp;<a href='?menu=$module_name&action=editInterfase&id=$idEth'>" . $nicname . "</a>";
             $arrTmp[1] = strtoupper($arrEth['Type']);
             $arrTmp[2] = $arrEth['Inet Addr'];
             $arrTmp[3] = $arrEth['Mask'];
