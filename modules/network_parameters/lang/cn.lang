@@ -78,5 +78,6 @@ $arrLangModule=array(
 "Static Routes" => "静态路由",
 "The default route is set with the Default Gateway field" => "默认路由通过“默认网关”字段设置",
 "Gateway" => "网关",
+"Gateway is required (use 0.0.0.0 for an on-link route)" => "网关为必填项（on-link 路由请使用 0.0.0.0）",
 );
 ?>

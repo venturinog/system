@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 25
+Release: 26
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -194,6 +194,14 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-26
+- Network Parameters: the static route form gets example placeholders and
+  per-field validation with inline ok/fail feedback (red outline on error),
+  both client and server side. The destination defaults to /32 when no prefix
+  is given; the gateway is required (0.0.0.0 means an on-link route); an empty
+  metric is left to NetworkManager. The netconfig helper also validates the
+  route specifications as a backstop.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-25
 - Network Parameters: use checkboxes in the static routes grid so several routes
   can be deleted at once, matching the other delete-list grids.

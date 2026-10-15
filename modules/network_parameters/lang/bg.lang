@@ -82,5 +82,6 @@ $arrLangModule=array(
 "Static Routes" => "Статични маршрути",
 "The default route is set with the Default Gateway field" => "Маршрутът по подразбиране се задава с полето Шлюз по подразбиране",
 "Gateway" => "Шлюз",
+"Gateway is required (use 0.0.0.0 for an on-link route)" => "Шлюзът е задължителен (използвайте 0.0.0.0 за on-link маршрут)",
 );
 ?>

@@ -142,19 +142,19 @@ function _moduleContent(&$smarty, $module_name)
         "route_dest"   => array("LABEL"                  => _tr("Destination"),
                                 "REQUIRED"               => "yes",
                                 "INPUT_TYPE"             => "TEXT",
-                                "INPUT_EXTRA_PARAM"      => array("style" => "width:160px"),
+                                "INPUT_EXTRA_PARAM"      => array("style" => "width:160px", "placeholder" => "10.0.0.0/8"),
                                 "VALIDATION_TYPE"        => "text",
                                 "VALIDATION_EXTRA_PARAM" => ""),
         "route_gw"     => array("LABEL"                  => _tr("Gateway"),
-                                "REQUIRED"               => "no",
+                                "REQUIRED"               => "yes",
                                 "INPUT_TYPE"             => "TEXT",
-                                "INPUT_EXTRA_PARAM"      => array("style" => "width:130px"),
+                                "INPUT_EXTRA_PARAM"      => array("style" => "width:130px", "placeholder" => "192.168.1.1"),
                                 "VALIDATION_TYPE"        => "text",
                                 "VALIDATION_EXTRA_PARAM" => ""),
         "route_metric" => array("LABEL"                  => _tr("Metric"),
                                 "REQUIRED"               => "no",
                                 "INPUT_TYPE"             => "TEXT",
-                                "INPUT_EXTRA_PARAM"      => array("style" => "width:60px"),
+                                "INPUT_EXTRA_PARAM"      => array("style" => "width:60px", "placeholder" => "100"),
                                 "VALIDATION_TYPE"        => "numeric",
                                 "VALIDATION_EXTRA_PARAM" => ""),
         "route_orig"   => array("LABEL"                  => "route_orig",
@@ -212,13 +212,22 @@ function _moduleContent(&$smarty, $module_name)
         return NULL;
     } else if(isset($_POST['save_route'])) {
         $routeResult = saveStaticRoute($pNet);
-        if ($routeResult !== TRUE) {
-            $smarty->assign("mb_title", _tr("ERROR"));
-            $smarty->assign("mb_message", $routeResult);
-        } else {
+        if ($routeResult === TRUE) {
             header("Location: index.php?menu=$module_name");
             return NULL;
         }
+        // Errores por campo: re-render del formulario marcando los campos.
+        $routeOrig = (string)getParameter('route_orig');
+        return constructRouteForm($smarty, $module_name, $local_templates_dir, $arrFormRoute,
+            array(
+                'route_dev'    => (string)getParameter('route_dev'),
+                'route_dest'   => (string)getParameter('route_dest'),
+                'route_gw'     => (string)getParameter('route_gw'),
+                'route_metric' => (string)getParameter('route_metric'),
+                'route_orig'   => $routeOrig,
+            ),
+            ($routeOrig === '') ? 'new' : 'edit',
+            isset($routeResult['errors']) ? $routeResult['errors'] : array());
     } else if(isset($_POST['delete_route'])) {
         $routeResult = deleteStaticRoute($pNet);
         if ($routeResult !== TRUE) {
@@ -458,9 +467,20 @@ function _moduleContent(&$smarty, $module_name)
     return $strReturn;
 }
 
-function constructRouteForm($smarty, $module_name, $local_templates_dir, $arrFormRoute, $data, $action)
+function constructRouteForm($smarty, $module_name, $local_templates_dir, $arrFormRoute, $data, $action, $errors = array())
 {
+    // Marca los campos de texto con error (recuadro rojo).
+    foreach (array('route_dest', 'route_gw', 'route_metric') as $f) {
+        if (!isset($errors[$f])) continue;
+        if (!isset($arrFormRoute[$f]['INPUT_EXTRA_PARAM']) || !is_array($arrFormRoute[$f]['INPUT_EXTRA_PARAM']))
+            $arrFormRoute[$f]['INPUT_EXTRA_PARAM'] = array();
+        $cls = isset($arrFormRoute[$f]['INPUT_EXTRA_PARAM']['class'])
+            ? $arrFormRoute[$f]['INPUT_EXTRA_PARAM']['class'].' ' : 'form-control ';
+        $arrFormRoute[$f]['INPUT_EXTRA_PARAM']['class'] = $cls.'is-invalid';
+    }
+
     $oForm = new paloForm($smarty, $arrFormRoute);
+    $smarty->assign("ROUTE_ERRORS", $errors);
     $smarty->assign("SAVE", _tr("Save"));
     $smarty->assign("CANCEL", _tr("Cancel"));
     $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
@@ -516,29 +536,65 @@ function renderRoutesGrid($smarty, $module_name, &$pNet)
     return $oGrid->fetchGrid();
 }
 
-// Da de alta (o reemplaza) una ruta estática. Devuelve TRUE o el mensaje de error.
+// Da de alta (o reemplaza) una ruta estática. Devuelve TRUE, o un arreglo con
+// los errores por campo: array('errors' => array(campo => mensaje)).
 function saveStaticRoute(&$pNet)
 {
-    $dev    = getParameter('route_dev');
+    $dev    = (string)getParameter('route_dev');
     $dest   = trim((string)getParameter('route_dest'));
     $gw     = trim((string)getParameter('route_gw'));
     $metric = trim((string)getParameter('route_metric'));
-    $orig   = getParameter('route_orig');
+    $orig   = (string)getParameter('route_orig');
 
-    if (is_null($dev) || $dev === '') return _tr("Invalid interface");
-    if (!preg_match('/^\d{1,3}(\.\d{1,3}){3}\/\d{1,2}$/', $dest))
-        return _tr("Invalid destination (use CIDR, e.g. 10.0.0.0/8)");
-    if ($dest === '0.0.0.0/0')
-        return _tr("The default route is set with the Default Gateway field");
-    if ($gw !== '' && !preg_match('/^\d{1,3}(\.\d{1,3}){3}$/', $gw))
-        return _tr("Invalid gateway");
-    if ($metric !== '' && !ctype_digit($metric))
-        return _tr("Invalid metric");
+    $errors = array();
 
-    $spec = $dest.($gw !== '' ? ' '.$gw : '').($metric !== '' ? ' '.$metric : '');
+    if ($dev === '') $errors['route_dev'] = _tr("Invalid interface");
+
+    // Destino: IPv4 CIDR. Si no se escribe máscara, se asume /32.
+    if ($dest === '') {
+        $errors['route_dest'] = _tr("Invalid destination (use CIDR, e.g. 10.0.0.0/8)");
+    } else {
+        if (strpos($dest, '/') === FALSE) $dest .= '/32';
+        $m = NULL;
+        if (!preg_match('/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/', $dest, $m)) {
+            $errors['route_dest'] = _tr("Invalid destination (use CIDR, e.g. 10.0.0.0/8)");
+        } else if ($m[1] > 255 || $m[2] > 255 || $m[3] > 255 || $m[4] > 255 || $m[5] > 32) {
+            $errors['route_dest'] = _tr("Invalid destination (use CIDR, e.g. 10.0.0.0/8)");
+        } else if ($dest === '0.0.0.0/0' || $dest === '0.0.0.0') {
+            $errors['route_dest'] = _tr("The default route is set with the Default Gateway field");
+        }
+    }
+
+    // Gateway obligatorio. 0.0.0.0 significa ruta on-link (sin next-hop).
+    $onlink = FALSE;
+    if ($gw === '') {
+        $errors['route_gw'] = _tr("Gateway is required (use 0.0.0.0 for an on-link route)");
+    } else if ($gw === '0.0.0.0') {
+        $onlink = TRUE;
+    } else {
+        $m = NULL;
+        if (!preg_match('/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/', $gw, $m)
+            || $m[1] > 255 || $m[2] > 255 || $m[3] > 255 || $m[4] > 255) {
+            $errors['route_gw'] = _tr("Invalid gateway");
+        }
+    }
+
+    // Métrica opcional. Vacío -> NM decide (no se envía).
+    if ($metric !== '' && (!ctype_digit($metric) || (float)$metric > 4294967295)) {
+        $errors['route_metric'] = _tr("Invalid metric");
+    }
+
+    if (count($errors) > 0) return array('errors' => $errors);
+
+    // Spec: "dest [gw] [metric]". On-link -> solo dest (la métrica se omite).
+    $spec = $dest;
+    if (!$onlink) {
+        $spec .= ' '.$gw;
+        if ($metric !== '') $spec .= ' '.$metric;
+    }
 
     $list = routeBaseList($pNet, $dev);
-    if (!is_null($orig) && $orig !== '') {
+    if ($orig !== '') {
         $list = array_values(array_diff($list, array($orig)));
     }
     $list = array_values(array_diff($list, array($spec)));

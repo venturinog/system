@@ -79,5 +79,6 @@ $arrLangModule=array(
 "Static Routes" => "Rutas estáticas",
 "The default route is set with the Default Gateway field" => "La ruta por defecto se define con el campo Puerta de Enlace",
 "Gateway" => "Puerta de enlace",
+"Gateway is required (use 0.0.0.0 for an on-link route)" => "La puerta de enlace es obligatoria (use 0.0.0.0 para una ruta on-link)",
 );
 ?>

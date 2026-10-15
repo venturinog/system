@@ -82,5 +82,6 @@ $arrLangModule=array(
 "Static Routes" => "Statične rute",
 "The default route is set with the Default Gateway field" => "Zadana ruta postavlja se poljem Zadani gateway",
 "Gateway" => "Poveznik",
+"Gateway is required (use 0.0.0.0 for an on-link route)" => "Gateway je obavezan (koristite 0.0.0.0 za on-link rutu)",
 );
 ?>

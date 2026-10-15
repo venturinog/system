@@ -78,5 +78,6 @@ $arrLangModule=array(
 "Static Routes" => "Statiska rutter",
 "The default route is set with the Default Gateway field" => "Standardrutten anges i fältet Standardgateway",
 "Gateway" => "Gateway",
+"Gateway is required (use 0.0.0.0 for an on-link route)" => "Gateway krävs (använd 0.0.0.0 för en on-link-rutt)",
 );
 ?>

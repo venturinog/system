@@ -82,5 +82,6 @@ $arrLangModule=array(
 "Static Routes" => "Rotte statiche",
 "The default route is set with the Default Gateway field" => "La rotta predefinita si imposta con il campo Gateway predefinito",
 "Gateway" => "Gateway",
+"Gateway is required (use 0.0.0.0 for an on-link route)" => "Il gateway è obbligatorio (usa 0.0.0.0 per una rotta on-link)",
 );
 ?>

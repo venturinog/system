@@ -82,5 +82,6 @@ $arrLangModule=array(
 "Static Routes" => "Statikus útvonalak",
 "The default route is set with the Default Gateway field" => "Az alapértelmezett útvonalat az Alapértelmezett átjáró mező adja meg",
 "Gateway" => "Átjáró",
+"Gateway is required (use 0.0.0.0 for an on-link route)" => "Az átjáró kötelező (használjon 0.0.0.0-t on-link útvonalhoz)",
 );
 ?>

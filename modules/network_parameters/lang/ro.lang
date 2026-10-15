@@ -82,5 +82,6 @@ $arrLangModule=array(
 "Static Routes" => "Rute statice",
 "The default route is set with the Default Gateway field" => "Ruta implicită se setează cu câmpul Gateway implicit",
 "Gateway" => "Gateway",
+"Gateway is required (use 0.0.0.0 for an on-link route)" => "Gateway-ul este obligatoriu (folosiți 0.0.0.0 pentru o rută on-link)",
 );
 ?>

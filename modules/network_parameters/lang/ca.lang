@@ -82,5 +82,6 @@ $arrLangModule=array(
 "Static Routes" => "Rutes estàtiques",
 "The default route is set with the Default Gateway field" => "La ruta per defecte es defineix amb el camp Passarel·la per defecte",
 "Gateway" => "Porta d'enllaç",
+"Gateway is required (use 0.0.0.0 for an on-link route)" => "La passarel·la és obligatòria (utilitzeu 0.0.0.0 per a una ruta on-link)",
 );
 ?>
