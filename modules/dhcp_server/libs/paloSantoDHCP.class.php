@@ -51,16 +51,8 @@ class PaloSantoDHCP
             $regs = NULL;
             $patron = '/^\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*-\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*$/';
             if (preg_match($patron, $subnet['pools'][0]['pool'], $regs)) {
-                $ini = explode('.', $regs[1]);
-                $fin = explode('.', $regs[2]);
-                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_ini_1"] = $ini[0];
-                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_ini_2"] = $ini[1];
-                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_ini_3"] = $ini[2];
-                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_ini_4"] = $ini[3];
-                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_fin_1"] = $fin[0];
-                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_fin_2"] = $fin[1];
-                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_fin_3"] = $fin[2];
-                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_fin_4"] = $fin[3];
+                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_ini"] = $regs[1];
+                $arrConfigurationDHCP["IPS_RANGE"]["in_ip_fin"] = $regs[2];
             }
         }
 
@@ -75,56 +67,25 @@ class PaloSantoDHCP
             foreach ($scope['option-data'] as $od) {
                 $name = isset($od['name']) ? $od['name'] : (isset($od['code']) ? $od['code'] : NULL);
                 if ($name === 'routers' && !isset($arrConfigurationDHCP["GATEWAY"])) {
-                    $ip = explode('.', $od['data']);
-                    $arrConfigurationDHCP["GATEWAY"]["in_gw_1"] = $ip[0];
-                    $arrConfigurationDHCP["GATEWAY"]["in_gw_2"] = $ip[1];
-                    $arrConfigurationDHCP["GATEWAY"]["in_gw_3"] = $ip[2];
-                    $arrConfigurationDHCP["GATEWAY"]["in_gw_4"] = $ip[3];
+                    $arrConfigurationDHCP["GATEWAY"]["in_gw"] = $od['data'];
                 } elseif ($name === 'netbios-name-servers' && !isset($arrConfigurationDHCP["WINS"])) {
-                    $ip = explode('.', $od['data']);
-                    $arrConfigurationDHCP["WINS"]["in_wins_1"] = $ip[0];
-                    $arrConfigurationDHCP["WINS"]["in_wins_2"] = $ip[1];
-                    $arrConfigurationDHCP["WINS"]["in_wins_3"] = $ip[2];
-                    $arrConfigurationDHCP["WINS"]["in_wins_4"] = $ip[3];
+                    $arrConfigurationDHCP["WINS"]["in_wins"] = $od['data'];
                 } elseif ($name === 'domain-name-servers') {
                     $dnsList = preg_split('/,\s*/', $od['data']);
                     foreach ($dnsList as $dnsString) {
-                        $ip = explode('.', $dnsString);
                         if (!isset($arrConfigurationDHCP["DNS1"])) {
-                            $arrConfigurationDHCP["DNS1"]["in_dns1_1"] = $ip[0];
-                            $arrConfigurationDHCP["DNS1"]["in_dns1_2"] = $ip[1];
-                            $arrConfigurationDHCP["DNS1"]["in_dns1_3"] = $ip[2];
-                            $arrConfigurationDHCP["DNS1"]["in_dns1_4"] = $ip[3];
+                            $arrConfigurationDHCP["DNS1"]["in_dns1"] = $dnsString;
                         } else if (!isset($arrConfigurationDHCP["DNS2"])) {
-                            $arrConfigurationDHCP["DNS2"]["in_dns2_1"] = $ip[0];
-                            $arrConfigurationDHCP["DNS2"]["in_dns2_2"] = $ip[1];
-                            $arrConfigurationDHCP["DNS2"]["in_dns2_3"] = $ip[2];
-                            $arrConfigurationDHCP["DNS2"]["in_dns2_4"] = $ip[3];
+                            $arrConfigurationDHCP["DNS2"]["in_dns2"] = $dnsString;
                         }
                     }
                 }
             }
         }
 
-        // GATEWAY NETMASK (deducido del prefijo de la subred)
-        if (isset($subnet['subnet'])) {
-            $regs = NULL;
-            if (preg_match('#/(\d+)$#', $subnet['subnet'], $regs)) {
-                $iMask = (0xFFFFFFFF << (32 - (int)$regs[1])) & 0xFFFFFFFF;
-                $arrConfigurationDHCP["GATEWAY_NETMASK"]["in_gwm_1"] = ($iMask >> 24) & 0xFF;
-                $arrConfigurationDHCP["GATEWAY_NETMASK"]["in_gwm_2"] = ($iMask >> 16) & 0xFF;
-                $arrConfigurationDHCP["GATEWAY_NETMASK"]["in_gwm_3"] = ($iMask >>  8) & 0xFF;
-                $arrConfigurationDHCP["GATEWAY_NETMASK"]["in_gwm_4"] = ($iMask      ) & 0xFF;
-            }
-        }
-
         // NEXT SERVER (PXE Boot Server)
         if (isset($subnet['next-server'])) {
-            $ip = explode('.', $subnet['next-server']);
-            $arrConfigurationDHCP["NEXT"]["in_next_1"] = $ip[0];
-            $arrConfigurationDHCP["NEXT"]["in_next_2"] = $ip[1];
-            $arrConfigurationDHCP["NEXT"]["in_next_3"] = $ip[2];
-            $arrConfigurationDHCP["NEXT"]["in_next_4"] = $ip[3];
+            $arrConfigurationDHCP["NEXT"]["in_next"] = $subnet['next-server'];
         }
         //TODO: filename parameter
 
@@ -135,22 +96,10 @@ class PaloSantoDHCP
 
         //Lleno de vacio los q no se encontraron... Para tener q mostrar .. esto solo por presentacion.
         if (!isset($arrConfigurationDHCP["DNS2"])) {
-            $arrConfigurationDHCP["DNS2"]["in_dns2_1"] = "";
-            $arrConfigurationDHCP["DNS2"]["in_dns2_2"] = "";
-            $arrConfigurationDHCP["DNS2"]["in_dns2_3"] = "";
-            $arrConfigurationDHCP["DNS2"]["in_dns2_4"] = "";
+            $arrConfigurationDHCP["DNS2"]["in_dns2"] = "";
         }
         if (!isset($arrConfigurationDHCP["WINS"])) {
-            $arrConfigurationDHCP["WINS"]["in_wins_1"] = "";
-            $arrConfigurationDHCP["WINS"]["in_wins_2"] = "";
-            $arrConfigurationDHCP["WINS"]["in_wins_3"] = "";
-            $arrConfigurationDHCP["WINS"]["in_wins_4"] = "";
-        }
-        if (!isset($arrConfigurationDHCP["GATEWAY_NETMASK"])) {
-            $arrConfigurationDHCP["GATEWAY_NETMASK"]["in_gwm_1"] = "";
-            $arrConfigurationDHCP["GATEWAY_NETMASK"]["in_gwm_2"] = "";
-            $arrConfigurationDHCP["GATEWAY_NETMASK"]["in_gwm_3"] = "";
-            $arrConfigurationDHCP["GATEWAY_NETMASK"]["in_gwm_4"] = "";
+            $arrConfigurationDHCP["WINS"]["in_wins"] = "";
         }
         if (!isset($arrConfigurationDHCP["LEASE_TIME"])) {
             $arrConfigurationDHCP["LEASE_TIME"]["in_lease_time"] = "7200";
@@ -229,12 +178,12 @@ class PaloSantoDHCP
             ' --ip-start '.escapeshellcmd($ip_ini).
             ' --ip-end '.escapeshellcmd($ip_fin).
             ' --lease-time '.escapeshellcmd($in_lease_time).
-            (($ip_gw != '...') ? ' --gateway '.escapeshellcmd($ip_gw) : '').
-            (($ip_wins != '...') ? ' --wins '.escapeshellcmd($ip_wins) : '').
-            (($ip_next != '...') ? ' --next-server '.escapeshellcmd($ip_next) : '').
+            (($ip_gw != '') ? ' --gateway '.escapeshellcmd($ip_gw) : '').
+            (($ip_wins != '') ? ' --wins '.escapeshellcmd($ip_wins) : '').
+            (($ip_next != '') ? ' --next-server '.escapeshellcmd($ip_next) : '').
             (($in_filename != '') ? ' --filename '.escapeshellcmd($in_filename) : '').
-            (($ip_dns1 != '...') ? ' --dns1 '.escapeshellcmd($ip_dns1) : '').
-            (($ip_dns2 != '...') ? ' --dns2 '.escapeshellcmd($ip_dns2) : '').
+            (($ip_dns1 != '') ? ' --dns1 '.escapeshellcmd($ip_dns1) : '').
+            (($ip_dns2 != '') ? ' --dns2 '.escapeshellcmd($ip_dns2) : '').
             ' 2>&1';
         $output = $ret = NULL;
         exec($sComando, $output, $ret);

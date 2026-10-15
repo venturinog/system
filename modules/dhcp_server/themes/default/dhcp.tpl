@@ -13,78 +13,120 @@
     </div>
     <section class="iss-card">
         <div class="iss-card__body iss-formgrid">
-            <div class="iss-field">
+            <div class="iss-field iss-field--full">
                 <span class="iss-field__label">{$STATUS}</span>
-                <span class="iss-field__control">{$DHCP_STATUS}</span>
+                <span class="iss-field__control iss-field__value{if !$DHCP_STATUS_ACTIVE} iss-field__value--empty{/if}">{$DHCP_STATUS}</span>
             </div>
-            <div class="iss-field iss-field--full">
-                <span class="iss-field__label">{$START_RANGE_OF_IPS}&nbsp;<span class="iss-required">*</span></span>
-                <span class="iss-field__control iss-ip-octets">
-                    {$in_ip_ini_1.LABEL}{$in_ip_ini_1.INPUT}
-                    {$in_ip_ini_2.LABEL}{$in_ip_ini_2.INPUT}
-                    {$in_ip_ini_3.LABEL}{$in_ip_ini_3.INPUT}
-                    {$in_ip_ini_4.LABEL}{$in_ip_ini_4.INPUT}
-                </span>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_ip_ini.LABEL}&nbsp;<span class="iss-required">*</span></span>
+                <span class="iss-field__control">{$in_ip_ini.INPUT}</span>
+                {if $ERRORS.in_ip_ini}<div class="invalid-feedback d-block">{$ERRORS.in_ip_ini}</div>{/if}
             </div>
-            <div class="iss-field iss-field--full">
-                <span class="iss-field__label">{$END_RANGE_OF_IPS}&nbsp;<span class="iss-required">*</span></span>
-                <span class="iss-field__control iss-ip-octets">
-                    {$in_ip_fin_1.LABEL}{$in_ip_fin_1.INPUT}
-                    {$in_ip_fin_2.LABEL}{$in_ip_fin_2.INPUT}
-                    {$in_ip_fin_3.LABEL}{$in_ip_fin_3.INPUT}
-                    {$in_ip_fin_4.LABEL}{$in_ip_fin_4.INPUT}
-                </span>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_ip_fin.LABEL}&nbsp;<span class="iss-required">*</span></span>
+                <span class="iss-field__control">{$in_ip_fin.INPUT}</span>
+                {if $ERRORS.in_ip_fin}<div class="invalid-feedback d-block">{$ERRORS.in_ip_fin}</div>{/if}
             </div>
             <div class="iss-field">
                 <span class="iss-field__label">{$in_lease_time.LABEL}&nbsp;<span class="iss-required">*</span></span>
-                <span class="iss-field__control">{$in_lease_time.INPUT}&nbsp;&nbsp;({$OF_1_TO_50000_SECONDS})</span>
+                <span class="iss-field__control">{$in_lease_time.INPUT}</span>
+                <div class="iss-field__help">{$OF_1_TO_50000_SECONDS}</div>
+                {if $ERRORS.in_lease_time}<div class="invalid-feedback d-block">{$ERRORS.in_lease_time}</div>{/if}
             </div>
-            <div class="iss-field iss-field--full">
-                <span class="iss-field__label">{$DNS_1}</span>
-                <span class="iss-field__control iss-ip-octets">
-                    {$in_dns1_1.LABEL}{$in_dns1_1.INPUT}
-                    {$in_dns1_2.LABEL}{$in_dns1_2.INPUT}
-                    {$in_dns1_3.LABEL}{$in_dns1_3.INPUT}
-                    {$in_dns1_4.LABEL}{$in_dns1_4.INPUT}&nbsp;&nbsp;({$OPTIONAL})
-                </span>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_dns1.LABEL}</span>
+                <span class="iss-field__control">{$in_dns1.INPUT}</span>
+                {if $ERRORS.in_dns1}<div class="invalid-feedback d-block">{$ERRORS.in_dns1}</div>{/if}
             </div>
-            <div class="iss-field iss-field--full">
-                <span class="iss-field__label">{$DNS_2}</span>
-                <span class="iss-field__control iss-ip-octets">
-                    {$in_dns2_1.LABEL}{$in_dns2_1.INPUT}
-                    {$in_dns2_2.LABEL}{$in_dns2_2.INPUT}
-                    {$in_dns2_3.LABEL}{$in_dns2_3.INPUT}
-                    {$in_dns2_4.LABEL}{$in_dns2_4.INPUT}&nbsp;&nbsp;({$OPTIONAL})
-                </span>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_dns2.LABEL}</span>
+                <span class="iss-field__control">{$in_dns2.INPUT}</span>
+                {if $ERRORS.in_dns2}<div class="invalid-feedback d-block">{$ERRORS.in_dns2}</div>{/if}
             </div>
-            <div class="iss-field iss-field--full">
-                <span class="iss-field__label">{$WINS}</span>
-                <span class="iss-field__control iss-ip-octets">
-                    {$in_wins_1.LABEL}{$in_wins_1.INPUT}
-                    {$in_wins_2.LABEL}{$in_wins_2.INPUT}
-                    {$in_wins_3.LABEL}{$in_wins_3.INPUT}
-                    {$in_wins_4.LABEL}{$in_wins_4.INPUT}&nbsp;&nbsp;({$OPTIONAL})
-                </span>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_wins.LABEL}</span>
+                <span class="iss-field__control">{$in_wins.INPUT}</span>
+                {if $ERRORS.in_wins}<div class="invalid-feedback d-block">{$ERRORS.in_wins}</div>{/if}
             </div>
-            <div class="iss-field iss-field--full">
-                <span class="iss-field__label">{$GATEWAY}</span>
-                <span class="iss-field__control iss-ip-octets">
-                    {$in_gw_1.LABEL}{$in_gw_1.INPUT}
-                    {$in_gw_2.LABEL}{$in_gw_2.INPUT}
-                    {$in_gw_3.LABEL}{$in_gw_3.INPUT}
-                    {$in_gw_4.LABEL}{$in_gw_4.INPUT}&nbsp;&nbsp;({$OPTIONAL})
-                </span>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_gw.LABEL}</span>
+                <span class="iss-field__control">{$in_gw.INPUT}</span>
+                {if $ERRORS.in_gw}<div class="invalid-feedback d-block">{$ERRORS.in_gw}</div>{/if}
             </div>
-            <div class="iss-field iss-field--full">
-                <span class="iss-field__label">{$NEXT_SERVER}</span>
-                <span class="iss-field__control iss-ip-octets">
-                    {$in_next_1.LABEL}{$in_next_1.INPUT}
-                    {$in_next_2.LABEL}{$in_next_2.INPUT}
-                    {$in_next_3.LABEL}{$in_next_3.INPUT}
-                    {$in_next_4.LABEL}{$in_next_4.INPUT}&nbsp;&nbsp;({$OPTIONAL})
-                </span>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_next.LABEL}</span>
+                <span class="iss-field__control">{$in_next.INPUT}</span>
+                {if $ERRORS.in_next}<div class="invalid-feedback d-block">{$ERRORS.in_next}</div>{/if}
             </div>
         </div>
     </section>
 </div>
 </form>
+<script>
+{literal}
+(function () {
+    'use strict';
+
+    function q(name) { return document.querySelector('[name="' + name + '"]'); }
+    function validV4(v) {
+        var m = (v || '').trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+        if (!m) return false;
+        for (var i = 1; i <= 4; i++) if (parseInt(m[i], 10) > 255) return false;
+        return true;
+    }
+    function mark(el, ok) {
+        if (!el) return;
+        el.classList.remove('is-valid', 'is-invalid');
+        el.classList.add(ok ? 'is-valid' : 'is-invalid');
+    }
+
+    var ini = q('in_ip_ini'), fin = q('in_ip_fin'), lease = q('in_lease_time');
+    var optional = [q('in_dns1'), q('in_dns2'), q('in_wins'), q('in_gw'), q('in_next')];
+    var first = ini || fin;
+    if (!first) return;
+    var form = first.form;
+    if (!form) return;
+
+    function checkAll(touched) {
+        var ok = true;
+
+        var vIni = !!ini && ini.value.trim() !== '' && validV4(ini.value.trim());
+        if (touched || (ini && ini.value.trim() !== '')) mark(ini, vIni);
+        ok = vIni && ok;
+
+        var vFin = !!fin && fin.value.trim() !== '' && validV4(fin.value.trim());
+        if (touched || (fin && fin.value.trim() !== '')) mark(fin, vFin);
+        ok = vFin && ok;
+
+        var lv = lease ? (lease.value || '').trim() : '';
+        var vLease = !!lease && /^\d+$/.test(lv) && parseInt(lv, 10) >= 1 && parseInt(lv, 10) <= 50000;
+        if (touched || lv !== '') mark(lease, vLease);
+        ok = vLease && ok;
+
+        optional.forEach(function (el) {
+            if (!el) return;
+            if (el.value.trim() === '') { el.classList.remove('is-valid', 'is-invalid'); return; }
+            var v = validV4(el.value.trim());
+            mark(el, v);
+            ok = v && ok;
+        });
+
+        return ok;
+    }
+
+    [ini, fin, lease].concat(optional).forEach(function (el) {
+        if (!el) return;
+        el.addEventListener('input', function () { checkAll(true); });
+        el.addEventListener('blur', function () { checkAll(true); });
+    });
+
+    form.addEventListener('submit', function (e) {
+        // Solo el boton de guardado valida; Start/Stop del servicio no.
+        if (e.submitter && e.submitter.name !== 'in_actualizar_conf_red') return;
+        if (!checkAll(true)) { e.preventDefault(); return false; }
+    });
+
+    checkAll(false);
+})();
+{/literal}
+</script>

@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 34
+Release: 35
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-35
+- DHCP Server: replace the four dotted octet inputs with a single IPv4 text box
+  per address, isolate field-level validation errors and re-render the form
+  instead of lumping them into a global message, and add live client-side
+  validation. Cards, placeholders and the required/optional convention follow the
+  module style guide.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-34
 - Network Parameters: label the interface edit form button 'Save' instead of
   'Apply Changes', matching the general parameters and static route forms. The

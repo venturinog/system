@@ -57,5 +57,8 @@ $arrLangModule=array(
 "Inactive"=>"Неактивный",
 "Information" => "Информация",
 "Active"=>"Активный",
+"%s is required" => "%s обязательно",
+"%s is invalid" => "%s недопустимо",
+"PXE Boot Server" => "PXE-сервер загрузки",
 );
 ?>
