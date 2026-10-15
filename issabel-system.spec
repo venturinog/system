@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 33
+Release: 34
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,11 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-34
+- Network Parameters: label the interface edit form button 'Save' instead of
+  'Apply Changes', matching the general parameters and static route forms. The
+  button only stages the change; it is the pending changes panel that applies it.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-33
 - Network Parameters: show action errors inside the module page and re-render it
   when applying the staged change set or deleting a static route fails, instead

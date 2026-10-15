@@ -4,7 +4,7 @@
         <span class="iss-form__hint"><span class="iss-required">*</span> {$REQUIRED_FIELD}</span>
         <div class="iss-form__buttons">
             {if $mode eq 'input'}
-            <input class="button" type="submit" name="save_interfase_changes" value="{$APPLY_CHANGES}"
+            <input class="button" type="submit" name="save_interfase_changes" value="{$SAVE}"
                    onClick="return confirmSubmit('{$CONFIRM_EDIT}')">
             <input class="button" type="submit" name="cancel_interfase_edit" value="{$CANCEL}">
             {else}

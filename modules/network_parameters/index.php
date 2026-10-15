@@ -588,7 +588,7 @@ function constructInterfaseForm($smarty, $module_name, $local_templates_dir, $ar
     $smarty->assign("INTERFASE_ERRORS", array_merge(
         array('ip' => '', 'mask' => '', 'ip6addr' => '', 'ip6gw' => ''), $errors));
     $smarty->assign("CANCEL", _tr("Cancel"));
-    $smarty->assign("APPLY_CHANGES", _tr("Apply Changes"));
+    $smarty->assign("SAVE", _tr("Save"));
     $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
     $smarty->assign("EDIT_PARAMETERS", _tr("Edit Network Parameters"));
     $smarty->assign("icon", "/modules/$module_name/images/system_hardware_detector.png");
