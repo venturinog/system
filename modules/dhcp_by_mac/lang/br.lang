@@ -43,5 +43,6 @@ $arrLangModule=array(
 'Invalid IP address' => 'Endereço IP inválido',
 'Invalid MAC address' => 'Endereço MAC inválido',
 'Duplicate IP or MAC' => 'IP ou MAC duplicado',
+"%s is required" => "%s é obrigatório",
 );
 ?>

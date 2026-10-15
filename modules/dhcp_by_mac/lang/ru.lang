@@ -45,5 +45,6 @@ $arrLangModule=array(
 "Hide Filter" => "Скрыть Фильтр",
 "Page" => "Страница",
 "No records match the filter criteria" => "Нет записей соответствуют критериям фильтра",
+"%s is required" => "%s обязательно",
 );
 ?>

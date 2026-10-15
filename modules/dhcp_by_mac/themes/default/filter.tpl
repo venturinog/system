@@ -1,8 +1,15 @@
-<table width="99%" border="0" cellspacing="0" cellpadding="0" align="center">
-    <tr class="letra12">
-        <td align="left">
-            {$filter_field.LABEL}:&nbsp;&nbsp;{$filter_field.INPUT}&nbsp;&nbsp;{$filter_value.INPUT}
-            <input class="button" type="submit" name="show" value="{$SHOW}" />
-        </td>
-    </tr>
-</table>
+<div class="iss-form" style="margin-bottom:1.25rem;">
+    <section class="iss-card">
+        <div class="iss-card__body iss-formgrid">
+            <div class="iss-field iss-field--full">
+                <span class="iss-field__label">{$filter_field.LABEL}</span>
+                <span class="iss-field__control">
+                    <span class="iss-inline-field">
+                        {$filter_field.INPUT}{$filter_value.INPUT}
+                        <input class="button" type="submit" name="show" value="{$SHOW}" />
+                    </span>
+                </span>
+            </div>
+        </div>
+    </section>
+</div>

@@ -190,26 +190,21 @@ function createFieldFilter(){
 function viewFormDHCP_Configuration($smarty, $module_name, $local_templates_dir, &$pDB, $arrConf, $edit="true")
 {
     $pDHCP_Configuration = new paloSantoDHCP_Configuration($pDB);
-
     $arrFormDHCP_Configuration = createFieldForm();
-    $oForm = new paloForm($smarty,$arrFormDHCP_Configuration);
-    
+
     //begin, Form data persistence to errors and other events.
     $_DATA  = $_POST;
     $action = getParameter("action");
     $id     = getParameter("id");
-    $smarty->assign("ID", $id); //persistence id with input hidden in tpl
-    
-    if($action=="view_dhcpconf"){
-        $oForm->setViewMode();
-    }else if($edit=="true"){
-        $oForm->setEditMode();
-    }
 
+    $mode = 'input';
+    if($action=="view_dhcpconf") $mode = 'view';
+    else if($edit=="true")       $mode = 'edit';
     //end, Form data persistence to errors and other events.
+
     if($action=="view_dhcpconf" || $edit=="true"){ // the action is to view or view_edit.
         $dataDhcpConfig = $pDHCP_Configuration->leerInfoIPFija($id);
-        if(is_array($dataDhcpConfig) & count($dataDhcpConfig)>0)
+        if(is_array($dataDhcpConfig) && count($dataDhcpConfig)>0)
             $_DATA = $dataDhcpConfig;
         else{
             $smarty->assign("mb_title", _tr('Error get Data'));
@@ -217,81 +212,72 @@ function viewFormDHCP_Configuration($smarty, $module_name, $local_templates_dir,
         }
     }
 
-    $smarty->assign("SAVE", _tr('Save'));
-    $smarty->assign("EDIT", _tr('Edit'));
-    $smarty->assign("CANCEL", _tr('Cancel'));
-    $smarty->assign("REQUIRED_FIELD", _tr('Required field'));
-    $smarty->assign("icon", "modules/$module_name/images/system_network_assign_ip_address.png");
-    $smarty->assign("HOST_NAME", _tr('ex_hostname'));
-    $smarty->assign("IP_ADDRESS", _tr('ex_ipaddress'));
-    $smarty->assign("MAC_ADDRESS", _tr('ex_mac_address'));
-
-    $htmlForm = $oForm->fetchForm("$local_templates_dir/form.tpl",_tr('Assign IP Address to Host'), $_DATA);
-    $content = "<form  method='POST' style='margin-bottom:0;' action='?menu=$module_name'>".$htmlForm."</form>";
-
-    return $content;
+    return renderDHCPForm($smarty, $module_name, $local_templates_dir, $arrFormDHCP_Configuration, $mode, $_DATA);
 }
 
 
 function saveDHCP_Configuration($smarty, $module_name, $local_templates_dir, &$pDB, $arrConf, $update=FALSE){
     $pDHCP_Configuration = new paloSantoDHCP_Configuration($pDB);
     $arrFormDHCP_Configuration = createFieldForm();
-    $oForm = new paloForm($smarty,$arrFormDHCP_Configuration);
-    if ($update) $oForm->setEditMode();   
 
-    $smarty->assign("REQUIRED_FIELD", _tr('Required field'));
-    $smarty->assign("SAVE", _tr('Save'));
-    $smarty->assign("EDIT", _tr('Edit'));
-    $smarty->assign("CANCEL", _tr('Cancel'));
-    $smarty->assign("icon", "modules/$module_name/images/system_network_assign_ip_address.png");
-    $smarty->assign("ID", getParameter('id'));
-    
-    if(!$oForm->validateForm($_POST)) {
-        // Falla la validación básica del formulario
-        $smarty->assign("mb_title", _tr('Validation Error'));
-        $arrErrores = $oForm->arrErroresValidacion;
-        $strErrorMsg = "<b>"._tr('The following fields contain errors').":</b><br/>";
-        if(is_array($arrErrores) && count($arrErrores) > 0){
-            foreach($arrErrores as $k=>$v) {
-                $strErrorMsg .= "$k, ";
-            }
-        }
-        $smarty->assign("mb_message", $strErrorMsg);
+    // Un "nombre apellido" se guarda como "nombre_apellido" (comportamiento previo)
+    $hostname = getParameter("hostname");
+    if(preg_match("/^([a-zA-Z]+)[[:space:]]+([a-zA-Z]+)$/", $hostname, $arrReg))
+        $hostname = $arrReg[1]."_".$arrReg[2];
 
-        $htmlForm = $oForm->fetchForm("$local_templates_dir/form.tpl", _tr('Assign IP Address to Host'), $_POST);
-        $contenidoModulo = "<form  method='POST' enctype='multipart/form-data' style='margin-bottom:0;' action='?menu=$module_name'>".$htmlForm."</form>";
-        return $contenidoModulo;
-    }else {
-        $arrDhcpPost = array();
-        $hostname = getParameter("hostname");
-        if(preg_match("/^([a-zA-Z]+)[[:space:]]+([a-zA-Z]+)$/", $hostname, $arrReg))
-            $arrDhcpPost['hostname'] = $arrReg[1]."_".$arrReg[2];
-        else $arrDhcpPost['hostname'] = getParameter("hostname");
+    $ipaddress  = getParameter("ipaddress");
+    $macaddress = getParameter("macaddress");
 
-        $arrDhcpPost['ipaddress'] = getParameter("ipaddress");
-        $arrDhcpPost['macaddress'] = getParameter("macaddress");
-        
-        if($update){
-            $id = getParameter("id");
-            $r = $pDHCP_Configuration->actualizarIpFija($id, $arrDhcpPost['hostname'], $arrDhcpPost['ipaddress'], $arrDhcpPost['macaddress']);
-        }else{
-            $r = $pDHCP_Configuration->insertarIpFija($arrDhcpPost['hostname'], $arrDhcpPost['ipaddress'], $arrDhcpPost['macaddress']);
-        }
-        if (!$r) {
-            $smarty->assign("mb_message", $pDHCP_Configuration->errMsg);
-    
-            $smarty->assign("REQUIRED_FIELD", _tr('Required field'));
-            $smarty->assign("SAVE", _tr('Save'));
-            $smarty->assign("CANCEL", _tr('Cancel'));
-            $smarty->assign("icon", "modules/$module_name/images/system_network_assign_ip_address.png");
-    
-            $htmlForm = $oForm->fetchForm("$local_templates_dir/form.tpl", _tr('Assign IP Address to Host'), $_POST);
-            $contenidoModulo = "<form  method='POST' enctype='multipart/form-data' style='margin-bottom:0;' action='?menu=$module_name'>".$htmlForm."</form>";
-            return $contenidoModulo;
-        } else {
-            header("Location: ?menu=$module_name&action=show");
-        }
+    // Validacion por campo (el servidor es la fuente de verdad)
+    $errors = array();
+    if ($hostname === '')
+        $errors['hostname'] = sprintf(_tr('%s is required'), _tr('Host Name'));
+    else if (!preg_match('/^([[:alnum:]-]+)$/', $hostname))
+        $errors['hostname'] = _tr('Invalid hostname');
+
+    if ($ipaddress === '')
+        $errors['ipaddress'] = sprintf(_tr('%s is required'), _tr('IP Address'));
+    else if (!validIpv4($ipaddress))
+        $errors['ipaddress'] = _tr('Invalid IP address');
+
+    if ($macaddress === '')
+        $errors['macaddress'] = sprintf(_tr('%s is required'), _tr('MAC Address'));
+    else if (!preg_match('/^[[:xdigit:]]{2}(:[[:xdigit:]]{2}){5}$/', $macaddress))
+        $errors['macaddress'] = _tr('Invalid MAC address');
+
+    if (count($errors) > 0) {
+        return renderDHCPForm($smarty, $module_name, $local_templates_dir, $arrFormDHCP_Configuration,
+            $update ? 'edit' : 'input', $_POST, $errors);
     }
+
+    if($update){
+        $id = getParameter("id");
+        $r = $pDHCP_Configuration->actualizarIpFija($id, $hostname, $ipaddress, $macaddress);
+    }else{
+        $r = $pDHCP_Configuration->insertarIpFija($hostname, $ipaddress, $macaddress);
+    }
+
+    if (!$r) {
+        // El fallo de la capa de datos se atribuye al campo correspondiente cuando se puede
+        $msg = $pDHCP_Configuration->errMsg;
+        $dataErrors = array();
+        if ($msg == _tr('Invalid hostname')) {
+            $dataErrors['hostname'] = $msg;
+        } else if ($msg == _tr('Invalid IP address')) {
+            $dataErrors['ipaddress'] = $msg;
+        } else if ($msg == _tr('Invalid MAC address')) {
+            $dataErrors['macaddress'] = $msg;
+        } else if ($msg == _tr('Duplicate IP or MAC')) {
+            $dataErrors['ipaddress']  = $msg;
+            $dataErrors['macaddress'] = $msg;
+        } else {
+            $smarty->assign("mb_message", $msg);
+        }
+        return renderDHCPForm($smarty, $module_name, $local_templates_dir, $arrFormDHCP_Configuration,
+            $update ? 'edit' : 'input', $_POST, $dataErrors);
+    }
+
+    header("Location: ?menu=$module_name&action=show");
 }
 
 function deleteDHCP_Configuration($smarty, $module_name, $local_templates_dir, &$pDB, $arrConf){
@@ -307,33 +293,90 @@ function deleteDHCP_Configuration($smarty, $module_name, $local_templates_dir, &
     header("Location: ?menu=$module_name&action=show");
 }
 
+/*
+ * Render unico del formulario ABM (nuevo, ver y editar). Marca los campos con
+ * error, resuelve el modo del paloForm y devuelve la plantilla. Lo usan
+ * viewFormDHCP_Configuration() y saveDHCP_Configuration(), de modo que un error
+ * re-renderiza la pagina sin redirigir ni perder los valores enviados.
+ */
+function renderDHCPForm($smarty, $module_name, $local_templates_dir, $arrFormDHCP_Configuration, $mode, $data, $errors = array())
+{
+    $fields = array('hostname', 'ipaddress', 'macaddress');
+
+    foreach ($fields as $f) {
+        if (!isset($errors[$f])) continue;
+        if (!isset($arrFormDHCP_Configuration[$f]['INPUT_EXTRA_PARAM']) || !is_array($arrFormDHCP_Configuration[$f]['INPUT_EXTRA_PARAM']))
+            $arrFormDHCP_Configuration[$f]['INPUT_EXTRA_PARAM'] = array();
+        $cls = isset($arrFormDHCP_Configuration[$f]['INPUT_EXTRA_PARAM']['class'])
+            ? $arrFormDHCP_Configuration[$f]['INPUT_EXTRA_PARAM']['class'].' ' : 'form-control ';
+        $arrFormDHCP_Configuration[$f]['INPUT_EXTRA_PARAM']['class'] = $cls.'is-invalid';
+    }
+
+    $oForm = new paloForm($smarty, $arrFormDHCP_Configuration);
+    if ($mode === 'view')      $oForm->setViewMode();
+    else if ($mode === 'edit') $oForm->setEditMode();
+
+    $smarty->assign("SAVE", _tr('Save'));
+    $smarty->assign("EDIT", _tr('Edit'));
+    $smarty->assign("CANCEL", _tr('Cancel'));
+    $smarty->assign("REQUIRED_FIELD", _tr('Required field'));
+    $smarty->assign("icon", "modules/$module_name/images/system_network_assign_ip_address.png");
+    $smarty->assign("MODULE_NAME", $module_name);
+
+    $smarty->assign("ID", isset($data['id']) ? $data['id'] : getParameter('id'));
+
+    $arrErrors = array();
+    $arrValues = array();
+    foreach ($fields as $f) {
+        $arrErrors[$f] = isset($errors[$f]) ? $errors[$f] : '';
+        $arrValues[$f] = isset($data[$f]) ? $data[$f] : '';
+    }
+    $smarty->assign("ERRORS", $arrErrors);
+    $smarty->assign("VALUES", $arrValues);
+
+    return $oForm->fetchForm("$local_templates_dir/form.tpl", _tr('Assign IP Address to Host'), $data);
+}
+
 function createFieldForm()
 {
     $arrFields = array(
             "hostname"   => array(      "LABEL"                  => _tr('Host Name'),
                                             "REQUIRED"               => "yes",
                                             "INPUT_TYPE"             => "TEXT",
-                                            "INPUT_EXTRA_PARAM"      => array("style" => "width:200px","maxlength" =>"200"),
+                                            "INPUT_EXTRA_PARAM"      => array("placeholder" => "myhostname","maxlength" =>"200"),
                                             "VALIDATION_TYPE"        => "text",
                                             "VALIDATION_EXTRA_PARAM" => ""
                                             ),
             "ipaddress"   => array(      "LABEL"                  => _tr('IP Address'),
                                             "REQUIRED"               => "yes",
                                             "INPUT_TYPE"             => "TEXT",
-                                            "INPUT_EXTRA_PARAM"      => array("style" => "width:200px","maxlength" =>"200"),
+                                            "INPUT_EXTRA_PARAM"      => array("placeholder" => "192.168.1.10"),
                                             "VALIDATION_TYPE"        => "ip",
-                                            //"VALIDATION_EXTRA_PARAM" => "([0-9]){1,3}.([0-9]+){1,3}.([0-9]+){1,3}.([0-9]+){1,3}$"
                                             "VALIDATION_EXTRA_PARAM" => ""
                                             ),
             "macaddress"   => array(      "LABEL"                  => _tr('MAC Address'),
                                             "REQUIRED"               => "yes",
                                             "INPUT_TYPE"             => "TEXT",
-                                            "INPUT_EXTRA_PARAM"      => array("style" => "width:200px","maxlength" =>"200"),
-                                            "VALIDATION_TYPE"        => "ereg",//AGREGAR MAC VALIDACION AL FRAMEWORD PALOSANTOVALIDAR
-                                            "VALIDATION_EXTRA_PARAM" => "([a-fA-F0-9]{2}):([a-fA-F0-9]{2}):([a-fA-F0-9]{2}):([a-fA-F0-9]{2}):([a-fA-F0-9]{2}):([a-fA-F0-9]{2})$"
+                                            "INPUT_EXTRA_PARAM"      => array("placeholder" => "AA:BB:CC:DD:EE:FF"),
+                                            "VALIDATION_TYPE"        => "ereg",
+                                            "VALIDATION_EXTRA_PARAM" => "([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$"
                                             ),
             );
     return $arrFields;
+}
+
+/*
+ * Validacion pura de una direccion IPv4 en formato a.b.c.d, con octetos 0-255.
+ */
+function validIpv4($s)
+{
+    if (!is_string($s) || $s === '') return FALSE;
+    $octets = explode('.', $s);
+    if (count($octets) != 4) return FALSE;
+    foreach ($octets as $octet) {
+        if ($octet === '' || !ctype_digit($octet) || (int)$octet > 255) return FALSE;
+    }
+    return TRUE;
 }
 
 function getAction()

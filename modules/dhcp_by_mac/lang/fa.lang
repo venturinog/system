@@ -41,5 +41,6 @@ $arrLangModule=array(
 "ex_hostname" => "(ex. myhostname)",
 "ex_ipaddress" => "(ex. 127.0.0.1)",
 "ex_mac_address" => "(ex. AA:BB:CC:DD:EE:FF)",
+"%s is required" => "%s الزامی است",
 );
 ?>

@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 35
+Release: 36
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,14 @@ fi
 /usr/lib/systemd/system/issabel-netconfig-recover.service
 
 %changelog
+* Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-36
+- Assign IP Address to Host: apply the style guide to the add/edit/view form:
+  render the view mode as plain text, re-render per-field validation errors
+  instead of a global list, add live client-side validation, use placeholders
+  and move the <form> into the template so the CSRF token is injected. Tighten
+  the IPv4 check in the data class to reject octets above 255 and restyle the
+  list filter with the theme kit.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-35
 - DHCP Server: replace the four dotted octet inputs with a single IPv4 text box
   per address, isolate field-level validation errors and re-render the form

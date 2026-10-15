@@ -144,7 +144,7 @@ class paloSantoDHCP_Configuration
             $this->errMsg = _tr('Invalid hostname');
         	return FALSE;
         }
-        if (!preg_match('/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/', $ipaddress)) {
+        if (!$this->_validIpv4($ipaddress)) {
             $this->errMsg = _tr('Invalid IP address');
         	return FALSE;
         }
@@ -194,7 +194,7 @@ class paloSantoDHCP_Configuration
             $this->errMsg = _tr('Invalid hostname');
             return FALSE;
         }
-        if (!preg_match('/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/', $ipaddress)) {
+        if (!$this->_validIpv4($ipaddress)) {
             $this->errMsg = _tr('Invalid IP address');
             return FALSE;
         }
@@ -247,6 +247,21 @@ class paloSantoDHCP_Configuration
         return $this->_actualizarConfiguracionDHCP();
     }
     
+    /*
+     * Validacion pura de una direccion IPv4 en formato a.b.c.d, con octetos
+     * 0-255. Backstop de servidor: no basta con el validador del formulario.
+     */
+    private function _validIpv4($ip)
+    {
+        if (!is_string($ip) || $ip === '') return FALSE;
+        $octets = explode('.', $ip);
+        if (count($octets) != 4) return FALSE;
+        foreach ($octets as $octet) {
+            if ($octet === '' || !ctype_digit($octet) || (int)$octet > 255) return FALSE;
+        }
+        return TRUE;
+    }
+
     // Llamar al programa privilegiado
     private function _actualizarConfiguracionDHCP()
     {
