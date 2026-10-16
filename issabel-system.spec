@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 45
+Release: 47
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -207,6 +207,29 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-47
+- Health: apply the endpoint guards. The collector keeps per-endpoint state in
+  health.db (endpoint_state) so a down trunk or extension is only reported after
+  the debounce window, and extensions that were not registered recently are
+  ignored (a configured but unused extension no longer alarms). The Health page
+  lets the admin tune the debounce and the recent window.
+- Dashboard: the Health Center trend can now show 7 and 30 days, from the new
+  sampler aggregates, with a 1 h / 8 h / 24 h / 7 d / 30 d selector. Rendering
+  the applet no longer deletes old samples (pruning is the sampler's job).
+
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-46
+- Health: add the backup freshness check (the newest .tar in the backup
+  directory; warns when there is none or it is older than backup_warn_hours,
+  default 48 h) and its threshold field.
+- Health: add the read-only /health JSON endpoint (modules/health/health.php)
+  with a per-installation token, off by default. The Health page gains a
+  section that explains what it is for and how to consume it, toggles it, and
+  shows the token masked with a copy button and a regenerate button.
+- Dashboard: show the news ticker only to the administrator group, and add a
+  "Show the news ticker" switch to Dashboard Applet Admin.
+- Health Center: replace the native confirm() with a theme-styled modal for the
+  corrective actions.
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-45
 - Escape the rpm queryformat used to record the pre-version on upgrade.
   The VERSION and RELEASE macros were expanded at build time, so %pre always
