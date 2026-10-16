@@ -6,7 +6,6 @@ $(document).ready(function() {
  });
 
 });
-});
 </script>
 {/literal}
 <div class="iss-form">
