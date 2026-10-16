@@ -99,7 +99,14 @@
         </div>
 
         <div class="iss-hc__card iss-hc__card--chart">
-            <div class="iss-hc__cardtitle"><i class="ti ti-activity"></i> {$LABEL_TREND}</div>
+            <div class="iss-hc__cardtitle d-flex justify-content-between align-items-center gap-2">
+                <span><i class="ti ti-activity"></i> {$LABEL_TREND}</span>
+                <span class="iss-hc__range">
+                    {foreach from=$ranges item=r}
+                    <button type="button" class="btn btn-sm {if $r.active}btn-primary{else}btn-outline-secondary{/if} iss-hc-range" data-range="{$r.key}">{$r.label}</button>
+                    {/foreach}
+                </span>
+            </div>
             <div class="iss-hc__chartwrap"><canvas id="iss-hc-chart"></canvas></div>
             <div class="iss-hc__nodata" id="iss-hc-chart-nodata" style="display:none">{$LABEL_NO_DATA}</div>
         </div>
@@ -113,6 +120,18 @@
             </ul>
         </div>
 
+    </div>
+</div>
+
+<div class="iss-hc-modal" id="iss-hc-modal" hidden>
+    <div class="iss-hc-modal__backdrop" data-isshc-close="1"></div>
+    <div class="iss-hc-modal__box" role="dialog" aria-modal="true" aria-labelledby="iss-hc-modal-title">
+        <div class="iss-hc-modal__title" id="iss-hc-modal-title"></div>
+        <div class="iss-hc-modal__text" id="iss-hc-modal-text"></div>
+        <div class="iss-hc-modal__actions">
+            <button type="button" class="btn btn-link link-secondary" data-isshc-close="1">{$LABEL_CANCEL}</button>
+            <button type="button" class="btn btn-danger" id="iss-hc-modal-ok">{$LABEL_CONFIRM}</button>
+        </div>
     </div>
 </div>
 
@@ -161,26 +180,64 @@
             done, 'json').fail(fail);
     }
 
+    // --- Modal de confirmación propio (no hay Bootstrap JS en el iframe) ---
+    function modalEl() { return document.getElementById('iss-hc-modal'); }
+    function modalClose() {
+        var m = modalEl();
+        if (m) { m.hidden = true; }
+        window.__issHcPending = null;
+    }
+    function modalOpen(btn, payload, title, text) {
+        var m = modalEl();
+        if (!m) return;
+        document.getElementById('iss-hc-modal-title').textContent = title || '';
+        document.getElementById('iss-hc-modal-text').textContent = text || '';
+        window.__issHcPending = {btn: btn, payload: payload};
+        m.hidden = false;
+    }
+
+    $(document).on('click', '[data-isshc-close]', function (e) {
+        e.preventDefault();
+        modalClose();
+    });
+
+    $(document).on('click', '#iss-hc-modal-ok', function () {
+        var p = window.__issHcPending;
+        modalClose();
+        if (!p) return;
+        var b = p.btn;
+        $(b).prop('disabled', true);
+        post(p.payload, function (r) {
+            $(b).prop('disabled', false);
+            window.alert((r && r.message) ? r.message : 'Error');
+        }, function () {
+            $(b).prop('disabled', false);
+            window.alert('Error');
+        });
+    });
+
     $(document).off('click.issHc').on('click.issHc', '.iss-hc-act', function () {
         var b = $(this);
         var type = b.data('type');
-        var prompt = (type === 'service')
-            ? b.data('label') + ' — ' + b.data('action') + '\n\n' + b.data('impact')
-            : b.data('impact');
-        if (!window.confirm(prompt)) return;
-
-        b.prop('disabled', true);
+        var title = (type === 'service')
+            ? (b.data('label') + ' — ' + b.data('action'))
+            : b.data('label');
         var payload = (type === 'service')
             ? {action: 'serviceAction', service: b.data('service'), svcaction: b.data('action')}
             : {action: 'certRenew'};
+        modalOpen(this, payload, title, b.data('impact'));
+    });
 
-        post(payload, function (r) {
-            b.prop('disabled', false);
-            window.alert((r && r.message) ? r.message : 'Error');
-        }, function () {
-            b.prop('disabled', false);
-            window.alert('Error');
-        });
+    // Selector de rango de la tendencia: re-consultamos el applet con `range`.
+    $(document).off('click.issHcRange').on('click.issHcRange', '.iss-hc-range', function () {
+        var range = $(this).data('range');
+        var box = $(this).closest('.appletwindow_content');
+        if (!box.length) return;
+        var full = box.children('.appletwindow_fullcontent');
+        $.get('index.php', {menu: 'dashboard', rawmode: 'yes', applet: 'HealthCenter',
+                            action: 'getContent', range: range}, function (resp) {
+            if (resp && resp.status === 'success' && resp.html) full.html(resp.html);
+        }, 'json');
     });
 })();
 </script>

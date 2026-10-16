@@ -75,9 +75,15 @@ class Applet_HealthCenter
             'LABEL_OPEN'      => _tr('Open health page'),
             'LABEL_ND'        => _tr('N/D'),
             'LABEL_NO_DATA'   => _tr('No data yet'),
+            'LABEL_CANCEL'    => _tr('Cancel'),
+            'LABEL_CONFIRM'   => _tr('Confirm'),
         ));
 
         $h = new issabelHealth();
+
+        // Rango de la tendencia (1 h / 8 h / 24 h crudo; 7 d / 30 d agregados).
+        $range = isset($_REQUEST['range']) ? (string)$_REQUEST['range'] : '8h';
+        if (!array_key_exists($range, _issabelHealthRanges())) $range = '8h';
 
         // --- Estado global (health.db) ---
         $rows  = $h->readChecks();
@@ -154,7 +160,8 @@ class Applet_HealthCenter
             'mem_total_gb'   => round($m['mem_total'] / 1024 / 1024, 1),
             'swap_percent'   => $m['swap_percent'],
             'load'           => number_format($m['load'][0], 2).' / '.$m['cores'],
-            'CHART_CONFIG'   => _issabelHealthTrendConfig(),
+            'ranges'         => _issabelHealthRangesForTemplate($range),
+            'CHART_CONFIG'   => _issabelHealthTrendConfig($range),
         ));
 
         $local_templates_dir = dirname($_SERVER['SCRIPT_FILENAME'])."/modules/$module_name/applets/HealthCenter/tpl";
@@ -260,12 +267,44 @@ function _issabelHealthHumanAgo($seconds)
 }
 
 /**
+ * Rangos disponibles para la tendencia. `resolution` 0 = muestras crudas
+ * (~26 h); 3600/86400 = agregados del sampler (samples_rollup).
+ */
+function _issabelHealthRanges()
+{
+    return array(
+        '1h'  => array('label' => '1 h',  'secs' => 3600,      'resolution' => 0),
+        '8h'  => array('label' => '8 h',  'secs' => 8 * 3600,  'resolution' => 0),
+        '24h' => array('label' => '24 h', 'secs' => 24 * 3600, 'resolution' => 0),
+        '7d'  => array('label' => '7 d',  'secs' => 7 * 86400, 'resolution' => 3600),
+        '30d' => array('label' => '30 d', 'secs' => 30 * 86400,'resolution' => 86400),
+    );
+}
+
+/** Rangos con la marca de cuál está activo, para la plantilla. */
+function _issabelHealthRangesForTemplate($current)
+{
+    $out = array();
+    foreach (_issabelHealthRanges() as $key => $r) {
+        $out[] = array('key' => $key, 'label' => $r['label'], 'active' => ($key === $current));
+    }
+    return $out;
+}
+
+/**
  * Configuración de la gráfica de tendencia (Chart.js), a partir del sampler.
  * Devuelve un JSON (o "null" si no hay datos todavía).
  */
-function _issabelHealthTrendConfig()
+function _issabelHealthTrendConfig($range = '8h')
 {
     global $arrConf;
+
+    $ranges = _issabelHealthRanges();
+    if (!isset($ranges[$range])) $range = '8h';
+    $def    = $ranges[$range];
+    $end    = time();
+    $start  = $end - $def['secs'];
+    $res    = (int)$def['resolution'];
 
     $cfg = array('type' => 'line', 'data' => array('datasets' => array()), 'options' => array(
         'responsive' => true,
@@ -273,7 +312,7 @@ function _issabelHealthTrendConfig()
         'animation' => false,
         'elements' => array('line' => array('borderWidth' => 1), 'point' => array('radius' => 0)),
         'scales' => array(
-            'x' => array('type' => 'time', 'time' => array('unit' => 'minute')),
+            'x' => array('type' => 'time', 'time' => array('unit' => ($res >= 86400 ? 'day' : 'minute'))),
             'y' => array('beginAtZero' => true),
         ),
         'plugins' => array('legend' => array('labels' => array('boxWidth' => 12))),
@@ -289,17 +328,25 @@ function _issabelHealthTrendConfig()
         $lines = $oSampler->getGraphLinesById(1);
         if (!is_array($lines) || count($lines) === 0) return 'null';
 
-        $end = time();
-        $start = $end - 8 * 3600;
-        $oSampler->deleteDataBeforeThisTimestamp($start);
-
         foreach ($lines as $line) {
-            $samples = $oSampler->getSamplesByLineId($line['id']);
-            if (!is_array($samples) || count($samples) === 0) continue;
-            $data = array();
-            foreach ($samples as $s) {
-                $data[] = array('x' => (int)$s['timestamp'] * 1000, 'y' => (float)$s['value']);
+            if ($res === 0) {
+                $samples = $oSampler->getSamplesByLineId($line['id']);
+                $data = array();
+                foreach ((array)$samples as $s) {
+                    $ts = (int)$s['timestamp'];
+                    if ($ts < $start) continue;
+                    $data[] = array('x' => $ts * 1000, 'y' => (float)$s['value']);
+                }
+            } else {
+                // El bucket se alinea a su inicio, así que pedimos uno de más
+                // para incluir el que contiene `$start`.
+                $rows = $oSampler->getRollup($line['id'], $res, $start - $res, $end);
+                $data = array();
+                foreach ((array)$rows as $r) {
+                    $data[] = array('x' => (int)$r['timestamp'] * 1000, 'y' => (float)$r['value']);
+                }
             }
+            if (count($data) === 0) continue;
             $cfg['data']['datasets'][] = array(
                 'label'           => _tr($line['name']),
                 'data'            => $data,
