@@ -59,29 +59,35 @@
     <div class="iss-hc__grid">
 
         <div class="iss-hc__card">
-            <div class="iss-hc__cardtitle"><i class="ti ti-cpu"></i> {$LABEL_RESOURCES}</div>
+            <div class="iss-hc__cardtitle d-flex justify-content-between align-items-center gap-2">
+                <span><i class="ti ti-cpu"></i> {$LABEL_RESOURCES}</span>
+                <span class="iss-hc__stamp" title="{$LABEL_LAST_UPDATE}: {$resources_at}" id="iss-hc-res-ago">{$resources_ago}</span>
+            </div>
             <div class="iss-hc__gauges">
                 <div class="iss-hc__gauge">
-                    <div class="iss-hc__gaugeval">{$cpu_percent}%</div>
+                    <div class="iss-hc__gaugeval" id="iss-hc-cpu">{$cpu_percent}%</div>
                     <div class="iss-hc__gaugelbl">{$LABEL_CPU}</div>
                 </div>
                 <div class="iss-hc__gauge">
-                    <div class="iss-hc__gaugeval">{$mem_percent}%</div>
+                    <div class="iss-hc__gaugeval" id="iss-hc-mem">{$mem_percent}%</div>
                     <div class="iss-hc__gaugelbl">{$LABEL_RAM}</div>
                 </div>
                 <div class="iss-hc__gauge">
-                    <div class="iss-hc__gaugeval">{$swap_percent}%</div>
+                    <div class="iss-hc__gaugeval" id="iss-hc-swap">{$swap_percent}%</div>
                     <div class="iss-hc__gaugelbl">{$LABEL_SWAP}</div>
                 </div>
             </div>
             <ul class="iss-hc__specs">
-                <li><span>{$LABEL_RAM}</span><strong>{$mem_used_gb} / {$mem_total_gb} GB</strong></li>
-                <li><span>{$LABEL_LOAD}</span><strong>{$load}</strong></li>
+                <li><span>{$LABEL_RAM}</span><strong><span id="iss-hc-memuse">{$mem_used_gb} / {$mem_total_gb}</span> GB</strong></li>
+                <li><span>{$LABEL_LOAD}</span><strong id="iss-hc-load">{$load}</strong></li>
             </ul>
         </div>
 
         <div class="iss-hc__card">
-            <div class="iss-hc__cardtitle"><i class="ti ti-hdd"></i> {$LABEL_STORAGE}</div>
+            <div class="iss-hc__cardtitle d-flex justify-content-between align-items-center gap-2">
+                <span><i class="ti ti-hdd"></i> {$LABEL_STORAGE}</span>
+                <span class="iss-hc__stamp" title="{$LABEL_LAST_UPDATE}: {$storage_at}">{$storage_ago}</span>
+            </div>
             {foreach from=$disks item=d}
             <div class="iss-hc__disk">
                 <div class="iss-hc__disktop">
@@ -109,14 +115,25 @@
             </div>
             <div class="iss-hc__chartwrap"><canvas id="iss-hc-chart"></canvas></div>
             <div class="iss-hc__nodata" id="iss-hc-chart-nodata" style="display:none">{$LABEL_NO_DATA}</div>
+            <div class="iss-hc__chartfoot">
+                <span class="iss-hc__stamp" title="{$LABEL_LAST_UPDATE}: {$trend_at}" id="iss-hc-trend-ago">{$trend_ago}</span>
+                <span class="iss-hc__stamp live">{$LABEL_ACTIVE_CALLS}: <strong id="iss-hc-calls-trend">{$live_calls}</strong></span>
+            </div>
         </div>
 
         <div class="iss-hc__card">
-            <div class="iss-hc__cardtitle"><i class="ti ti-phone"></i> {$LABEL_TELEPHONY}</div>
+            <div class="iss-hc__cardtitle d-flex justify-content-between align-items-center gap-2">
+                <span><i class="ti ti-phone"></i> {$LABEL_TELEPHONY}</span>
+                <span class="iss-hc__stamp" title="{$LABEL_LAST_UPDATE}: {$telephony_at}">{$telephony_ago}</span>
+            </div>
             <ul class="iss-hc__specs">
                 <li><span>{$LABEL_ASTERISK}</span><strong>{$tel_asterisk}</strong></li>
                 <li><span>{$LABEL_TRUNKS}</span><strong>{$tel_trunks}</strong></li>
                 <li><span>{$LABEL_EXTENSIONS}</span><strong>{$tel_extensions}</strong></li>
+                <li class="iss-hc__specs-live">
+                    <span>{$LABEL_ACTIVE_CALLS}</span>
+                    <strong><span id="iss-hc-calls">{$live_calls}</span> &middot; {$LABEL_CHANNELS} <span id="iss-hc-channels">{$live_channels}</span></strong>
+                </li>
             </ul>
         </div>
 
@@ -135,7 +152,7 @@
     </div>
 </div>
 
-<script>window.ISS_HC_CHART = {$CHART_CONFIG}; window.ISS_HC_BASE = '{$WEBPATH}themes/{$THEMENAME}/js/';</script>
+<script>window.ISS_HC_CHART = {$CHART_CONFIG}; window.ISS_HC_BASE = '{$WEBPATH}themes/{$THEMENAME}/js/'; window.ISS_HC_RANGE = '{$range_current}';</script>
 {literal}
 <script>
 (function () {
@@ -238,6 +255,59 @@
                             action: 'getContent', range: range}, function (resp) {
             if (resp && resp.status === 'success' && resp.html) full.html(resp.html);
         }, 'json');
+    });
+
+    // Auto-refresh: métricas vivas cada 30 s y tendencia cada 5 min (alineada con
+    // el sampler). No se dispara si la pestaña está oculta, y los timers se
+    // reemplazan en cada re-render del applet.
+    function _issSetText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+
+    function refreshLive() {
+        if (document.hidden) return;
+        $.get('index.php', {menu: 'dashboard', rawmode: 'yes', applet: 'HealthCenter', action: 'liveMetrics'},
+            function (r) {
+                if (!r || r.status !== 'success' || !r.metrics) return;
+                var m = r.metrics;
+                _issSetText('iss-hc-cpu', m.cpu_percent + '%');
+                _issSetText('iss-hc-mem', m.mem_percent + '%');
+                _issSetText('iss-hc-swap', m.swap_percent + '%');
+                _issSetText('iss-hc-memuse', m.mem_used_gb + ' / ' + m.mem_total_gb);
+                _issSetText('iss-hc-load', m.load);
+                _issSetText('iss-hc-calls', m.calls);
+                _issSetText('iss-hc-channels', m.channels);
+                _issSetText('iss-hc-calls-trend', m.calls);
+                var ago = document.getElementById('iss-hc-res-ago');
+                if (ago) { ago.textContent = m.ago; ago.title = m.at; }
+            }, 'json');
+    }
+
+    function refreshTrend() {
+        if (document.hidden) return;
+        $.get('index.php', {menu: 'dashboard', rawmode: 'yes', applet: 'HealthCenter',
+                            action: 'trend', range: window.ISS_HC_RANGE},
+            function (r) {
+                if (!r || r.status !== 'success') return;
+                var ago = document.getElementById('iss-hc-trend-ago');
+                if (ago) { ago.textContent = r.ago; ago.title = r.at; }
+                if (!r.config || typeof Chart === 'undefined') return;
+                if (window.__issHcChart) {
+                    window.__issHcChart.data = r.config.data;
+                    window.__issHcChart.options = r.config.options;
+                    window.__issHcChart.update('none');
+                } else {
+                    var cv = document.getElementById('iss-hc-chart');
+                    if (cv) window.__issHcChart = new Chart(cv.getContext('2d'), r.config);
+                }
+            }, 'json');
+    }
+
+    if (window.__issHcLiveTimer)  clearInterval(window.__issHcLiveTimer);
+    if (window.__issHcTrendTimer) clearInterval(window.__issHcTrendTimer);
+    window.__issHcLiveTimer  = setInterval(refreshLive, 30000);
+    window.__issHcTrendTimer = setInterval(refreshTrend, 300000);
+
+    $(document).off('visibilitychange.issHc').on('visibilitychange.issHc', function () {
+        if (!document.hidden) refreshLive();
     });
 })();
 </script>

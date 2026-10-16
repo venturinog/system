@@ -725,6 +725,30 @@ class issabelHealth
         return $this->_run("asterisk -r -x ".escapeshellarg($cmd), $timeout);
     }
 
+    /**
+     * Llamadas y canales activos AHORA (en vivo, no cacheado). Es barato y es
+     * lo único de telefonía que cambia segundo a segundo; las troncales y
+     * extensiones siguen leyéndose del caché (TTL 5 min).
+     */
+    function liveTelephony()
+    {
+        $r = $this->_asterisk('core show channels count');
+        if (!is_array($r)) return array('available' => FALSE, 'calls' => 0, 'channels' => 0);
+        return $this->_parseChannelsCount($r['out']);
+    }
+
+    /** Parser de `core show channels count` (puro). */
+    private function _parseChannelsCount($out)
+    {
+        $res = array('available' => TRUE, 'calls' => 0, 'channels' => 0);
+        foreach ((array)$out as $line) {
+            $line = trim($line);
+            if (preg_match('/^(\d+)\s+active call/i', $line, $m))         $res['calls']    = (int)$m[1];
+            elseif (preg_match('/^(\d+)\s+active channel/i', $line, $m))  $res['channels'] = (int)$m[1];
+        }
+        return $res;
+    }
+
     function checkAsterisk()
     {
         $r = $this->_asterisk('core show uptime');

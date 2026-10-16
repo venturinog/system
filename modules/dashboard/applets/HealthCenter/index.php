@@ -27,6 +27,15 @@ function _issabelHealthLib()
     return FALSE;
 }
 
+function _issabelHealthFmtLib()
+{
+    foreach (array('modules/dashboard/libs/issabelDashboardFormat.class.php',
+                   '/var/www/html/modules/dashboard/libs/issabelDashboardFormat.class.php') as $f) {
+        if (file_exists($f)) { require_once $f; return TRUE; }
+    }
+    return FALSE;
+}
+
 class Applet_HealthCenter
 {
     function handleJSON_getContent($smarty, $module_name, $appletlist)
@@ -49,6 +58,7 @@ class Applet_HealthCenter
             $respuesta['message'] = _tr('Health module is not installed');
             return _issabelHealthJson($respuesta);
         }
+        _issabelHealthFmtLib();
 
         $smarty->assign(array(
             'LABEL_ATTENTION' => _tr('Requires attention'),
@@ -138,6 +148,17 @@ class Applet_HealthCenter
         $checkedAt = 0;
         foreach ($rows as $r) if ($r['checked_at'] > $checkedAt) $checkedAt = $r['checked_at'];
 
+        // Frescura por tarjeta: Resources es en vivo; Storage y Telephony salen
+        // de sus grupos en health.db; la tendencia, del punto más nuevo.
+        $storageAt   = _issabelHealthGroupTs($rows, array('storage.disk'));
+        $telephonyAt = _issabelHealthGroupTs($rows, array('telephony.'));
+        $nowTs       = time();
+
+        $live = $h->liveTelephony();
+
+        $chartConfig = _issabelHealthTrendConfig($range);
+        $trendTs     = _issabelHealthTrendLastTs($chartConfig);
+
         $smarty->assign(array(
             'state'          => $score['state'],
             'score'          => is_null($score['score']) ? '–' : $score['score'],
@@ -154,6 +175,22 @@ class Applet_HealthCenter
             'tel_asterisk'   => $tel['asterisk'],
             'tel_trunks'     => $tel['trunks'],
             'tel_extensions' => $tel['extensions'],
+            // Llamadas/canales activos AHORA (en vivo)
+            'live_calls'     => $live['calls'],
+            'live_channels'  => $live['channels'],
+            'live_available' => $live['available'],
+            // Frescura por tarjeta (relativa a la vista) + absoluta para el tooltip
+            'resources_ago'  => _issabelHealthAgo($nowTs),
+            'resources_at'   => date('d/m H:i', $nowTs),
+            'storage_ago'    => _issabelHealthAgo($storageAt),
+            'storage_at'     => $storageAt ? date('d/m H:i', $storageAt) : '',
+            'telephony_ago'  => _issabelHealthAgo($telephonyAt),
+            'telephony_at'   => $telephonyAt ? date('d/m H:i', $telephonyAt) : '',
+            'trend_ago'      => _issabelHealthAgo($trendTs),
+            'trend_at'       => $trendTs ? date('d/m H:i', $trendTs) : '',
+            'LABEL_LAST_UPDATE' => _tr('Last update'),
+            'LABEL_ACTIVE_CALLS'=> _tr('Active calls'),
+            'LABEL_CHANNELS'  => _tr('Channels'),
             'cpu_percent'    => $m['cpu_percent'],
             'mem_percent'    => $m['mem_percent'],
             'mem_used_gb'    => round($m['mem_used'] / 1024 / 1024, 1),
@@ -161,7 +198,8 @@ class Applet_HealthCenter
             'swap_percent'   => $m['swap_percent'],
             'load'           => number_format($m['load'][0], 2).' / '.$m['cores'],
             'ranges'         => _issabelHealthRangesForTemplate($range),
-            'CHART_CONFIG'   => _issabelHealthTrendConfig($range),
+            'range_current'  => $range,
+            'CHART_CONFIG'   => $chartConfig,
         ));
 
         $local_templates_dir = dirname($_SERVER['SCRIPT_FILENAME'])."/modules/$module_name/applets/HealthCenter/tpl";
@@ -180,6 +218,56 @@ class Applet_HealthCenter
     function handleJSON_certRenew($smarty, $module_name, $appletlist)
     {
         return $this->_runAction('cert');
+    }
+
+    /** AJAX: métricas vivas para el auto-refresh (CPU/memoria y llamadas activas). */
+    function handleJSON_liveMetrics($smarty, $module_name, $appletlist)
+    {
+        $resp = array('status' => 'success', 'message' => '(no message)');
+        session_commit();
+        if (!_issabelHealthLib()) {
+            $resp['status'] = 'error'; $resp['message'] = _tr('Health module is not installed');
+            return _issabelHealthJson($resp);
+        }
+        _issabelHealthFmtLib();
+        $h = new issabelHealth();
+        $m = $h->fastMetrics();
+        $live = $h->liveTelephony();
+        $resp['metrics'] = array(
+            'cpu_percent'  => $m['cpu_percent'],
+            'mem_percent'  => $m['mem_percent'],
+            'mem_used_gb'  => round($m['mem_used'] / 1024 / 1024, 1),
+            'mem_total_gb' => round($m['mem_total'] / 1024 / 1024, 1),
+            'swap_percent' => $m['swap_percent'],
+            'load'         => number_format($m['load'][0], 2).' / '.$m['cores'],
+            'calls'        => $live['calls'],
+            'channels'     => $live['channels'],
+            'telephony_available' => $live['available'],
+            'ago'          => _issabelHealthAgo(time()),
+            'at'           => date('d/m H:i'),
+        );
+        return _issabelHealthJson($resp);
+    }
+
+    /** AJAX: configuración de la tendencia (para refrescar la gráfica en vivo). */
+    function handleJSON_trend($smarty, $module_name, $appletlist)
+    {
+        $resp = array('status' => 'success', 'message' => '(no message)');
+        session_commit();
+        if (!_issabelHealthLib()) {
+            $resp['status'] = 'error'; $resp['message'] = _tr('Health module is not installed');
+            return _issabelHealthJson($resp);
+        }
+        _issabelHealthFmtLib();
+        $range = isset($_REQUEST['range']) ? (string)$_REQUEST['range'] : '8h';
+        if (!array_key_exists($range, _issabelHealthRanges())) $range = '8h';
+        $cfg = _issabelHealthTrendConfig($range);
+        $ts  = _issabelHealthTrendLastTs($cfg);
+        $resp['range']  = $range;
+        $resp['config'] = json_decode($cfg, TRUE);
+        $resp['ago']    = _issabelHealthAgo($ts);
+        $resp['at']     = $ts ? date('d/m H:i', $ts) : '';
+        return _issabelHealthJson($resp);
     }
 
     private function _runAction($kind)
@@ -289,6 +377,41 @@ function _issabelHealthRangesForTemplate($current)
         $out[] = array('key' => $key, 'label' => $r['label'], 'active' => ($key === $current));
     }
     return $out;
+}
+
+/** checked_at más reciente de los chequeos cuyos ids empiezan por alguno de los prefijos. */
+function _issabelHealthGroupTs($rows, $prefixes)
+{
+    $ts = 0;
+    foreach ((array)$rows as $id => $r) {
+        foreach ((array)$prefixes as $p) {
+            if (strpos($id, $p) === 0) {
+                if ($r['checked_at'] > $ts) $ts = (int)$r['checked_at'];
+                break;
+            }
+        }
+    }
+    return $ts;
+}
+
+/** Marca de tiempo del punto más nuevo de la tendencia (0 si no hay datos). */
+function _issabelHealthTrendLastTs($jsonConfig)
+{
+    $cfg = json_decode($jsonConfig, TRUE);
+    if (!is_array($cfg) || empty($cfg['data']['datasets'])) return 0;
+    $max = 0;
+    foreach ($cfg['data']['datasets'] as $d) {
+        foreach ((array)$d['data'] as $pt) if ($pt['x'] > $max) $max = (int)$pt['x'];
+    }
+    return (int)($max / 1000);
+}
+
+/** "hace N" para un timestamp (vacío si no hay dato). */
+function _issabelHealthAgo($ts)
+{
+    $ts = (int)$ts;
+    if ($ts <= 0) return '';
+    return issabelDashboardFormat::ago($ts);
 }
 
 /**

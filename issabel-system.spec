@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 50
+Release: 51
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -207,6 +207,18 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-51
+- Health Center: show a subtle "last update" stamp (relative to the view, with
+  the absolute time in the tooltip) to the right of the Resources, Storage,
+  Telephony and trend titles, so it is clear which numbers are live and which
+  come from the cached checks (Storage 15 min, Telephony 5 min).
+- Health Center: refresh in place. The Resources values and the active
+  calls/channels poll every 30 s, and the trend chart every 5 min (aligned with
+  the sampler), without rebuilding the applet or reloading Chart.js; the polling
+  pauses while the tab is hidden.
+- Health: add liveTelephony() (core show channels count) for the active
+  calls/channels, shown in the Telephony card and next to the trend chart.
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-50
 - Dashboard: redesign the Calls, Calendar and Voicemails applets. They now
   render from Smarty templates (no HTML built with str_replace on translated
