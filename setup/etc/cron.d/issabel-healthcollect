@@ -1,0 +1,6 @@
+# Health Center collector (Issabel 6). See DASHBOARDtodo.md §6.6.
+# Runs every 5 minutes; the collector itself skips checks whose TTL has not
+# expired yet, so the expensive ones (dnf, du) only run every few hours.
+SHELL=/bin/bash
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+*/5 * * * * root /usr/bin/flock -n /var/run/issabel-healthcollect.lock /usr/bin/issabel-helper healthcollect >/dev/null 2>&1

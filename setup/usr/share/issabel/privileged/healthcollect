@@ -1,0 +1,51 @@
+#!/usr/bin/php
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel version 6.0                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2026 Issabel Foundation                                |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2. You may obtain a copy of the License at             |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  +----------------------------------------------------------------------+
+  | The Initial Developer of the Original Code is PaloSanto Solutions    |
+  +----------------------------------------------------------------------+
+
+  Recolector del Health Center (helper privileged, corre como root).
+  Lo invoca /etc/cron.d/issabel-healthcollect cada 5 minutos; el propio
+  recolector respeta el TTL de cada grupo de chequeos (DASHBOARDtodo.md §6.6).
+
+  Uso: healthcollect [--force]
+      --force  ignora el TTL y ejecuta todos los chequeos.
+*/
+
+if (posix_geteuid() !== 0) {
+    fputs(STDERR, "healthcollect: must be run as root\n");
+    exit(1);
+}
+
+$root = getenv('ISSABEL_ROOT');
+if (!$root) $root = '/var/www/html';
+
+require_once "$root/libs/misc.lib.php";
+require_once "$root/configs/default.conf.php";
+require_once "$root/modules/health/libs/issabelHealth.class.php";
+
+$force = in_array('--force', $argv);
+
+try {
+    $h = new issabelHealth();
+    $r = $h->collect($force);
+    printf("healthcollect: ran=%d skipped=%d errors=%d (%d ms)\n",
+        $r['ran'], $r['skipped'], $r['errors'], $r['duration_ms']);
+    // Los fallos de recolección son datos (se guardan como unknown); no hacemos
+    // fallar el cron por ellos.
+    exit(0);
+} catch (Throwable $e) {
+    fputs(STDERR, 'healthcollect: '.$e->getMessage()."\n");
+    exit(1);
+}
