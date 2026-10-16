@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 54
+Release: 55
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -14,7 +14,6 @@ Requires(pre): php-soap
 Conflicts: elastix-agenda < 2.2.0-1
 Conflicts: elastix-pbx <= 2.4.0-15
 Requires: issabel-php-simplepie
-Requires: hdparm
 
 Obsoletes: elastix-system
 
@@ -94,12 +93,8 @@ rmdir setup/etc/cron.d setup/etc
 #mkdir -p $RPM_BUILD_ROOT/opt/issabel/
 #mv setup/dialer
 
-# ** Dahdi files **#
-mkdir -p $RPM_BUILD_ROOT/etc/dahdi
 mkdir -p $RPM_BUILD_ROOT/usr/sbin/
 
-# ** switch_wanpipe_media file ** #
-mv setup/usr/sbin/switch_wanpipe_media        $RPM_BUILD_ROOT/usr/sbin/
 mv setup/usr/sbin/issabel_migration.sh        $RPM_BUILD_ROOT/usr/sbin/
 mv setup/usr/sbin/issabel_migration_fpbx.sh   $RPM_BUILD_ROOT/usr/sbin/
 rmdir setup/usr/sbin
@@ -137,14 +132,6 @@ rm $pathModule/preversion_%{modname}.info
 if [ $1 -eq 1 ]; then #install
   # The installer database
     issabel-dbprocess "install" "$pathModule/setup/db"
-
-    if [ -f /etc/dahdi/genconf_parameters ]; then
-        # ** The following selects oslec as default echo canceller ** #
-        echo "echo_can oslec" > /etc/dahdi/genconf_parameters
-        echo "bri_sig_style bri" >> /etc/dahdi/genconf_parameters
-        echo "context_lines from-pstn" >> /etc/dahdi/genconf_parameters
-        echo "context_phones default" >> /etc/dahdi/genconf_parameters
-    fi
 
 elif [ $1 -eq 2 ]; then #update
     issabel-dbprocess "update"  "$pathModule/setup/db" "$preversion"
@@ -197,7 +184,6 @@ fi
 /usr/share/issabel/module_installer/*
 /var/www/backup/automatic_backup.php
 %defattr(755, root, root)
-/usr/sbin/switch_wanpipe_media
 /usr/sbin/issabel_migration.sh
 /usr/sbin/issabel_migration_fpbx.sh
 /usr/share/issabel/privileged/*
@@ -207,6 +193,16 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-55
+- Remove the Hardware Detector module and the legacy DAHDI/wanpipe cluster that
+  only existed to serve it: modules/hardware_detector, the privileged helpers
+  hardware_detector and dahdiconfig, /usr/sbin/switch_wanpipe_media and the
+  hardware_detector database schema (db.info, install and update). The menu item
+  is gone too. Also drop the now dead hdmodelreport helper (its only caller, the
+  HardDrives applet, was retired), the /etc/dahdi/genconf_parameters defaults
+  written by %post and the hdparm dependency they needed. Nothing requires any
+  of it: dahdiconfig in issabelPBX writes /etc/dahdi/system.conf on its own.
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-54
 - Health Center: the module is now a direct child of System in the menu, right
   after Dashboard, instead of hanging from the Dashboard group, and it is named

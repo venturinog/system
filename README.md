@@ -13,7 +13,7 @@ It uses the [Asterisk©](http://www.asterisk.org/ "Asterisk Home Page") open sou
 System
 ----
 
-Issabel System Modules to manage network configuration, backups, repositories, dashboard, hardware detector, and more.
+Issabel System Modules to manage network configuration, backups, repositories, dashboard, and more.
 
 DHCP Server (Kea)
 ----
