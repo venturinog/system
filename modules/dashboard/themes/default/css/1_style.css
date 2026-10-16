@@ -195,6 +195,11 @@ img.fullwidth {
 .iss-appletgrid { display: flex; gap: 16px; align-items: flex-start; width: 100%; }
 .iss-appletgrid .appletcolumn { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
 
+/* Health Center: fijo arriba y a ancho completo (DASHBOARDtodo.md §4.1) */
+.iss-appletgrid-full { display: block; width: 100%; margin-bottom: 16px; }
+.iss-appletgrid-full .appletwindow { margin-bottom: 0; }
+.iss-appletwindow--fixed { cursor: default; }
+
 .appletwindow {
     float: none;
     width: auto;
@@ -289,3 +294,24 @@ img.fullwidth {
 }
 .iss-perf-legend .legendLabel { color: var(--tblr-body-color, #22303e); }
 .iss-perf-legend .legendColorBox > div { border: 0 !important; }
+
+/* Ticker de noticias (DASHBOARDtodo.md §9) */
+.iss-news-ticker {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; margin-bottom: 16px;
+    background: var(--tblr-bg-surface-secondary, #f7f8fa);
+    border: 1px solid var(--tblr-border-color, #e3e8ef);
+    border-radius: 10px;
+    font-size: 13.5px;
+    min-height: 40px;
+}
+.iss-news-ticker__icon {
+    flex: 0 0 auto; font-weight: 600; color: #572364;
+    display: inline-flex; align-items: center; gap: 6px;
+    text-transform: uppercase; font-size: 11px; letter-spacing: .04em;
+}
+.iss-news-ticker__body { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.iss-news-ticker__title { color: var(--tblr-body-color, #22303e); text-decoration: none; }
+.iss-news-ticker__title:hover { text-decoration: underline; }
+.iss-news-ticker__date { color: var(--tblr-secondary-color, #74838f); font-size: 12px; }
+.iss-news-ticker__nav { flex: 0 0 auto; color: var(--tblr-secondary-color, #74838f); font-size: 12px; }

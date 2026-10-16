@@ -87,19 +87,74 @@ function handleHTML_appletGrid($smarty, $module_name, $appletlist)
     $smarty->assign("icon","modules/$module_name/images/system_dashboard.png");
     $smarty->assign("LABEL_LOADING",  _tr('Loading'));
     
-    // Partir los applets en las columnas requeridas
+    // Partir los applets en las columnas requeridas. El Health Center, si está
+    // activo, se saca aparte: va fijo arriba y a ancho completo (DASHBOARDtodo.md
+    // §4.1), y no participa del drag-and-drop.
+    $healthcenter = NULL;
+    $movable = array();
+    foreach ($appletlist as $applet) {
+        $applet['name'] = _tr($applet['name']);
+        if ($applet['code'] === 'Applet_HealthCenter') {
+            $healthcenter = $applet;
+        } else {
+            $movable[] = $applet;
+        }
+    }
+
     $applet_col_1 = array();
     $applet_col_2 = array();
-    foreach ($appletlist as $i => $applet) {
-    	$applet['name'] = _tr($applet['name']);
+    foreach ($movable as $i => $applet) {
         if ($i % 2)
             $applet_col_2[] = $applet;
         else $applet_col_1[] = $applet;
     }
+    $smarty->assign('healthcenter', $healthcenter);
     $smarty->assign('applet_col_1', $applet_col_1);
     $smarty->assign('applet_col_2', $applet_col_2);
-    
+
+    // Ticker de noticias (DASHBOARDtodo.md §9): ya no es un applet. La
+    // visibilidad se controla con la clave `issabel_dashboard_news` de
+    // settings.db (por defecto visible).
+    global $arrConf;
+    $newsEnabled = TRUE;
+    if (!empty($arrConf['issabel_dsn']['settings'])) {
+        $pDB = new paloDB($arrConf['issabel_dsn']['settings']);
+        if (empty($pDB->errMsg) && get_key_settings($pDB, 'issabel_dashboard_news') === 'no')
+            $newsEnabled = FALSE;
+    }
+    $smarty->assign('news_enabled', $newsEnabled);
+    $smarty->assign('LABEL_NEWS', _tr('News'));
+    $smarty->assign('LABEL_NEWS_LOADING', _tr('Loading'));
+
     return $smarty->fetch("$local_templates_dir/appletgrid.tpl");
+}
+
+/**
+ * AJAX: titulares del ticker de noticias. Devuelve JSON para que el shell los
+ * pinte sin bloquear el dashboard si el feed falla.
+ */
+function handleJSON_newsFeed($smarty, $module_name, $appletlist)
+{
+    session_commit();
+
+    require_once "modules/$module_name/libs/issabelNewsFeed.class.php";
+
+    $respuesta = array('status' => 'success', 'message' => '(no message)', 'items' => array());
+    $feed  = new issabelNewsFeed();
+    $items = $feed->fetch(10);
+    if ($items === FALSE) {
+        $respuesta['status']  = 'error';
+        $respuesta['message'] = $feed->errMsg;
+    } else {
+        foreach ($items as $it) {
+            $it['date_format'] = ($it['date'] > 0) ? date('Y.m.d', $it['date']) : '';
+            $respuesta['items'][] = $it;
+        }
+    }
+
+    $json = new Services_JSON();
+    Header('Content-Type: application/json');
+    return $json->encode($respuesta);
 }
 
 function handleJSON_unimplemented($smarty, $module_name, $appletlist)

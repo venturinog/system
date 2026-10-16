@@ -45,7 +45,7 @@ class paloSantoApplets
      * Procedimiento para leer la lista de los applets activados para el usuario.
      * Para compatibilidad con la implementación anterior, y como efecto 
      * secundario, si el usuario indicado no tiene applets activados, se crea una
-     * nueva lista de activaciones por omisión y se guarda esta lista durante la
+     * nueva lista de activaciones por omisión y se guarda esta lista durante la 
      * consulta.
      * 
      * @param   string  $user   Usuario de sistema para el cual se consulta
@@ -143,11 +143,20 @@ SQL_APPLETS_BY_USER;
         
     	$listaApplets = $this->leerAppletsActivados($user);
         if (!is_array($listaApplets)) return FALSE;
-        if (count($nuevo_orden) != count($listaApplets)) {
+
+        // El Health Center va fijo arriba y no es arrastrable: se excluye del
+        // conjunto de applets cuyo orden se guarda (DASHBOARDtodo.md §4.1).
+        $movable = array();
+        foreach ($listaApplets as $applet) {
+        	if (!in_array($applet['code'], $this->_fixedAppletCodes()))
+                $movable[] = $applet;
+        }
+
+        if (count($nuevo_orden) != count($movable)) {
             $this->errMsg = _tr('(internal) Active applet count mismatch');
         	return FALSE;
         }
-        foreach ($listaApplets as $applet) {
+        foreach ($movable as $applet) {
         	if (!in_array($applet['code'], $nuevo_orden)) {
                 $this->errMsg = _tr('(internal) Cannot reference inactive applet');
         		return FALSE;
@@ -155,7 +164,7 @@ SQL_APPLETS_BY_USER;
         }
         
         $nuevo_orden = array_flip($nuevo_orden);
-        foreach ($listaApplets as $applet) {
+        foreach ($movable as $applet) {
         	$r = $this->_db->genQuery(
                 'UPDATE activated_applet_by_user SET order_no = ? WHERE id = ?',
                 array($nuevo_orden[$applet['code']] + 1, $applet['aau_id']));
@@ -166,5 +175,14 @@ SQL_APPLETS_BY_USER;
         }
         return TRUE;
     }
+
+    /**
+     * Applets que no se arrastran y por tanto no entran en el guardado del orden.
+     *
+     * @return  array   Códigos completos (con el prefijo Applet_).
+     */
+    private function _fixedAppletCodes()
+    {
+        return array('Applet_HealthCenter');
+    }
 }
-?>
