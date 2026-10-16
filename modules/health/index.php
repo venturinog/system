@@ -207,7 +207,7 @@ function _healthRenderPage($smarty, $h, $dir, $msg, $msgType)
         'api_url'           => $api['url'],
         'api_token'         => $api['token'],
         'api_enabled'       => $api['enabled'],
-        'api_curl'          => 'curl -k -H "X-Health-Token: '.$api['token'].'" '.$api['url'],
+        'api_curl'          => 'curl -k -H "X-Health-Token: <TOKEN>" '.$api['url'],
     ));
     return $smarty->fetch("$dir/health.tpl");
 }

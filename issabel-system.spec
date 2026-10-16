@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 48
+Release: 49
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -207,6 +207,11 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-49
+- Health: the /health API example no longer prints the real token. The curl
+  snippet now shows a <TOKEN> placeholder; the actual value stays in the masked
+  field (with reveal and copy) only.
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-48
 - Health: fix the endpoint classification. The trunk list was never loaded (it
   checked for a class name that does not exist), so every endpoint was counted
