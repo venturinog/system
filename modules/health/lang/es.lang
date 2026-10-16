@@ -45,6 +45,20 @@ $arrLangModule = array(
     "Certificate critical"          => "Certificado: crítico",
     "days"                          => "días",
     "Channel capacity (0 = off)"    => "Capacidad de canales (0 = apagado)",
+    "Backup warning"                => "Respaldo: aviso",
+    "Health API"                    => "API de salud",
+    "Read-only JSON with the health score and every check, for external monitoring (Zabbix, Nagios, curl). Off by default." =>
+        "JSON de solo lectura con el puntaje de salud y todos los chequeos, para monitoreo externo (Zabbix, Nagios, curl). Apagado por defecto.",
+    "Consume it with this URL and the token header (recommended over ?token=, which may be logged):" =>
+        "Se consume con esta URL y la cabecera del token (recomendado sobre ?token=, que puede quedar en los logs):",
+    "Token"                         => "Token",
+    "Enabled"                       => "Activada",
+    "Disabled"                      => "Desactivada",
+    "Copy"                          => "Copiar",
+    "Regenerate token"              => "Regenerar token",
+    "Token regenerated"             => "Token regenerado",
+    "Regenerating invalidates the previous token immediately." =>
+        "Regenerar invalida el token anterior de inmediato.",
     "Critical endpoints"            => "Endpoints críticos",
     "Trunks"                        => "Troncales",
     "Extensions"                    => "Extensiones",
@@ -53,6 +67,11 @@ $arrLangModule = array(
     "No data yet"                   => "Sin datos aún",
     "An endpoint that is down is reported as critical only if it is in this list." =>
         "Un endpoint caído se reporta como crítico solo si está en esta lista.",
+    "Endpoint policy"               => "Política de endpoints",
+    "Debounce (minutes)"            => "Tiempo de gracia (minutos)",
+    "Consider registered within (days)" => "Considerar registrada en (días)",
+    "A down endpoint is ignored until it has been down for this long, so reboots and re-registrations do not raise alarms." =>
+        "Un endpoint caído se ignora hasta llevar este tiempo caído, así un reinicio o un re-registro no generan alarma.",
     "You do not have permission to view this page" => "No tiene permiso para ver esta página",
     "Health module is not installed" => "El módulo health no está instalado",
     "just now"                      => "ahora mismo",

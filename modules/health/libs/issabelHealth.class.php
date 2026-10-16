@@ -49,6 +49,13 @@ class issabelHealth
     private $_settings = NULL;   // paloDB sobre settings.db
     private $_cfg      = NULL;
 
+    // Cachés en memoria de una misma corrida (evita repetir llamadas a Asterisk).
+    private $_peerCache        = NULL;
+    private $_trunkCache       = NULL;
+    private $_trunkCacheLoaded = FALSE;
+    private $_stateRows        = NULL;   // endpoint_state tras actualizarlo
+    private $_observed         = NULL;   // foto de endpoints de esta corrida
+
     function __construct()
     {
         global $arrConf;
@@ -78,7 +85,9 @@ class issabelHealth
                 'cert_warn_days'     => 30,
                 'cert_crit_days'     => 7,
                 'channels_capacity'  => 0,   // 0 = desactivado
+                'backup_warn_hours'  => 48,  // aviso si el respaldo es más viejo
             ),
+            'backup_dir'           => '/var/www/backup',
             'critical_trunks'      => array('mode' => 'all',  'ids' => array()),
             'critical_extensions'  => array('mode' => 'list', 'ids' => array()),
             'endpoint_debounce_minutes' => 10,
@@ -92,6 +101,7 @@ class issabelHealth
                 'cert'      => 86400,
                 'updates'   => 43200,
                 'telephony' => 300,
+                'backup'    => 3600,
             ),
         );
     }
@@ -124,6 +134,9 @@ class issabelHealth
 
             $r = $this->_getKey('health_endpoint_recent_days');
             if (is_numeric($r)) $cfg['endpoint_recent_days'] = (int)$r;
+
+            $bd = $this->_getKey('health_backup_dir');
+            if (is_string($bd) && trim($bd) !== '') $cfg['backup_dir'] = trim($bd);
         }
         $this->_cfg = $cfg;
         return $cfg;
@@ -140,6 +153,8 @@ class issabelHealth
             'health_critical_extensions'   => $d['critical_extensions'],
             'health_endpoint_debounce_minutes' => (string)$d['endpoint_debounce_minutes'],
             'health_endpoint_recent_days'  => (string)$d['endpoint_recent_days'],
+            'health_backup_dir'            => $d['backup_dir'],
+            'health_api_enabled'           => 'no',
         );
         foreach ($map as $key => $value) {
             if ($this->_getKey($key) === '') {
@@ -147,7 +162,16 @@ class issabelHealth
                 $this->_setKey($key, $json);
             }
         }
+        // El token de la API se genera una sola vez, en la instalación.
+        if ($this->_getKey('health_api_token') === '') {
+            $this->_setKey('health_api_token', $this->_generateToken());
+        }
         return TRUE;
+    }
+
+    private function _generateToken()
+    {
+        return bin2hex(random_bytes(24));
     }
 
     private function _getJson($key)
@@ -279,6 +303,7 @@ class issabelHealth
             $svc('postfix.service',  FALSE, 'SMTP relay'),
             array('group' => 'platform',  'call' => 'checkSystemdFailed'),
             array('group' => 'platform',  'call' => 'checkClock'),
+            array('group' => 'backup',    'category' => 'platform', 'id' => 'platform.backup', 'call' => 'checkBackups'),
             array('group' => 'storage',   'call' => 'checkDisks'),
             array('group' => 'dirspace',  'call' => 'checkDirSpace'),
             array('group' => 'security',  'call' => 'checkFirewall'),
@@ -408,10 +433,59 @@ class issabelHealth
         );
     }
 
+    /**
+     * Respaldo más reciente en el directorio de backups (DASHBOARDtodo.md §7.6).
+     * "Correcto" = existe un .tar con tamaño > 0; se usa su mtime. No se simula
+     * OK: si no hay ninguno, se avisa.
+     */
+    function checkBackups($cfg)
+    {
+        $dir = (isset($cfg['backup_dir']) && trim($cfg['backup_dir']) !== '')
+            ? rtrim($cfg['backup_dir'], '/') : '/var/www/backup';
+        $warnHours = isset($cfg['thresholds']['backup_warn_hours'])
+            ? (int)$cfg['thresholds']['backup_warn_hours'] : 48;
+
+        $newest = NULL; $newestTs = 0;
+        foreach ((array)glob($dir.'/*.tar') as $f) {
+            if (!is_file($f) || filesize($f) <= 0) continue;
+            $ts = filemtime($f);
+            if ($ts > $newestTs) { $newestTs = $ts; $newest = $f; }
+        }
+
+        if (is_null($newest)) {
+            return array(
+                'severity'  => self::SEV_WARNING,
+                'value'     => 'none',
+                'threshold' => "> {$warnHours} h warning",
+                'detail'    => "no backups found in $dir",
+                'source'    => 'backup',
+                'link'      => 'menu=backup_restore',
+            );
+        }
+
+        $ageH = (time() - $newestTs) / 3600.0;
+        return array(
+            'severity'  => ($ageH > $warnHours) ? self::SEV_WARNING : self::SEV_OK,
+            'value'     => self::_ageStr($newestTs).' old',
+            'threshold' => "> {$warnHours} h warning",
+            'detail'    => basename($newest).' ('.self::_ageStr($newestTs).' old)',
+            'source'    => 'backup',
+            'link'      => 'menu=backup_restore',
+        );
+    }
+
+    /** Edad legible y corta, en inglés ("6 h", "3 d", "20 min"). */
+    private static function _ageStr($ts)
+    {
+        $s = max(0, time() - (int)$ts);
+        if ($s < 3600)  return max(1, (int)floor($s / 60)).' min';
+        if ($s < 86400) return (int)floor($s / 3600).' h';
+        return (int)floor($s / 86400).' d';
+    }
+
     // =====================================================================
     //  Chequeos: almacenamiento
     // =====================================================================
-
     private function _diskPaths()
     {
         return array('/', '/var', '/var/log', '/var/lib/mysql', '/var/www/backup',
@@ -663,6 +737,7 @@ class issabelHealth
 
     private function _peerRows()
     {
+        if (is_array($this->_peerCache)) return $this->_peerCache;
         $rows = array();
         $r = $this->_asterisk('sip show peers');
         if (is_array($r)) {
@@ -683,10 +758,19 @@ class issabelHealth
                 if (count($p) >= 3) $rows[] = array('name' => $p[1], 'state' => $p[2]);
             }
         }
+        $this->_peerCache = $rows;
         return $rows;
     }
 
     private function _trunkNames()
+    {
+        if ($this->_trunkCacheLoaded) return $this->_trunkCache;
+        $this->_trunkCacheLoaded = TRUE;
+        $this->_trunkCache = $this->_trunkNamesCompute();
+        return $this->_trunkCache;
+    }
+
+    private function _trunkNamesCompute()
     {
         if (!class_exists('paloSantoTrunk')) {
             $f = '/var/www/html/libs/paloSantoTrunk.class.php';
@@ -718,43 +802,151 @@ class issabelHealth
         return in_array($endpoint, isset($policy['ids']) ? $policy['ids'] : array());
     }
 
+    /**
+     * Foto de endpoints (troncales + extensiones) con su estado actual.
+     * @return array  [{name, kind: trunk|extension, up: bool}]
+     */
+    private function _observedEndpoints()
+    {
+        if (is_array($this->_observed)) return $this->_observed;
+        $trunks = $this->_trunkNames();
+        $trunks = is_array($trunks) ? $trunks : array();
+        $out = array();
+        foreach ($this->_peerRows() as $p) {
+            $out[] = array(
+                'name' => $p['name'],
+                'kind' => in_array($p['name'], $trunks) ? 'trunk' : 'extension',
+                'up'   => (stripos($p['state'], 'OK') === 0),
+            );
+        }
+        $this->_observed = $out;
+        return $out;
+    }
+
+    /**
+     * Actualiza `endpoint_state` y devuelve las filas resultantes. Guarda
+     * first_seen / last_up / down_since para poder aplicar el debounce y el
+     * filtro de "registrada recientemente" (§6.5); poda lo no visto en 30 días.
+     */
+    private function _endpointState($now)
+    {
+        if (is_array($this->_stateRows)) return $this->_stateRows;
+        if (!$this->_openDb(TRUE)) { $this->_stateRows = array(); return $this->_stateRows; }
+
+        $existing = array();
+        $t = $this->_db->fetchTable('SELECT * FROM endpoint_state', TRUE, array());
+        if (is_array($t)) foreach ($t as $row) $existing[$row['name']] = $row;
+
+        $rows = array();
+        foreach ($this->_observedEndpoints() as $o) {
+            $name = $o['name']; $up = $o['up'];
+            $cur = isset($existing[$name]) ? $existing[$name] : NULL;
+            if (is_null($cur)) {
+                $r = array('name' => $name, 'kind' => $o['kind'],
+                    'first_seen' => $now, 'last_seen' => $now,
+                    'last_up' => $up ? $now : 0, 'last_state' => $up ? 'up' : 'down',
+                    'down_since' => $up ? 0 : $now, 'last_change' => $now, 'flap_count' => 0);
+                $this->_db->genQuery(
+                    'INSERT INTO endpoint_state (name,kind,first_seen,last_seen,last_up,last_state,down_since,last_change,flap_count)
+                     VALUES (?,?,?,?,?,?,?,?,?)',
+                    array($r['name'], $r['kind'], $r['first_seen'], $r['last_seen'],
+                          $r['last_up'], $r['last_state'], $r['down_since'],
+                          $r['last_change'], $r['flap_count']));
+            } else {
+                $r = $cur;
+                $r['kind'] = $o['kind'];
+                $r['last_seen'] = $now;
+                $st = $up ? 'up' : 'down';
+                if ($cur['last_state'] !== $st) {
+                    $r['last_change'] = $now;
+                    $r['flap_count']  = ((int)$cur['flap_count']) + 1;
+                    $r['last_state']  = $st;
+                    if ($up) { $r['last_up'] = $now; $r['down_since'] = 0; }
+                    else     { $r['down_since'] = $now; }
+                } elseif ($up) {
+                    $r['last_up'] = $now; $r['down_since'] = 0;
+                }
+                $this->_db->genQuery(
+                    'UPDATE endpoint_state SET kind=?,last_seen=?,last_up=?,last_state=?,down_since=?,last_change=?,flap_count=? WHERE name=?',
+                    array($r['kind'], $r['last_seen'], $r['last_up'], $r['last_state'],
+                          $r['down_since'], $r['last_change'], $r['flap_count'], $name));
+            }
+            $rows[$name] = $r;
+        }
+        $this->_db->genQuery('DELETE FROM endpoint_state WHERE last_seen < ?', array($now - 30 * 86400));
+        $this->_stateRows = $rows;
+        return $rows;
+    }
+
+    /**
+     * Clasifica los endpoints observados aplicando debounce y (solo para
+     * extensiones) el filtro de "registrada recientemente". Es una función
+     * pura, para poder probarla sin Asterisk.
+     *
+     * @return array  ['trunk'=>['up'=>N,'down'=>[nombres]], 'extension'=>...]
+     */
+    function classifyEndpoints($observed, $stateRows, $cfg, $now)
+    {
+        $debounce = ((int)$cfg['endpoint_debounce_minutes']) * 60;
+        $recent   = ((int)$cfg['endpoint_recent_days']) * 86400;
+
+        $out = array('trunk' => array('up' => 0, 'down' => array()),
+                     'extension' => array('up' => 0, 'down' => array()));
+        foreach ($observed as $o) {
+            $k = $o['kind'];
+            if ($o['up']) { $out[$k]['up']++; continue; }
+            $r  = isset($stateRows[$o['name']]) ? $stateRows[$o['name']] : NULL;
+            $ds = $r ? (int)$r['down_since'] : 0;
+            $lu = $r ? (int)$r['last_up'] : 0;
+            $armed = ($ds > 0) && ($now - $ds >= $debounce);
+            if ($armed && $k === 'extension') {
+                // Una extensión configurada y nunca usada no alerta.
+                $armed = ($lu > 0) && ($now - $lu <= $recent);
+            }
+            if ($armed) $out[$k]['down'][] = $o['name'];
+        }
+        return $out;
+    }
+
     function checkTrunks($cfg)
     {
-        $peers = $this->_peerRows();
-        if (empty($peers)) return array('severity' => self::SEV_UNKNOWN, 'detail' => 'sin datos de troncales');
-        $trunks = $this->_trunkNames();
-        if (is_null($trunks)) {
+        if (is_null($this->_trunkNames())) {
             return array('severity' => self::SEV_UNKNOWN, 'value' => '?',
                          'detail' => 'no se pudo determinar la lista de troncales');
         }
-        $down = array(); $up = 0;
-        foreach ($peers as $p) {
-            if (!in_array($p['name'], $trunks)) continue;
-            if (stripos($p['state'], 'OK') === 0) $up++;
-            else $down[] = $p['name'];
-        }
+        $observed = $this->_observedEndpoints();
+        if (empty($observed)) return array('severity' => self::SEV_UNKNOWN, 'detail' => 'sin datos de troncales');
+
+        $now   = time();
+        $state = $this->_endpointState($now);
+        $c     = $this->classifyEndpoints($observed, $state, $cfg, $now);
+        $up    = $c['trunk']['up'];
+        $down  = $c['trunk']['down'];
+
         $critDown = array();
         foreach ($down as $t) if ($this->_isCritical($t, $cfg['critical_trunks'])) $critDown[] = $t;
         $sev = $critDown ? self::SEV_CRITICAL : ($down ? self::SEV_WARNING : self::SEV_OK);
+        $total = $up + count($down);
         return array(
-            'severity' => $sev, 'value' => $up.'/'.($up + count($down)),
-            'detail'   => $down ? ('caídas: '.implode(', ', $down)) : 'troncales registradas',
-            'threshold'=> $cfg['critical_trunks']['mode'], 'source' => 'asterisk-cli', 'link' => 'menu=pbxconfig',
+            'severity' => $sev, 'value' => $up.'/'.$total,
+            'threshold'=> $cfg['critical_trunks']['mode'],
+            'detail'   => $down ? ('down: '.implode(', ', $down))
+                                : ($total ? 'trunks registered' : 'no trunks'),
+            'source'   => 'asterisk-cli', 'link' => 'menu=pbxconfig',
         );
     }
 
     function checkExtensions($cfg)
     {
-        $peers = $this->_peerRows();
-        if (empty($peers)) return array('severity' => self::SEV_UNKNOWN, 'detail' => 'sin datos de extensiones');
-        $trunks = $this->_trunkNames();
-        $trunks = is_array($trunks) ? $trunks : array();
-        $reg = 0; $down = array();
-        foreach ($peers as $p) {
-            if (in_array($p['name'], $trunks)) continue;
-            if (stripos($p['state'], 'OK') === 0) $reg++;
-            else $down[] = $p['name'];
-        }
+        $observed = $this->_observedEndpoints();
+        if (empty($observed)) return array('severity' => self::SEV_UNKNOWN, 'detail' => 'sin datos de extensiones');
+
+        $now   = time();
+        $state = $this->_endpointState($now);
+        $c     = $this->classifyEndpoints($observed, $state, $cfg, $now);
+        $reg   = $c['extension']['up'];
+        $down  = $c['extension']['down'];
+
         // Default: ninguna extensión es crítica (§6.5), así que las caídas se
         // agrupan y no fuerzan el rojo.
         $critDown = array();
@@ -763,8 +955,9 @@ class issabelHealth
         $sev = $critDown ? self::SEV_CRITICAL : (count($down) ? self::SEV_WARNING : self::SEV_OK);
         return array(
             'severity' => $sev, 'value' => $reg.'/'.$total,
-            'detail'   => count($down).' sin registrar'.($critDown ? (' (críticas: '.implode(', ', $critDown).')') : ''),
-            'threshold'=> $cfg['critical_extensions']['mode'], 'source' => 'asterisk-cli', 'link' => 'menu=pbxconfig',
+            'threshold'=> $cfg['critical_extensions']['mode'],
+            'detail'   => count($down).' unregistered'.($critDown ? (' (critical: '.implode(', ', $critDown).')') : ''),
+            'source'   => 'asterisk-cli', 'link' => 'menu=pbxconfig',
         );
     }
 
@@ -1130,6 +1323,112 @@ class issabelHealth
         $this->_cfg = NULL;
     }
 
+    /** Guarda la política de endpoints: debounce y "registrada recientemente". */
+    function saveEndpointPolicy($debounceMinutes, $recentDays, $user)
+    {
+        if (!$this->isAdminUser($user)) return $this->_actionResult(FALSE, $this->_t('Not authorized'));
+        $dm = (int)$debounceMinutes;
+        $rd = (int)$recentDays;
+        if ($dm < 0 || $rd < 0) return $this->_actionResult(FALSE, $this->_t('Invalid value'));
+        if ($this->_setKey('health_endpoint_debounce_minutes', (string)$dm) === FALSE ||
+            $this->_setKey('health_endpoint_recent_days', (string)$rd) === FALSE)
+            return $this->_actionResult(FALSE, $this->_t('Could not save the configuration'));
+        $this->cfgInvalidate();
+        $this->_audit($user, 'health.save_endpoint_policy', 'endpoints', 'ok');
+        return $this->_actionResult(TRUE, $this->_t('Configuration saved'));
+    }
+
+    // =====================================================================
+    //  API de salud (token) — DASHBOARDtodo.md §12 (endpoint /health)
+    // =====================================================================
+
+    /** Estado de la API: enabled, token y URL de consumo. */
+    function getApiConfig()
+    {
+        $v = $this->_getKey('health_api_enabled');
+        return array(
+            'enabled' => ($v === 'yes' || $v === '1'),
+            'token'   => $this->_getKey('health_api_token'),
+            'url'     => $this->apiUrl(),
+        );
+    }
+
+    /** URL absoluta del endpoint (mejor esfuerzo, a partir del host actual). */
+    function apiUrl()
+    {
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : gethostname();
+        return 'https://'.$host.'/modules/health/health.php';
+    }
+
+    function apiEnabled()
+    {
+        $v = $this->_getKey('health_api_enabled');
+        return ($v === 'yes' || $v === '1');
+    }
+
+    /** Compara el token recibido con el guardado (tiempo constante). */
+    function apiTokenValid($token)
+    {
+        $cur = $this->_getKey('health_api_token');
+        if (!is_string($token) || $token === '' || !is_string($cur) || $cur === '') return FALSE;
+        return hash_equals($cur, $token);
+    }
+
+    function setApiEnabled($enabled, $user)
+    {
+        if (!$this->isAdminUser($user)) return $this->_actionResult(FALSE, $this->_t('Not authorized'));
+        if ($this->_setKey('health_api_enabled', $enabled ? 'yes' : 'no') === FALSE)
+            return $this->_actionResult(FALSE, $this->_t('Could not save the configuration'));
+        $this->_audit($user, 'health.api_'.($enabled ? 'enable' : 'disable'), 'api', 'ok');
+        return $this->_actionResult(TRUE, $this->_t('Configuration saved'));
+    }
+
+    function regenerateApiToken($user)
+    {
+        if (!$this->isAdminUser($user)) return $this->_actionResult(FALSE, $this->_t('Not authorized'));
+        $token = $this->_generateToken();
+        if ($this->_setKey('health_api_token', $token) === FALSE)
+            return $this->_actionResult(FALSE, $this->_t('Could not save the configuration'));
+        $this->_audit($user, 'health.api_retoken', 'api', 'ok');
+        $r = $this->_actionResult(TRUE, $this->_t('Token regenerated'));
+        $r['token'] = $token;
+        return $r;
+    }
+
+    /** Cuerpo JSON del endpoint (mismo modelo que el applet y la página). */
+    function apiPayload()
+    {
+        $rows  = $this->readChecks();
+        $score = $this->computeScore($rows);
+        $run   = $this->lastRun();
+
+        $checks = array();
+        foreach ($rows as $id => $r) {
+            $checks[] = array(
+                'id'         => $id,
+                'category'   => $r['category'],
+                'severity'   => $r['severity'],
+                'value'      => $r['value'],
+                'threshold'  => $r['threshold'],
+                'detail'     => $r['detail'],
+                'checked_at' => (int)$r['checked_at'],
+            );
+        }
+        return array(
+            'status'     => 'success',
+            'score'      => $score['score'],
+            'state'      => $score['state'],
+            'counts'     => array(
+                'critical' => $score['critical'],
+                'warning'  => $score['warning'],
+                'ok'       => $score['ok'],
+                'unknown'  => $score['unknown'],
+            ),
+            'checked_at' => $run ? (int)$run['started_at'] : 0,
+            'checks'     => $checks,
+        );
+    }
+
     // =====================================================================
     //  Utilidades internas
     // =====================================================================
@@ -1227,6 +1526,12 @@ class issabelHealth
                 duration_ms integer not null default 0, ran integer not null default 0,
                 skipped integer not null default 0, errors integer not null default 0,
                 message varchar(255))', array());
+        $this->_db->genQuery(
+            'CREATE TABLE IF NOT EXISTS endpoint_state (
+                name varchar(64) primary key, kind varchar(16),
+                first_seen integer, last_seen integer, last_up integer,
+                last_state varchar(8), down_since integer, last_change integer,
+                flap_count integer)', array());
         return TRUE;
     }
 

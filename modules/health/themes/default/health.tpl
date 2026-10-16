@@ -128,7 +128,31 @@
                     <label class="form-label">{$LABEL_CHANNELS_CAP}</label>
                     <input class="form-control" type="number" name="channels_capacity" value="{$th.channels_capacity|escape:'html'}" min="0">
                 </div>
+                <div class="col-md-3">
+                    <label class="form-label">{$LABEL_BACKUP_WARN} (h)</label>
+                    <input class="form-control" type="number" name="backup_warn_hours" value="{$th.backup_warn_hours|escape:'html'}" min="1">
+                </div>
             </div>
+            <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
+        </div>
+    </form>
+
+    <form method="post" action="" class="card mb-3">
+        {$ISSABEL_CSRF_FIELD}
+        <input type="hidden" name="action" value="saveEndpointPolicy">
+        <div class="card-header"><h3 class="card-title">{$LABEL_EP_POLICY}</h3></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">{$LABEL_DEBOUNCE}</label>
+                    <input class="form-control" type="number" name="ep_minutes" value="{$ep_minutes|escape:'html'}" min="0">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{$LABEL_RECENT}</label>
+                    <input class="form-control" type="number" name="ep_days" value="{$ep_days|escape:'html'}" min="0">
+                </div>
+            </div>
+            <div class="text-secondary small mt-2">{$LABEL_HINT_DEBOUNCE}</div>
             <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
         </div>
     </form>
@@ -198,6 +222,41 @@
             </div>
             <div class="text-secondary mt-2 small">{$LABEL_HINT_EP}</div>
             <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
+        </div>
+    </form>
+
+    <form method="post" action="" class="card mb-3">
+        {$ISSABEL_CSRF_FIELD}
+        <input type="hidden" name="action" value="saveApi">
+        <div class="card-header"><h3 class="card-title">{$LABEL_API_TITLE}</h3></div>
+        <div class="card-body">
+            <p class="text-secondary">{$LABEL_API_DESC}</p>
+
+            <label class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" name="api_enabled" value="1" {if $api_enabled}checked{/if}>
+                <span class="form-check-label">{if $api_enabled}{$LABEL_API_ON}{else}{$LABEL_API_OFF}{/if}</span>
+            </label>
+
+            <div class="mb-2">
+                <label class="form-label">{$LABEL_API_CONSUME}</label>
+                <input type="text" class="form-control font-monospace mb-1" readonly value="{$api_url|escape:'html'}">
+                <input type="text" class="form-control font-monospace" readonly value="{$api_curl|escape:'html'}">
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label">{$LABEL_API_TOKEN}</label>
+                <div class="input-group">
+                    <input type="password" class="form-control font-monospace" id="iss-hc-token" readonly value="{$api_token|escape:'html'}">
+                    <button type="button" class="btn btn-outline-secondary" onclick="issHealthRevealToken()" title="{$LABEL_API_TOKEN}"><i class="ti ti-eye"></i></button>
+                    <button type="button" class="btn btn-outline-secondary" id="iss-hc-copy" onclick="issHealthCopyToken()" title="{$LABEL_COPY}"><i class="ti ti-copy"></i></button>
+                </div>
+                <div class="text-secondary small mt-1">{$LABEL_HINT_RETOKEN}</div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button class="btn btn-primary" name="do" value="save">{$LABEL_SAVE}</button>
+                <button class="btn btn-outline-danger" name="do" value="regenerate">{$LABEL_REGENERATE}</button>
+            </div>
         </div>
     </form>
 

@@ -59,7 +59,8 @@ function _moduleContent(&$smarty, $module_name)
     if ($action === 'saveThresholds') {
         $in = array();
         foreach (array('disk_warn_percent','disk_crit_percent','swap_warn_percent',
-                       'load_warn_factor','cert_warn_days','cert_crit_days','channels_capacity') as $k)
+                       'load_warn_factor','cert_warn_days','cert_crit_days',
+                       'channels_capacity','backup_warn_hours') as $k)
             if (isset($_POST[$k])) $in[$k] = $_POST[$k];
         $r = $h->saveThresholds($in, $user);
         $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
@@ -68,6 +69,19 @@ function _moduleContent(&$smarty, $module_name)
         $mode = isset($_POST['cmode']) ? $_POST['cmode'] : 'list';
         $ids  = (isset($_POST['cids']) && is_array($_POST['cids'])) ? $_POST['cids'] : array();
         $r = $h->saveCriticalEndpoints($type, $mode, $ids, $user);
+        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
+    } elseif ($action === 'saveEndpointPolicy') {
+        $dm = isset($_POST['ep_minutes']) ? $_POST['ep_minutes'] : 10;
+        $rd = isset($_POST['ep_days']) ? $_POST['ep_days'] : 7;
+        $r = $h->saveEndpointPolicy($dm, $rd, $user);
+        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
+    } elseif ($action === 'saveApi') {
+        if (isset($_POST['do']) && $_POST['do'] === 'regenerate') {
+            $r = $h->regenerateApiToken($user);
+        } else {
+            $en = (isset($_POST['api_enabled']) && $_POST['api_enabled'] === '1');
+            $r = $h->setApiEnabled($en, $user);
+        }
         $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
     }
 
@@ -86,6 +100,7 @@ function _healthRenderPage($smarty, $h, $dir, $msg, $msgType)
     $score = $h->computeScore($rows);
     $run   = $h->lastRun();
     $cfg   = $h->getConfig(TRUE);
+    $api   = $h->getApiConfig();
 
     $fcat = isset($_POST['fcat']) ? $_POST['fcat'] : '';
     $fsev = isset($_POST['fsev']) ? $_POST['fsev'] : '';
@@ -147,6 +162,7 @@ function _healthRenderPage($smarty, $h, $dir, $msg, $msgType)
         'LABEL_CRIT_CERT'=> _tr('Certificate critical'),
         'LABEL_DAYS'     => _tr('days'),
         'LABEL_CHANNELS_CAP' => _tr('Channel capacity (0 = off)'),
+        'LABEL_BACKUP_WARN'  => _tr('Backup warning'),
         'LABEL_CRITICAL_ENDPOINTS' => _tr('Critical endpoints'),
         'LABEL_TRUNKS'   => _tr('Trunks'),
         'LABEL_EXTENSIONS' => _tr('Extensions'),
@@ -154,6 +170,12 @@ function _healthRenderPage($smarty, $h, $dir, $msg, $msgType)
         'LABEL_SELECTED' => _tr('Only the selected ones'),
         'LABEL_NO_DATA'  => _tr('No data yet'),
         'LABEL_HINT_EP'  => _tr('An endpoint that is down is reported as critical only if it is in this list.'),
+        'LABEL_EP_POLICY' => _tr('Endpoint policy'),
+        'LABEL_DEBOUNCE' => _tr('Debounce (minutes)'),
+        'LABEL_RECENT'   => _tr('Consider registered within (days)'),
+        'LABEL_HINT_DEBOUNCE' => _tr('A down endpoint is ignored until it has been down for this long, so reboots and re-registrations do not raise alarms.'),
+        'ep_minutes'     => $cfg['endpoint_debounce_minutes'],
+        'ep_days'        => $cfg['endpoint_recent_days'],
         'state'          => $score['state'],
         'score'          => is_null($score['score']) ? '–' : $score['score'],
         'critical'       => $score['critical'],
@@ -172,6 +194,20 @@ function _healthRenderPage($smarty, $h, $dir, $msg, $msgType)
         'ext_mode'       => $ce['mode'],
         'trunk_options'  => _healthOptions($h->availableTrunks(), $ct['ids']),
         'ext_options'    => _healthOptions($h->availableExtensions(), $ce['ids']),
+        // API de salud (token)
+        'LABEL_API_TITLE'   => _tr('Health API'),
+        'LABEL_API_DESC'    => _tr('Read-only JSON with the health score and every check, for external monitoring (Zabbix, Nagios, curl). Off by default.'),
+        'LABEL_API_CONSUME' => _tr('Consume it with this URL and the token header (recommended over ?token=, which may be logged):'),
+        'LABEL_API_TOKEN'   => _tr('Token'),
+        'LABEL_API_OFF'     => _tr('Disabled'),
+        'LABEL_API_ON'      => _tr('Enabled'),
+        'LABEL_COPY'        => _tr('Copy'),
+        'LABEL_REGENERATE'  => _tr('Regenerate token'),
+        'LABEL_HINT_RETOKEN'=> _tr('Regenerating invalidates the previous token immediately.'),
+        'api_url'           => $api['url'],
+        'api_token'         => $api['token'],
+        'api_enabled'       => $api['enabled'],
+        'api_curl'          => 'curl -k -H "X-Health-Token: '.$api['token'].'" '.$api['url'],
     ));
     return $smarty->fetch("$dir/health.tpl");
 }

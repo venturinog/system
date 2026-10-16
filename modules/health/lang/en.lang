@@ -45,6 +45,20 @@ $arrLangModule = array(
     "Certificate critical"          => "Certificate critical",
     "days"                          => "days",
     "Channel capacity (0 = off)"    => "Channel capacity (0 = off)",
+    "Backup warning"                => "Backup warning",
+    "Health API"                    => "Health API",
+    "Read-only JSON with the health score and every check, for external monitoring (Zabbix, Nagios, curl). Off by default." =>
+        "Read-only JSON with the health score and every check, for external monitoring (Zabbix, Nagios, curl). Off by default.",
+    "Consume it with this URL and the token header (recommended over ?token=, which may be logged):" =>
+        "Consume it with this URL and the token header (recommended over ?token=, which may be logged):",
+    "Token"                         => "Token",
+    "Enabled"                       => "Enabled",
+    "Disabled"                      => "Disabled",
+    "Copy"                          => "Copy",
+    "Regenerate token"              => "Regenerate token",
+    "Token regenerated"             => "Token regenerated",
+    "Regenerating invalidates the previous token immediately." =>
+        "Regenerating invalidates the previous token immediately.",
     "Critical endpoints"            => "Critical endpoints",
     "Trunks"                        => "Trunks",
     "Extensions"                    => "Extensions",
@@ -53,6 +67,11 @@ $arrLangModule = array(
     "No data yet"                   => "No data yet",
     "An endpoint that is down is reported as critical only if it is in this list." =>
         "An endpoint that is down is reported as critical only if it is in this list.",
+    "Endpoint policy"               => "Endpoint policy",
+    "Debounce (minutes)"            => "Debounce (minutes)",
+    "Consider registered within (days)" => "Consider registered within (days)",
+    "A down endpoint is ignored until it has been down for this long, so reboots and re-registrations do not raise alarms." =>
+        "A down endpoint is ignored until it has been down for this long, so reboots and re-registrations do not raise alarms.",
     "You do not have permission to view this page" => "You do not have permission to view this page",
     "Health module is not installed" => "Health module is not installed",
     "just now"                      => "just now",
