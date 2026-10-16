@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 42
+Release: 45
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -85,6 +85,11 @@ mv setup/usr/share/issabel/privileged/*  $RPM_BUILD_ROOT/usr/share/issabel/privi
 
 rmdir setup/usr/share/issabel/privileged setup/usr/share/issabel setup/usr/share
 
+# ** Health Center collector cron ** #
+mkdir -p $RPM_BUILD_ROOT/etc/cron.d
+mv setup/etc/cron.d/issabel-healthcollect $RPM_BUILD_ROOT/etc/cron.d/
+rmdir setup/etc/cron.d setup/etc
+
 # Additional (module-specific) files that can be handled by RPM
 #mkdir -p $RPM_BUILD_ROOT/opt/issabel/
 #mv setup/dialer
@@ -116,7 +121,7 @@ mv menu.xml $RPM_BUILD_ROOT/usr/share/issabel/module_installer/%{name}-%{version
 mkdir -p /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/
 touch /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
 if [ $1 -eq 2 ]; then
-    rpm -q --queryformat='%{VERSION}-%{RELEASE}' %{name} > /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
+    rpm -q --queryformat='%%{VERSION}-%%{RELEASE}' %{name} > /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
 fi
 
 %post
@@ -199,8 +204,58 @@ fi
 
 %defattr(644, root, root)
 /usr/lib/systemd/system/issabel-netconfig-recover.service
+%config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-45
+- Escape the rpm queryformat used to record the pre-version on upgrade.
+  The VERSION and RELEASE macros were expanded at build time, so %pre always
+  wrote the new version and issabel-dbprocess skipped every version_sql
+  migration. They are now escaped so rpm expands them at run time.
+
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-44
+- Health Center: retarget the dashboard.db migrations to 6.0.0-44. They were
+  pointing at 6.0.0-43, the same Release that was installed, so an upgrade from
+  a 6.0.0-43 build skipped them: the database kept the old applets (whose
+  directories are gone, so only the News ticker was shown) and never got the
+  Health Center. Installing 6.0.0-44 now adds the Health Center applet, removes
+  the retired applets and leaves Calls/Calendar/Voicemails.
+
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-43
+- Health Center: add the dashboard applet (system/modules/dashboard/applets/
+  HealthCenter) that shows the platform score, the findings that require
+  attention, live resources, per-mount disk usage and the performance trend
+  (Chart.js from the modern theme). It is offered only to the administrator
+  role and is activatable per user from applet_admin, and it renders full width
+  and pinned above the sortable applet grid (it is excluded from order saving).
+- Health Center: add the issabelHealth model and the privileged healthcollect
+  helper that runs the slow platform/storage/security/updates/telephony checks
+  into /var/www/db/health.db, honouring a per-group TTL so the expensive checks
+  (dnf, du) are not run on every cycle.
+- Health Center: create the health.db schema and register it in db.info, and
+  schedule healthcollect every 5 minutes (with flock) via
+  /etc/cron.d/issabel-healthcollect. Health defaults (thresholds, critical
+  endpoints, TTLs) are seeded in settings.db by the collector.
+- applet_admin: reject id_dabu values that do not belong to the user role
+  catalog before saving the activation.
+- Health Center: add the corrective actions (start/restart a service from a
+  closed allowlist, and renew the TLS certificate via issabel-helper
+  ssl_certbot). They require an administrator, are confirmed with their impact,
+  are protected by the global CSRF helper and are logged in
+  /var/log/issabel/audit.log. Log purging is not offered: it is logrotate's job.
+- Health: add the "Health" page (system/modules/health) under Dashboard in the
+  menu, administrator only. It lists every check with category/severity filters,
+  exports to CSV, and lets the admin edit the thresholds and choose which trunks
+  and extensions are critical.
+- Dashboard: turn News into a slim ticker in the shell (dashboard/libs/
+  issabelNewsFeed.class.php + themes/default/js/0_news_ticker.js) that loads the
+  feed asynchronously with cache/timeout and hides itself if the feed fails. Its
+  visibility is controlled by the issabel_dashboard_news setting.
+- Dashboard: retire the SystemResources, ProcessesStatus, HardDrives,
+  PerformanceGraphic, CommunicationActivity and News applets (replaced by the
+  Health Center and the ticker) and drop the now unused flot/raphael/justgage
+  assets. Calls, Calendar and Voicemails are kept.
+
 * Thu Oct 15 2026 Issabel Foundation <info@issabel.org> - 6.0.0-42
 - Ping & Traceroute: flush the new console document before running the command,
   so the browser stops showing the previous result while the new one loads
