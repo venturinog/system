@@ -42,6 +42,8 @@ $arrLangModule=array(
 	"Check All" => "Seleccionar/Deseleccionar Todo",
 	"Applet" => "Applet",
 	"Dashboard Applet Admin" => "Gestión de Applets",
+	"Dashboard options" => "Opciones del dashboard",
+	"Show the news ticker" => "Mostrar el ticker de noticias",
     "You must have at least one applet activated" => "Debe tener al menos un applet activado",
 );
 ?>

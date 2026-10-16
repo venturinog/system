@@ -114,19 +114,37 @@ function handleHTML_appletGrid($smarty, $module_name, $appletlist)
 
     // Ticker de noticias (DASHBOARDtodo.md §9): ya no es un applet. La
     // visibilidad se controla con la clave `issabel_dashboard_news` de
-    // settings.db (por defecto visible).
-    global $arrConf;
-    $newsEnabled = TRUE;
-    if (!empty($arrConf['issabel_dsn']['settings'])) {
-        $pDB = new paloDB($arrConf['issabel_dsn']['settings']);
-        if (empty($pDB->errMsg) && get_key_settings($pDB, 'issabel_dashboard_news') === 'no')
-            $newsEnabled = FALSE;
-    }
-    $smarty->assign('news_enabled', $newsEnabled);
+    // settings.db (por defecto visible) y solo la ve el grupo administrator.
+    $smarty->assign('news_enabled', _dashboardNewsEnabled());
     $smarty->assign('LABEL_NEWS', _tr('News'));
     $smarty->assign('LABEL_NEWS_LOADING', _tr('Loading'));
 
     return $smarty->fetch("$local_templates_dir/appletgrid.tpl");
+}
+
+/**
+ * ¿Mostrar el ticker de noticias? Solo para administradores, y solo si el
+ * interruptor global (settings.db → issabel_dashboard_news) no está en 'no'.
+ */
+function _dashboardNewsEnabled()
+{
+    global $arrConf;
+
+    $user = isset($_SESSION['issabel_user']) ? $_SESSION['issabel_user'] : '';
+    if ($user === '') return FALSE;
+
+    if (!class_exists('paloACL')) {
+        foreach (array('libs/paloSantoACL.class.php', '/var/www/html/libs/paloSantoACL.class.php') as $f)
+            if (file_exists($f)) { require_once $f; break; }
+    }
+    if (!class_exists('paloACL')) return FALSE;
+    $pACL = new paloACL(new paloDB($arrConf['issabel_dsn']['acl']));
+    if (!$pACL->isUserAdministratorGroup($user)) return FALSE;
+
+    if (empty($arrConf['issabel_dsn']['settings'])) return TRUE;
+    $pDB = new paloDB($arrConf['issabel_dsn']['settings']);
+    if (!empty($pDB->errMsg)) return TRUE;
+    return (get_key_settings($pDB, 'issabel_dashboard_news') !== 'no');
 }
 
 /**

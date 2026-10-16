@@ -82,6 +82,17 @@ function showApplets_Admin($module_name)
     $smarty->assign("checkall", _tr("Check All"));
     $smarty->assign("icon", "modules/$module_name/images/system_dashboard_applet_admin.png");
 
+    // Opciones del dashboard: solo para administradores.
+    $isAdmin = _appletAdminIsAdmin();
+    $smarty->assign("dashboard_admin", $isAdmin);
+    if ($isAdmin) {
+        $pDBset = new paloDB($arrConf['issabel_dsn']['settings']);
+        $news = (!empty($pDBset->errMsg)) ? 'yes' : get_key_settings($pDBset, 'issabel_dashboard_news');
+        $smarty->assign("news_enabled", ($news !== 'no'));
+        $smarty->assign("LABEL_DASH_OPTIONS", _tr("Dashboard options"));
+        $smarty->assign("LABEL_NEWS_TICKER", _tr("Show the news ticker"));
+    }
+
     //folder path for custom templates
     $base_dir=dirname($_SERVER['SCRIPT_FILENAME']);
     $templates_dir=(isset($arrConf['templates_dir']))?$arrConf['templates_dir']:'themes';
@@ -95,12 +106,22 @@ function showApplets_Admin($module_name)
 function saveApplets_Admin($module_name)
 {
     global $smarty;
+    global $arrConf;
     $arrIDs_DAU = array();
 
     if(is_array($_POST) && count($_POST)>0){
         foreach($_POST as $key => $value){
             if(substr($key,0,7) == "chkdau_")
                 $arrIDs_DAU[] = substr($key,7);
+        }
+    }
+
+    // Opción del ticker de noticias (solo administradores).
+    if (_appletAdminIsAdmin() && !empty($arrConf['issabel_dsn']['settings'])) {
+        $pDBset = new paloDB($arrConf['issabel_dsn']['settings']);
+        if (empty($pDBset->errMsg)) {
+            set_key_settings($pDBset, 'issabel_dashboard_news',
+                (isset($_POST['news_ticker']) ? 'yes' : 'no'));
         }
     }
 
@@ -117,6 +138,20 @@ function saveApplets_Admin($module_name)
         }
     }
     return showApplets_Admin($module_name);
+}
+
+function _appletAdminIsAdmin()
+{
+    $user = isset($_SESSION['issabel_user']) ? $_SESSION['issabel_user'] : '';
+    if ($user === '') return FALSE;
+    if (!class_exists('paloACL')) {
+        foreach (array('libs/paloSantoACL.class.php', '/var/www/html/libs/paloSantoACL.class.php') as $f)
+            if (file_exists($f)) { require_once $f; break; }
+    }
+    if (!class_exists('paloACL')) return FALSE;
+    global $arrConf;
+    $pACL = new paloACL(new paloDB($arrConf['issabel_dsn']['acl']));
+    return (bool)$pACL->isUserAdministratorGroup($user);
 }
 
 function getAction()

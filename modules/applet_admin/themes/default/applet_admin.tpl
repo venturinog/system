@@ -31,4 +31,16 @@ $(document).ready(function() {
             {/foreach}
         </div>
     </section>
+
+    {if $dashboard_admin}
+    <section class="iss-card mt-3">
+        <div class="iss-card__header">{$LABEL_DASH_OPTIONS}</div>
+        <div class="iss-card__body">
+            <label class="form-check">
+                <input class="form-check-input" type="checkbox" name="news_ticker" value="1" {if $news_enabled}checked{/if}>
+                <span class="form-check-label">{$LABEL_NEWS_TICKER}</span>
+            </label>
+        </div>
+    </section>
+    {/if}
 </div>
