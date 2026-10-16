@@ -23,6 +23,11 @@
             <group id="3" name="extension" desc="extension user"></group>
         </permissions>
     </menuitem>
+    <menuitem menuid="health"               desc="Health"             parent="sysdash"      module="yes" link="" order="13">
+        <permissions>
+            <group id="1" name="administrator" desc="total access"></group>
+        </permissions>
+    </menuitem>
     <menuitem menuid="network"              desc="Network"            parent="system"      module="no"  link="" order="3">
         <permissions>
             <group id="1" name="administrator" desc="total access"></group>

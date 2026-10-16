@@ -1,0 +1,70 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel version 6.0                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2026 Issabel Foundation                                |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2 (the "License"); you may not use this file except in |
+  | compliance with the License. You may obtain a copy of the License at |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  +----------------------------------------------------------------------+
+  | Página Salud — Spanish.                                              |
+  +----------------------------------------------------------------------+
+  $Id$ */
+global $arrLangModule;
+$arrLangModule = array(
+    "System health"                 => "Salud del sistema",
+    "score"                         => "puntaje",
+    "critical"                      => "crítico(s)",
+    "warning"                       => "aviso(s)",
+    "ok"                            => "correcto(s)",
+    "unknown"                       => "desconocido(s)",
+    "Last check"                    => "Último chequeo",
+    "Export CSV"                    => "Exportar CSV",
+    "Category"                      => "Categoría",
+    "Severity"                      => "Severidad",
+    "All"                           => "Todas",
+    "Filter"                        => "Filtrar",
+    "Check"                         => "Chequeo",
+    "Value"                         => "Valor",
+    "Threshold"                     => "Umbral",
+    "Detail"                        => "Detalle",
+    "Updated"                       => "Actualizado",
+    "View"                          => "Ver",
+    "Thresholds"                    => "Umbrales",
+    "Save"                          => "Guardar",
+    "Disk warning"                  => "Disco: aviso",
+    "Disk critical"                 => "Disco: crítico",
+    "Swap warning"                  => "Swap: aviso",
+    "Load warning factor"           => "Factor de aviso de carga",
+    "Certificate warning"           => "Certificado: aviso",
+    "Certificate critical"          => "Certificado: crítico",
+    "days"                          => "días",
+    "Channel capacity (0 = off)"    => "Capacidad de canales (0 = apagado)",
+    "Critical endpoints"            => "Endpoints críticos",
+    "Trunks"                        => "Troncales",
+    "Extensions"                    => "Extensiones",
+    "All are critical"              => "Todas son críticas",
+    "Only the selected ones"        => "Solo las seleccionadas",
+    "No data yet"                   => "Sin datos aún",
+    "An endpoint that is down is reported as critical only if it is in this list." =>
+        "Un endpoint caído se reporta como crítico solo si está en esta lista.",
+    "You do not have permission to view this page" => "No tiene permiso para ver esta página",
+    "Health module is not installed" => "El módulo health no está instalado",
+    "just now"                      => "ahora mismo",
+    "minute(s)"                     => "minuto(s)",
+    "hour(s)"                       => "hora(s)",
+    "day(s)"                        => "día(s)",
+    "Configuration saved"           => "Configuración guardada",
+    "Invalid value"                 => "Valor no válido",
+    "Invalid action"                => "Acción no válida",
+    "Not authorized"                => "No autorizado",
+    "Could not save the configuration" => "No se pudo guardar la configuración",
+    "Warning must be lower than critical" => "El aviso debe ser menor que el crítico",
+    "Warning days must be greater than critical days" => "Los días de aviso deben ser mayores que los de crítico",
+);
+?>

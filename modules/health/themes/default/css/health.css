@@ -1,0 +1,25 @@
+/* Página Salud (DASHBOARDtodo.md §9) */
+
+.iss-health__score {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 5px solid var(--tblr-border-color, #e3e8ef);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.iss-health__score--ok       { border-color: #2fb344; }
+.iss-health__score--warning  { border-color: #f59f00; }
+.iss-health__score--critical { border-color: #d63939; }
+.iss-health__scoreval { font-size: 26px; font-weight: 700; line-height: 1; }
+.iss-health__scorelbl { font-size: 10px; text-transform: uppercase; color: var(--tblr-secondary-color, #74838f); }
+
+.iss-health__list {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--tblr-border-color, #e3e8ef);
+    border-radius: 8px;
+    padding: 8px;
+}
