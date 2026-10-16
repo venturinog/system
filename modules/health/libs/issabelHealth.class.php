@@ -53,6 +53,7 @@ class issabelHealth
     private $_peerCache        = NULL;
     private $_trunkCache       = NULL;
     private $_trunkCacheLoaded = FALSE;
+    private $_regCache         = NULL;   // pjsip show registrations -> name => status
     private $_stateRows        = NULL;   // endpoint_state tras actualizarlo
     private $_observed         = NULL;   // foto de endpoints de esta corrida
 
@@ -739,27 +740,100 @@ class issabelHealth
     {
         if (is_array($this->_peerCache)) return $this->_peerCache;
         $rows = array();
+        $seen = array();
+
         $r = $this->_asterisk('sip show peers');
-        if (is_array($r)) {
-            foreach ($r['out'] as $line) {
-                if (preg_match('/^\s*(\S+)\/\S+\s+(\S+)\s+\S*\s*\S*\s*\S*\s+\d+\s+(\D+)/', $line, $m)) {
-                    $rows[] = array('name' => $m[1], 'state' => $m[3]);
-                }
-            }
+        foreach ((is_array($r) ? $this->_parseSipPeers($r['out']) : array()) as $p) {
+            if (isset($seen[$p['name']])) continue;
+            $seen[$p['name']] = TRUE; $rows[] = $p;
         }
+
         $r = $this->_asterisk('pjsip show endpoints');
-        if (is_array($r)) {
-            $start = FALSE;
-            foreach ($r['out'] as $line) {
-                if (strpos($line, '====') === 0) { $start = TRUE; continue; }
-                if (!$start || strpos($line, 'Endpoint:') === FALSE) continue;
-                if (strpos($line, 'dummy_endpoint') !== FALSE) continue;
-                $p = preg_split('/\s+/', trim($line));
-                if (count($p) >= 3) $rows[] = array('name' => $p[1], 'state' => $p[2]);
-            }
+        foreach ((is_array($r) ? $this->_parsePjsipEndpoints($r['out']) : array()) as $p) {
+            if (isset($seen[$p['name']])) continue;
+            $seen[$p['name']] = TRUE; $rows[] = $p;
         }
+
         $this->_peerCache = $rows;
         return $rows;
+    }
+
+    /** chan_sip: `sip show peers`. up = estado empieza con "OK". */
+    private function _parseSipPeers($out)
+    {
+        $rows = array();
+        foreach ((array)$out as $line) {
+            if (preg_match('/^\s*(\S+)\/\S+\s+(\S+)\s+\S*\s*\S*\s*\S*\s+\d+\s+(\D+)/', $line, $m)) {
+                $state = trim($m[3]);
+                $rows[] = array('name' => $m[1], 'state' => $state,
+                                'up' => (stripos($state, 'OK') === 0));
+            }
+        }
+        return $rows;
+    }
+
+    /**
+     * PJSIP: `pjsip show endpoints`. El nombre llega como `id/id` (o `id`); nos
+     * quedamos con el id. down = Unavailable / Unreachable / Invalid.
+     */
+    private function _parsePjsipEndpoints($out)
+    {
+        $rows = array();
+        $start = FALSE;
+        foreach ((array)$out as $line) {
+            if (strpos($line, '====') === 0) { $start = TRUE; continue; }
+            if (!$start || strpos($line, 'Endpoint:') === FALSE) continue;
+            $p = preg_split('/\s+/', trim($line));
+            if (count($p) < 3) continue;
+            $name = explode('/', $p[1]);        // '1002/1002' -> '1002'
+            $name = $name[0];
+            if ($name === '' || $name === 'dummy_endpoint') continue;
+            $state = $p[2];
+            $rows[] = array('name' => $name, 'state' => $state, 'up' => self::_pjsipStateUp($state));
+        }
+        return $rows;
+    }
+
+    /** Estado de endpoint PJSIP: sólo es "abajo" si no está disponible. */
+    private static function _pjsipStateUp($state)
+    {
+        $s = strtolower((string)$state);
+        foreach (array('unavail', 'unreach', 'invalid', 'unknown') as $down)
+            if (strpos($s, $down) !== FALSE) return FALSE;
+        return TRUE;   // Available, Not in use, In use, Busy, Ringing, ...
+    }
+
+    /**
+     * PJSIP: `pjsip show registrations` -> [trunkName => status]. Para troncales
+     * con registro (Auth saliente), el estado real es el del registro.
+     */
+    private function _registrations()
+    {
+        if (is_array($this->_regCache)) return $this->_regCache;
+        $out = array();
+        $r = $this->_asterisk('pjsip show registrations');
+        if (is_array($r)) $out = $this->_parsePjsipRegistrations($r['out']);
+        $this->_regCache = $out;
+        return $out;
+    }
+
+    private function _parsePjsipRegistrations($out)
+    {
+        $out2 = array();
+        $start = FALSE;
+        foreach ((array)$out as $line) {
+            if (strpos($line, '====') === 0) { $start = TRUE; continue; }
+            if (!$start) continue;
+            $line = trim($line);
+            if ($line === '' || strpos($line, 'Objects found:') === 0) continue;
+            // <name>/<serveruri>  <auth>  <Status>  [(exp. Ns)]
+            $p = preg_split('/\s+/', $line);
+            if (count($p) < 3) continue;
+            $name = explode('/', $p[0]);
+            $name = $name[0];
+            if ($name !== '') $out2[$name] = $p[2];
+        }
+        return $out2;
     }
 
     private function _trunkNames()
@@ -772,24 +846,40 @@ class issabelHealth
 
     private function _trunkNamesCompute()
     {
-        if (!class_exists('paloSantoTrunk')) {
+        // La lista de troncales sale de la tabla `trunks` del PBX. Usamos
+        // getTrunks() (lo instala `reports` en libs/) si está, y si no,
+        // consultamos la tabla directamente para no depender de ese archivo.
+        if (!function_exists('getTrunks')) {
             $f = '/var/www/html/libs/paloSantoTrunk.class.php';
             if (file_exists($f)) require_once $f;
         }
-        if (!class_exists('paloSantoTrunk') || !function_exists('generarDSNSistema')) return NULL;
+        if (!function_exists('generarDSNSistema')) return NULL;
+
         try {
             $pDB = new paloDB(generarDSNSistema('asteriskuser', 'asterisk'));
             if (!empty($pDB->errMsg)) return NULL;
-            $arr = getTrunks($pDB);
-            if (!is_array($arr)) return NULL;
+
             $names = array();
-            foreach ($arr as $t) {
-                if (!empty($t[1]) && strpos($t[1], '/') !== FALSE) {
-                    $tmp = explode('/', $t[1]);
-                    $names[] = $tmp[1];
+            if (function_exists('getTrunks')) {
+                $arr = getTrunks($pDB);   // devuelve [ [trunkid, 'TECH/channelid'], ... ]
+                foreach ((array)$arr as $t) {
+                    if (!empty($t[1]) && strpos($t[1], '/') !== FALSE) {
+                        $tmp = explode('/', $t[1]);
+                        $names[] = $tmp[1];
+                    }
+                }
+            } else {
+                $arr = $pDB->fetchTable('SELECT channelid FROM trunks', TRUE);
+                if (!is_array($arr)) return NULL;
+                foreach ($arr as $t) {
+                    $cid = trim($t['channelid']);
+                    $cid = str_replace(array('$OUTNUM$@', 'CUSTOM/', 'AMP:'), '', $cid);
+                    if ($cid === '') continue;
+                    if (strpos($cid, '/') !== FALSE) { $tmp = explode('/', $cid); $cid = end($tmp); }
+                    $names[] = $cid;
                 }
             }
-            return $names;
+            return array_values(array_unique($names));
         } catch (Throwable $e) {
             return NULL;
         }
@@ -811,13 +901,17 @@ class issabelHealth
         if (is_array($this->_observed)) return $this->_observed;
         $trunks = $this->_trunkNames();
         $trunks = is_array($trunks) ? $trunks : array();
+        $regs   = $this->_registrations();
+
         $out = array();
         foreach ($this->_peerRows() as $p) {
-            $out[] = array(
-                'name' => $p['name'],
-                'kind' => in_array($p['name'], $trunks) ? 'trunk' : 'extension',
-                'up'   => (stripos($p['state'], 'OK') === 0),
-            );
+            $kind = in_array($p['name'], $trunks) ? 'trunk' : 'extension';
+            $up   = $p['up'];
+            // Troncal con registro saliente: manda el estado del registro.
+            if ($kind === 'trunk' && isset($regs[$p['name']])) {
+                $up = (strcasecmp($regs[$p['name']], 'Registered') === 0);
+            }
+            $out[] = array('name' => $p['name'], 'kind' => $kind, 'up' => $up);
         }
         $this->_observed = $out;
         return $out;
@@ -890,11 +984,12 @@ class issabelHealth
         $debounce = ((int)$cfg['endpoint_debounce_minutes']) * 60;
         $recent   = ((int)$cfg['endpoint_recent_days']) * 86400;
 
-        $out = array('trunk' => array('up' => 0, 'down' => array()),
-                     'extension' => array('up' => 0, 'down' => array()));
+        $out = array('trunk' => array('up' => 0, 'down' => array(), 'down_armed' => array()),
+                     'extension' => array('up' => 0, 'down' => array(), 'down_armed' => array()));
         foreach ($observed as $o) {
             $k = $o['kind'];
             if ($o['up']) { $out[$k]['up']++; continue; }
+            $out[$k]['down'][] = $o['name'];
             $r  = isset($stateRows[$o['name']]) ? $stateRows[$o['name']] : NULL;
             $ds = $r ? (int)$r['down_since'] : 0;
             $lu = $r ? (int)$r['last_up'] : 0;
@@ -903,7 +998,7 @@ class issabelHealth
                 // Una extensión configurada y nunca usada no alerta.
                 $armed = ($lu > 0) && ($now - $lu <= $recent);
             }
-            if ($armed) $out[$k]['down'][] = $o['name'];
+            if ($armed) $out[$k]['down_armed'][] = $o['name'];
         }
         return $out;
     }
@@ -922,16 +1017,19 @@ class issabelHealth
         $c     = $this->classifyEndpoints($observed, $state, $cfg, $now);
         $up    = $c['trunk']['up'];
         $down  = $c['trunk']['down'];
+        $armed = $c['trunk']['down_armed'];
 
         $critDown = array();
-        foreach ($down as $t) if ($this->_isCritical($t, $cfg['critical_trunks'])) $critDown[] = $t;
-        $sev = $critDown ? self::SEV_CRITICAL : ($down ? self::SEV_WARNING : self::SEV_OK);
+        foreach ($armed as $t) if ($this->_isCritical($t, $cfg['critical_trunks'])) $critDown[] = $t;
+        $sev = $critDown ? self::SEV_CRITICAL : ($armed ? self::SEV_WARNING : self::SEV_OK);
         $total = $up + count($down);
+        if ($armed)      $detail = 'down: '.implode(', ', $armed);
+        elseif ($down)   $detail = count($down).' down (within grace)';
+        else             $detail = ($total ? 'trunks registered' : 'no trunks');
         return array(
             'severity' => $sev, 'value' => $up.'/'.$total,
             'threshold'=> $cfg['critical_trunks']['mode'],
-            'detail'   => $down ? ('down: '.implode(', ', $down))
-                                : ($total ? 'trunks registered' : 'no trunks'),
+            'detail'   => $detail,
             'source'   => 'asterisk-cli', 'link' => 'menu=pbxconfig',
         );
     }
@@ -946,17 +1044,21 @@ class issabelHealth
         $c     = $this->classifyEndpoints($observed, $state, $cfg, $now);
         $reg   = $c['extension']['up'];
         $down  = $c['extension']['down'];
+        $armed = $c['extension']['down_armed'];
 
         // Default: ninguna extensión es crítica (§6.5), así que las caídas se
         // agrupan y no fuerzan el rojo.
         $critDown = array();
-        foreach ($down as $e) if ($this->_isCritical($e, $cfg['critical_extensions'])) $critDown[] = $e;
+        foreach ($armed as $e) if ($this->_isCritical($e, $cfg['critical_extensions'])) $critDown[] = $e;
         $total = $reg + count($down);
-        $sev = $critDown ? self::SEV_CRITICAL : (count($down) ? self::SEV_WARNING : self::SEV_OK);
+        $sev = $critDown ? self::SEV_CRITICAL : ($armed ? self::SEV_WARNING : self::SEV_OK);
+        if ($armed)    $detail = count($armed).' unregistered'.($critDown ? (' (critical: '.implode(', ', $critDown).')') : '');
+        elseif ($down) $detail = count($down).' down (within grace)';
+        else           $detail = 'extensions registered';
         return array(
             'severity' => $sev, 'value' => $reg.'/'.$total,
             'threshold'=> $cfg['critical_extensions']['mode'],
-            'detail'   => count($down).' unregistered'.($critDown ? (' (critical: '.implode(', ', $critDown).')') : ''),
+            'detail'   => $detail,
             'source'   => 'asterisk-cli', 'link' => 'menu=pbxconfig',
         );
     }

@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 47
+Release: 48
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -207,6 +207,17 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-48
+- Health: fix the endpoint classification. The trunk list was never loaded (it
+  checked for a class name that does not exist), so every endpoint was counted
+  as an extension and trunks showed as unknown. Load getTrunks() by function
+  (with a direct `trunks` query as fallback), normalise the PJSIP endpoint names
+  (id/id -> id), map the PJSIP states correctly (Unavailable/Unreachable/Invalid
+  = down; Available/Not in use = up), use `pjsip show registrations` for trunks
+  that register, and dedupe peers. The counts now also include endpoints that
+  are still within the debounce grace window, so a just-down endpoint no longer
+  disappears from the totals.
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-47
 - Health: apply the endpoint guards. The collector keeps per-endpoint state in
   health.db (endpoint_state) so a down trunk or extension is only reported after
