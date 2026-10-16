@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 52
+Release: 53
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -207,6 +207,22 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-53
+- Health: the down trunks and the critical unregistered extensions are reported
+  with the descriptive name that issabelPBX shows ("Trunk Name" of the trunks
+  table, the user Display Name for an extension), not the Asterisk identifier, so
+  a trunk reads "Pruebas" instead of "pruebas" and an extension "1000 (Ana)".
+  The raw identifier is still what is stored and what the critical-endpoint
+  policy uses, so renaming in the PBX does not break the configuration.
+- Health: the endpoint messages now say what they are ("trunk down: ...",
+  "3 trunks down (within grace)", "1 extension down (within grace)"), and the
+  Critical endpoints selector of the Health page shows the descriptive name with
+  the identifier.
+- Health: the View button of the trunk and extension checks no longer points at
+  the "pbxconfig" menu group. That item has no ACL resource (issabel-menumerge
+  only creates resources for items with a parent), so the tab manager answered
+  403 module_not_authorized; it now opens PBX Configuration ("pbxadmin").
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-52
 - Health: the check messages are no longer hardcoded Spanish. The collector now
   stores a message key plus its arguments in health.db and the applet, the page

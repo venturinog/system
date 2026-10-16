@@ -18,8 +18,12 @@
         var box = input.closest('[data-endpoints]');
         if (!box) return;
         box.querySelectorAll('.form-check').forEach(function (label) {
-            var match = label.textContent.toLowerCase().indexOf(q) >= 0;
-            label.style.display = match ? '' : 'none';
+            var input = label.querySelector('input[type="checkbox"]');
+            // Se busca por el nombre descriptivo y también por el id crudo
+            // (channelid de la troncal o número de extensión).
+            var hay = label.textContent.toLowerCase() + ' ' +
+                      (input ? String(input.value).toLowerCase() : '');
+            label.style.display = (hay.indexOf(q) >= 0) ? '' : 'none';
         });
     };
 

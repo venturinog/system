@@ -12,7 +12,10 @@
   | compliance with the License. You may obtain a copy of the License at |
   | http://www.opensource.org/licenses/gpl-license.php                   |
   +----------------------------------------------------------------------+
-  | Página Salud — br.
+  | Página Salud — br.                                               |
+  |                                                                      |
+  | Las claves con punto (svc.*, disk.*, ext.*) son los mensajes de los   |
+  | chequeos; los sufijos .one/.other/.few/.many son formas plurales.     |
   +----------------------------------------------------------------------+
   $Id$ */
 global $arrLangModule;
@@ -127,19 +130,20 @@ $arrLangModule = array(
     'ast.ok' => 'Asterisk está respondendo',
     'ast.down' => 'sem resposta do Asterisk (CLI)',
     'ast.missing' => 'Asterisk não está instalado',
-    'tr.down' => 'caídos: %s',
+    'tr.down.one' => 'tronco caído: %s',
+    'tr.down.other' => 'troncos caídos: %s',
     'tr.ok' => 'troncos registrados',
     'tr.none' => 'sem troncos',
-    'tr.grace.one' => '%d caído (dentro da carência)',
-    'tr.grace.other' => '%d caídos (dentro da carência)',
+    'tr.grace.one' => '%d tronco caído (dentro da carência)',
+    'tr.grace.other' => '%d troncos caídos (dentro da carência)',
     'tr.unknown' => 'sem dados de troncos',
     'tr.nolist' => 'não foi possível determinar a lista de troncos',
     'ext.unreg.one' => '%d ramal não registrado',
     'ext.unreg.other' => '%d ramais não registrados',
     'ext.unregcrit.one' => '%d ramal não registrado, críticos: %s',
     'ext.unregcrit.other' => '%d ramais não registrados, críticos: %s',
-    'ext.grace.one' => '%d caído (dentro da carência)',
-    'ext.grace.other' => '%d caídos (dentro da carência)',
+    'ext.grace.one' => '%d ramal caído (dentro da carência)',
+    'ext.grace.other' => '%d ramais caídos (dentro da carência)',
     'ext.ok' => 'ramais registrados',
     'ext.unknown' => 'sem dados de endpoints',
     'bk.none' => 'nenhum backup encontrado em %s',
@@ -166,17 +170,6 @@ $arrLangModule = array(
     'value.no' => 'não',
     'value.up' => 'ativo',
     'value.down' => 'inativo',
-    'systemd.failed.few' => 'systemd.failed.few',
-    'disk.mounts.few' => 'disk.mounts.few',
-    'f2b.jails.few' => 'f2b.jails.few',
-    'cert.expires.few' => 'cert.expires.few',
-    'updates.issabel.few' => 'updates.issabel.few',
-    'updates.security.few' => 'updates.security.few',
-    'repos.count.few' => 'repos.count.few',
-    'tr.grace.few' => 'tr.grace.few',
-    'ext.unreg.few' => 'ext.unreg.few',
-    'ext.unregcrit.few' => 'ext.unregcrit.few',
-    'ext.grace.few' => 'ext.grace.few',
     'Invalid service' => 'Serviço inválido',
     'The action could not be completed' => 'Não foi possível concluir a ação',
     'Certificate renewal requested' => 'Renovação do certificado solicitada',

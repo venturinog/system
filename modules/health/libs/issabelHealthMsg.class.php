@@ -78,19 +78,20 @@ class issabelHealthMsg
         'ast.ok' => 'Asterisk is responding',
         'ast.down' => 'no response from Asterisk (CLI)',
         'ast.missing' => 'Asterisk is not installed',
-        'tr.down' => 'down: %s',
+        'tr.down.one' => 'trunk down: %s',
+        'tr.down.other' => 'trunks down: %s',
         'tr.ok' => 'trunks registered',
         'tr.none' => 'no trunks',
-        'tr.grace.one' => '%d down (within grace)',
-        'tr.grace.other' => '%d down (within grace)',
+        'tr.grace.one' => '%d trunk down (within grace)',
+        'tr.grace.other' => '%d trunks down (within grace)',
         'tr.unknown' => 'no trunk data',
         'tr.nolist' => 'could not determine the trunk list',
         'ext.unreg.one' => '%d unregistered extension',
         'ext.unreg.other' => '%d unregistered extensions',
         'ext.unregcrit.one' => '%d unregistered extension, critical: %s',
         'ext.unregcrit.other' => '%d unregistered extensions, critical: %s',
-        'ext.grace.one' => '%d down (within grace)',
-        'ext.grace.other' => '%d down (within grace)',
+        'ext.grace.one' => '%d extension down (within grace)',
+        'ext.grace.other' => '%d extensions down (within grace)',
         'ext.ok' => 'extensions registered',
         'ext.unknown' => 'no endpoint data',
         'bk.none' => 'no backups found in %s',
@@ -262,6 +263,12 @@ class issabelHealthMsg
             $lang = self::$_lang;
         }
         $tpl = self::template($key, $count, $lang, $forceEn);
+        if (!is_string($tpl) || $tpl === $key) {
+            // Clave desconocida: se retiró (p. ej. tras actualizar el paquete)
+            // y la caché aún no se refrescó. Mejor el texto guardado que la
+            // clave cruda en pantalla.
+            return ($fallback !== '') ? $fallback : $key;
+        }
         $vals = self::args($args, $forceEn, $lang);
         if (count($vals) === 0) {
             // Sin argumentos no se puede aplicar vsprintf: si la plantilla los

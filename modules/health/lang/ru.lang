@@ -12,7 +12,10 @@
   | compliance with the License. You may obtain a copy of the License at |
   | http://www.opensource.org/licenses/gpl-license.php                   |
   +----------------------------------------------------------------------+
-  | Página Salud — ru.
+  | Página Salud — ru.                                               |
+  |                                                                      |
+  | Las claves con punto (svc.*, disk.*, ext.*) son los mensajes de los   |
+  | chequeos; los sufijos .one/.other/.few/.many son formas plurales.     |
   +----------------------------------------------------------------------+
   $Id$ */
 global $arrLangModule;
@@ -127,19 +130,21 @@ $arrLangModule = array(
     'ast.ok' => 'Asterisk отвечает',
     'ast.down' => 'нет ответа от Asterisk (CLI)',
     'ast.missing' => 'Asterisk не установлен',
-    'tr.down' => 'неактивны: %s',
+    'tr.down.one' => 'транк неактивен: %s',
+    'tr.down.other' => 'транков неактивны: %s',
+    'tr.down.few' => 'транка неактивны: %s',
     'tr.ok' => 'транки зарегистрированы',
     'tr.none' => 'нет транков',
-    'tr.grace.one' => '%d неактивен (в льготном периоде)',
-    'tr.grace.other' => '%d неактивных (в льготном периоде)',
+    'tr.grace.one' => '%d транк неактивен (в льготном периоде)',
+    'tr.grace.other' => '%d транков неактивны (в льготном периоде)',
     'tr.unknown' => 'нет данных о транках',
     'tr.nolist' => 'не удалось определить список транков',
     'ext.unreg.one' => '%d незарегистрированный номер',
     'ext.unreg.other' => '%d незарегистрированных номеров',
     'ext.unregcrit.one' => '%d незарегистрированный номер, критичные: %s',
     'ext.unregcrit.other' => '%d незарегистрированных номеров, критичные: %s',
-    'ext.grace.one' => '%d неактивен (в льготном периоде)',
-    'ext.grace.other' => '%d неактивных (в льготном периоде)',
+    'ext.grace.one' => '%d номер неактивен (в льготном периоде)',
+    'ext.grace.other' => '%d номеров неактивны (в льготном периоде)',
     'ext.ok' => 'номера зарегистрированы',
     'ext.unknown' => 'нет данных об абонентах',
     'bk.none' => 'резервные копии не найдены в %s',
@@ -173,10 +178,10 @@ $arrLangModule = array(
     'updates.issabel.few' => '%d пакета issabel* ожидают',
     'updates.security.few' => '%d обновления безопасности ожидают',
     'repos.count.few' => '%d репозитория',
-    'tr.grace.few' => '%d неактивных (в льготном периоде)',
+    'tr.grace.few' => '%d транка неактивны (в льготном периоде)',
     'ext.unreg.few' => '%d незарегистрированных номера',
     'ext.unregcrit.few' => '%d незарегистрированных номера, критичные: %s',
-    'ext.grace.few' => '%d неактивных (в льготном периоде)',
+    'ext.grace.few' => '%d номера неактивны (в льготном периоде)',
     'Invalid service' => 'Неверная служба',
     'The action could not be completed' => 'Не удалось выполнить действие',
     'Certificate renewal requested' => 'Запрошено обновление сертификата',

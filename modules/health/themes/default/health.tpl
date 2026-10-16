@@ -177,9 +177,9 @@
                 <input type="text" class="form-control mb-2" placeholder="{$LABEL_FILTER}..." oninput="issHealthFilterList(this)">
                 <div class="iss-health__list">
                 {foreach from=$trunk_options item=o}
-                    <label class="form-check">
+                    <label class="form-check" title="{$o.id|escape:'html'}">
                         <input class="form-check-input" type="checkbox" name="cids[]" value="{$o.id|escape:'html'}" {if $o.checked}checked{/if}>
-                        <span class="form-check-label">{$o.id|escape:'html'}</span>
+                        <span class="form-check-label">{$o.label|escape:'html'}</span>
                     </label>
                 {foreachelse}
                     <div class="text-secondary">{$LABEL_NO_DATA}</div>
@@ -211,9 +211,9 @@
                 <input type="text" class="form-control mb-2" placeholder="{$LABEL_FILTER}..." oninput="issHealthFilterList(this)">
                 <div class="iss-health__list">
                 {foreach from=$ext_options item=o}
-                    <label class="form-check">
+                    <label class="form-check" title="{$o.id|escape:'html'}">
                         <input class="form-check-input" type="checkbox" name="cids[]" value="{$o.id|escape:'html'}" {if $o.checked}checked{/if}>
-                        <span class="form-check-label">{$o.id|escape:'html'}</span>
+                        <span class="form-check-label">{$o.label|escape:'html'}</span>
                     </label>
                 {foreachelse}
                     <div class="text-secondary">{$LABEL_NO_DATA}</div>

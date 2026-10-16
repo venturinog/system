@@ -12,7 +12,10 @@
   | compliance with the License. You may obtain a copy of the License at |
   | http://www.opensource.org/licenses/gpl-license.php                   |
   +----------------------------------------------------------------------+
-  | Página Salud — bg.
+  | Página Salud — bg.                                               |
+  |                                                                      |
+  | Las claves con punto (svc.*, disk.*, ext.*) son los mensajes de los   |
+  | chequeos; los sufijos .one/.other/.few/.many son formas plurales.     |
   +----------------------------------------------------------------------+
   $Id$ */
 global $arrLangModule;
@@ -127,19 +130,20 @@ $arrLangModule = array(
     'ast.ok' => 'Asterisk отговаря',
     'ast.down' => 'няма отговор от Asterisk (CLI)',
     'ast.missing' => 'Asterisk не е инсталиран',
-    'tr.down' => 'изключени: %s',
+    'tr.down.one' => 'транк изключен: %s',
+    'tr.down.other' => 'транкове изключени: %s',
     'tr.ok' => 'транковете са регистрирани',
     'tr.none' => 'няма транкове',
-    'tr.grace.one' => '%d изключен (в грационен период)',
-    'tr.grace.other' => '%d изключени (в грационен период)',
+    'tr.grace.one' => '%d транк изключен (в грационен период)',
+    'tr.grace.other' => '%d транка изключени (в грационен период)',
     'tr.unknown' => 'няма данни за транкове',
     'tr.nolist' => 'списъкът с транкове не можа да бъде определен',
     'ext.unreg.one' => '%d нерегистриран вътрешен номер',
     'ext.unreg.other' => '%d нерегистрирани вътрешни номера',
     'ext.unregcrit.one' => '%d нерегистриран вътрешен номер, критични: %s',
     'ext.unregcrit.other' => '%d нерегистрирани вътрешни номера, критични: %s',
-    'ext.grace.one' => '%d изключен (в грационен период)',
-    'ext.grace.other' => '%d изключени (в грационен период)',
+    'ext.grace.one' => '%d вътрешен номер изключен (в грационен период)',
+    'ext.grace.other' => '%d вътрешни номера изключени (в грационен период)',
     'ext.ok' => 'вътрешните номера са регистрирани',
     'ext.unknown' => 'няма данни за крайни точки',
     'bk.none' => 'няма намерени резервни копия в %s',
@@ -166,17 +170,6 @@ $arrLangModule = array(
     'value.no' => 'не',
     'value.up' => 'активен',
     'value.down' => 'неактивен',
-    'systemd.failed.few' => 'systemd.failed.few',
-    'disk.mounts.few' => 'disk.mounts.few',
-    'f2b.jails.few' => 'f2b.jails.few',
-    'cert.expires.few' => 'cert.expires.few',
-    'updates.issabel.few' => 'updates.issabel.few',
-    'updates.security.few' => 'updates.security.few',
-    'repos.count.few' => 'repos.count.few',
-    'tr.grace.few' => 'tr.grace.few',
-    'ext.unreg.few' => 'ext.unreg.few',
-    'ext.unregcrit.few' => 'ext.unregcrit.few',
-    'ext.grace.few' => 'ext.grace.few',
     'Invalid service' => 'Невалидна услуга',
     'The action could not be completed' => 'Действието не можа да бъде изпълнено',
     'Certificate renewal requested' => 'Заявено подновяване на сертификата',

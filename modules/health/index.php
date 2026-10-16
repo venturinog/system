@@ -192,8 +192,8 @@ function _healthRenderPage($smarty, $h, $dir, $msg, $msgType)
         'th'             => $cfg['thresholds'],
         'trunk_mode'     => $ct['mode'],
         'ext_mode'       => $ce['mode'],
-        'trunk_options'  => _healthOptions($h->availableTrunks(), $ct['ids']),
-        'ext_options'    => _healthOptions($h->availableExtensions(), $ce['ids']),
+        'trunk_options'  => _healthOptions($h->availableTrunks(), $ct['ids'], $h->trunkLabels()),
+        'ext_options'    => _healthOptions($h->availableExtensions(), $ce['ids'], $h->extensionLabels()),
         // API de salud (token)
         'LABEL_API_TITLE'   => _tr('Health API'),
         'LABEL_API_DESC'    => _tr('Read-only JSON with the health score and every check, for external monitoring (Zabbix, Nagios, curl). Off by default.'),
@@ -232,12 +232,17 @@ function _healthExportCSV($h)
     return $csv;
 }
 
-function _healthOptions($available, $selected)
+function _healthOptions($available, $selected, $labels = array())
 {
     $all = array_values(array_unique(array_merge((array)$available, (array)$selected)));
     sort($all);
     $out = array();
-    foreach ($all as $id) $out[] = array('id' => $id, 'checked' => in_array($id, (array)$selected));
+    foreach ($all as $id) {
+        // `id` es el identificador crudo (lo que se guarda: channelid o número);
+        // `label` es el nombre descriptivo del PBX, solo para mostrar.
+        $label = (isset($labels[$id]) && (string)$labels[$id] !== '') ? (string)$labels[$id] : $id;
+        $out[] = array('id' => $id, 'label' => $label, 'checked' => in_array($id, (array)$selected));
+    }
     return $out;
 }
 

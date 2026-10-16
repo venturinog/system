@@ -58,6 +58,14 @@ class issabelHealth
     private $_stateRows        = NULL;   // endpoint_state tras actualizarlo
     private $_observed         = NULL;   // foto de endpoints de esta corrida
 
+    // Etiquetas "humanas" de endpoints (nombres del PBX), también cacheadas.
+    private $_pbxDb            = NULL;
+    private $_pbxDbLoaded      = FALSE;
+    private $_trunkLabels      = NULL;
+    private $_trunkLabelsLoaded = FALSE;
+    private $_extLabels        = NULL;
+    private $_extLabelsLoaded  = FALSE;
+
     function __construct()
     {
         global $arrConf;
@@ -927,12 +935,10 @@ class issabelHealth
             $f = '/var/www/html/libs/paloSantoTrunk.class.php';
             if (file_exists($f)) require_once $f;
         }
-        if (!function_exists('generarDSNSistema')) return NULL;
+        $pDB = $this->_pbxDb();
+        if (is_null($pDB)) return NULL;
 
         try {
-            $pDB = new paloDB(generarDSNSistema('asteriskuser', 'asterisk'));
-            if (!empty($pDB->errMsg)) return NULL;
-
             $names = array();
             if (function_exists('getTrunks')) {
                 $arr = getTrunks($pDB);   // devuelve [ [trunkid, 'TECH/channelid'], ... ]
@@ -946,10 +952,8 @@ class issabelHealth
                 $arr = $pDB->fetchTable('SELECT channelid FROM trunks', TRUE);
                 if (!is_array($arr)) return NULL;
                 foreach ($arr as $t) {
-                    $cid = trim($t['channelid']);
-                    $cid = str_replace(array('$OUTNUM$@', 'CUSTOM/', 'AMP:'), '', $cid);
+                    $cid = $this->_normalizeChannelId($t['channelid']);
                     if ($cid === '') continue;
-                    if (strpos($cid, '/') !== FALSE) { $tmp = explode('/', $cid); $cid = end($tmp); }
                     $names[] = $cid;
                 }
             }
@@ -957,6 +961,125 @@ class issabelHealth
         } catch (Throwable $e) {
             return NULL;
         }
+    }
+
+    /** Conexión (cacheada) a la base de datos del PBX (`asterisk`). */
+    private function _pbxDb()
+    {
+        if ($this->_pbxDbLoaded) return $this->_pbxDb;
+        $this->_pbxDbLoaded = TRUE;
+        if (!function_exists('generarDSNSistema')) return NULL;
+        try {
+            $db = new paloDB(generarDSNSistema('asteriskuser', 'asterisk'));
+            if (empty($db->errMsg)) $this->_pbxDb = $db;
+        } catch (Throwable $e) {
+            $this->_pbxDb = NULL;
+        }
+        return $this->_pbxDb;
+    }
+
+    /**
+     * El `channelid` de una troncal es el identificador que usa Asterisk
+     * (`SIP/<channelid>`); se normaliza igual que en `_trunkNamesCompute()`
+     * para poder cruzarlo con los nombres que reporta Asterisk.
+     */
+    private function _normalizeChannelId($cid)
+    {
+        $cid = trim((string)$cid);
+        $cid = str_replace(array('$OUTNUM$@', 'CUSTOM/', 'AMP:'), '', $cid);
+        if ($cid === '') return '';
+        if (strpos($cid, '/') !== FALSE) { $tmp = explode('/', $cid); $cid = end($tmp); }
+        return $cid;
+    }
+
+    /**
+     * Etiquetas de troncales: `channelid` => "Trunk Name" de issabelPBX.
+     * En la tabla `trunks` el `channelid` es el nombre de Asterisk y `name` el
+     * rótulo que ve el administrador ("Pruebas", "Twilio"...); si está vacío se
+     * usa el `channelid`.
+     */
+    private function _trunkLabelMap()
+    {
+        if ($this->_trunkLabelsLoaded) return $this->_trunkLabels;
+        $this->_trunkLabelsLoaded = TRUE;
+        $this->_trunkLabels = array();
+        $pDB = $this->_pbxDb();
+        if (is_null($pDB)) return $this->_trunkLabels;
+        try {
+            $rows = $pDB->fetchTable('SELECT channelid, name FROM trunks', TRUE);
+            if (!is_array($rows)) return $this->_trunkLabels;
+            foreach ($rows as $t) {
+                $cid = $this->_normalizeChannelId(isset($t['channelid']) ? $t['channelid'] : '');
+                if ($cid === '' || isset($this->_trunkLabels[$cid])) continue;
+                $name = isset($t['name']) ? trim($t['name']) : '';
+                $this->_trunkLabels[$cid] = ($name !== '') ? $name : $cid;
+            }
+        } catch (Throwable $e) {
+            $this->_trunkLabels = array();
+        }
+        return $this->_trunkLabels;
+    }
+
+    /**
+     * Nombres de extensión (Display Name del PBX): `1000` => `Ana`, para poder
+     * mostrar "1000 (Ana)". Tabla `users` de FreePBX.
+     */
+    private function _extensionNameMap()
+    {
+        if ($this->_extLabelsLoaded) return $this->_extLabels;
+        $this->_extLabelsLoaded = TRUE;
+        $this->_extLabels = array();
+        $pDB = $this->_pbxDb();
+        if (is_null($pDB)) return $this->_extLabels;
+        try {
+            $rows = $pDB->fetchTable('SELECT extension, name FROM users', TRUE);
+            if (!is_array($rows)) return $this->_extLabels;
+            foreach ($rows as $u) {
+                $ext  = isset($u['extension']) ? trim($u['extension']) : '';
+                $name = isset($u['name']) ? trim($u['name']) : '';
+                if ($ext === '' || $name === '' || isset($this->_extLabels[$ext])) continue;
+                $this->_extLabels[$ext] = $name;
+            }
+        } catch (Throwable $e) {
+            $this->_extLabels = array();
+        }
+        return $this->_extLabels;
+    }
+
+    /**
+     * Etiqueta para mostrar de un endpoint: el nombre descriptivo del PBX si lo
+     * hay ("Pruebas" para una troncal, "1000 (Ana)" para una extensión); si no,
+     * el propio nombre. El identificador guardado (críticos, config) sigue
+     * siendo el nombre crudo.
+     */
+    private function _endpointLabel($name, $kind)
+    {
+        if ($kind === 'trunk') {
+            $m = $this->_trunkLabelMap();
+            return isset($m[$name]) ? $m[$name] : $name;
+        }
+        $m = $this->_extensionNameMap();
+        return (isset($m[$name]) && $m[$name] !== '') ? $name.' ('.$m[$name].')' : $name;
+    }
+
+    /** Etiquetas de endpoints para los selectores de la página Salud. */
+    function trunkLabels()
+    {
+        $labels = $this->_trunkLabelMap();
+        $out = array();
+        foreach ($this->availableTrunks() as $name) {
+            $out[$name] = isset($labels[$name]) ? $labels[$name] : $name;
+        }
+        return $out;
+    }
+
+    function extensionLabels()
+    {
+        $out = array();
+        foreach ($this->availableExtensions() as $name) {
+            $out[$name] = $this->_endpointLabel($name, 'extension');
+        }
+        return $out;
     }
 
     private function _isCritical($endpoint, $policy)
@@ -1097,14 +1220,19 @@ class issabelHealth
         foreach ($armed as $t) if ($this->_isCritical($t, $cfg['critical_trunks'])) $critDown[] = $t;
         $sev = $critDown ? self::SEV_CRITICAL : ($armed ? self::SEV_WARNING : self::SEV_OK);
         $total = $up + count($down);
-        if ($armed)      $msg = array('tr.down', array(implode(', ', $armed)));
+        if ($armed) {
+            // El nombre que ve el administrador ("Pruebas"), no el channelid.
+            $labels = array();
+            foreach ($armed as $t) $labels[] = $this->_endpointLabel($t, 'trunk');
+            $msg = array('tr.down', array(implode(', ', $labels)), count($armed));
+        }
         elseif ($down)   $msg = array('tr.grace', array(count($down)), count($down));
         else             $msg = array($total ? 'tr.ok' : 'tr.none');
         $res = array(
             'severity' => $sev, 'value' => $up.'/'.$total,
             'threshold'=> $cfg['critical_trunks']['mode'],
             'msg'      => $msg,
-            'source'   => 'asterisk-cli', 'link' => 'menu=pbxconfig',
+            'source'   => 'asterisk-cli', 'link' => 'menu=pbxadmin',
         );
         if (in_array($res['threshold'], array('all', 'list'), TRUE)) $res['thr'] = array('mode.'.$res['threshold']);
         return $res;
@@ -1128,7 +1256,11 @@ class issabelHealth
         foreach ($armed as $e) if ($this->_isCritical($e, $cfg['critical_extensions'])) $critDown[] = $e;
         $total = $reg + count($down);
         $sev = $critDown ? self::SEV_CRITICAL : ($armed ? self::SEV_WARNING : self::SEV_OK);
-        if ($armed && $critDown) $msg = array('ext.unregcrit', array(count($armed), implode(', ', $critDown)), count($armed));
+        if ($armed && $critDown) {
+            $labels = array();
+            foreach ($critDown as $e) $labels[] = $this->_endpointLabel($e, 'extension');
+            $msg = array('ext.unregcrit', array(count($armed), implode(', ', $labels)), count($armed));
+        }
         elseif ($armed)          $msg = array('ext.unreg', array(count($armed)), count($armed));
         elseif ($down)           $msg = array('ext.grace', array(count($down)), count($down));
         else                     $msg = array('ext.ok');
@@ -1136,7 +1268,7 @@ class issabelHealth
             'severity' => $sev, 'value' => $reg.'/'.$total,
             'threshold'=> $cfg['critical_extensions']['mode'],
             'msg'      => $msg,
-            'source'   => 'asterisk-cli', 'link' => 'menu=pbxconfig',
+            'source'   => 'asterisk-cli', 'link' => 'menu=pbxadmin',
         );
         if (in_array($res['threshold'], array('all', 'list'), TRUE)) $res['thr'] = array('mode.'.$res['threshold']);
         return $res;
