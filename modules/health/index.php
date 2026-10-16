@@ -90,7 +90,7 @@ function _moduleContent(&$smarty, $module_name)
 
 function _healthDenied($smarty, $dir, $message)
 {
-    $smarty->assign(array('title' => _tr('System health'), 'MESSAGE' => $message));
+    $smarty->assign(array('title' => _tr('Health Center'), 'MESSAGE' => $message));
     return $smarty->fetch("$dir/denied.tpl");
 }
 
@@ -134,7 +134,7 @@ function _healthRenderPage($smarty, $h, $dir, $msg, $msgType)
     $ct = $cfg['critical_trunks']; $ce = $cfg['critical_extensions'];
 
     $smarty->assign(array(
-        'title'          => _tr('System health'),
+        'title'          => _tr('Health Center'),
         'LABEL_SCORE'    => _tr('score'),
         'LABEL_CRITICAL' => _tr('critical'),
         'LABEL_WARNING'  => _tr('warning'),

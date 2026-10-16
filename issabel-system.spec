@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 53
+Release: 54
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -207,6 +207,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-54
+- Health Center: the module is now a direct child of System in the menu, right
+  after Dashboard, instead of hanging from the Dashboard group, and it is named
+  "Health Center" (its translations live in the framework lang files). The menu
+  id stays "health", so the ACL resource and the links keep working, and the
+  Health page title and the applet button use the same name.
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-53
 - Health: the down trunks and the critical unregistered extensions are reported
   with the descriptive name that issabelPBX shows ("Trunk Name" of the trunks

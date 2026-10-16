@@ -23,7 +23,7 @@
             <group id="3" name="extension" desc="extension user"></group>
         </permissions>
     </menuitem>
-    <menuitem menuid="health"               desc="Health"             parent="sysdash"      module="yes" link="" order="13">
+    <menuitem menuid="health"               desc="Health Center"      parent="system"      module="yes" link="" order="2">
         <permissions>
             <group id="1" name="administrator" desc="total access"></group>
         </permissions>
@@ -73,11 +73,6 @@
         </permissions>
     </menuitem>
     <menuitem menuid="shutdown"             desc="Shutdown"           parent="system"      module="yes" link="" order="6">
-        <permissions>
-            <group id="1" name="administrator" desc="total access"></group>
-        </permissions>
-    </menuitem>
-    <menuitem menuid="hardware_detector"    desc="Hardware Detector"  parent="system"      module="yes" link="" order="7">
         <permissions>
             <group id="1" name="administrator" desc="total access"></group>
         </permissions>

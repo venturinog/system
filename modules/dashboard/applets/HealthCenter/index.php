@@ -93,7 +93,7 @@ class Applet_HealthCenter
             'LABEL_SWAP'      => _tr('SWAP'),
             'LABEL_LOAD'      => _tr('Load'),
             'LABEL_STATE'     => _tr('state'),
-            'LABEL_OPEN'      => _tr('Open health page'),
+            'LABEL_OPEN'      => _tr('Open Health Center'),
             'LABEL_ND'        => _tr('N/D'),
             'LABEL_NO_DATA'   => _tr('No data yet'),
             'LABEL_CANCEL'    => _tr('Cancel'),

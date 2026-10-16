@@ -20,7 +20,7 @@
   $Id$ */
 global $arrLangModule;
 $arrLangModule = array(
-    'System health' => 'سلامت سیستم',
+    'Health Center' => 'مرکز سلامت',
     'score' => 'امتیاز',
     'critical' => 'بحرانی',
     'warning' => 'هشدار',
