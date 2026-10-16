@@ -98,6 +98,20 @@ class paloSantoAppletAdmin {
                 $typeUser = "no_admin";
 
             $pDB->beginTransaction();
+            // Parte 0: Validar que cada id_dabu pertenezca al catálogo del rol
+            // del usuario (defensa en profundidad; ver DASHBOARDtodo.md §10.1).
+            $validos = array();
+            $t = $pDB->fetchTable('SELECT id FROM default_applet_by_user WHERE username = ?',
+                TRUE, array($typeUser));
+            if (is_array($t)) { foreach ($t as $row) $validos[] = $row['id']; }
+            foreach ($arrIDs_DAU as $idDau) {
+                if (!in_array($idDau, $validos)) {
+                    $this->errMsg = _tr('Invalid applet for this user role');
+                    $pDB->rollBack();
+                    return false;
+                }
+            }
+
             // Parte 1: Elimino todas las actuales
             $query1 = " delete from activated_applet_by_user 
                         where username=? and id_dabu in (select id from default_applet_by_user where username=?)";
