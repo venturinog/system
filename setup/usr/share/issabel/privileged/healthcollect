@@ -31,6 +31,10 @@ if (posix_geteuid() !== 0) {
 $root = getenv('ISSABEL_ROOT');
 if (!$root) $root = '/var/www/html';
 
+// El framework usa includes relativos ('libs/...'); fijamos el cwd al webroot
+// para que resuelvan igual que en el contexto web.
+@chdir($root);
+
 require_once "$root/libs/misc.lib.php";
 require_once "$root/configs/default.conf.php";
 require_once "$root/modules/health/libs/issabelHealth.class.php";
