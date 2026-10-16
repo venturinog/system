@@ -114,9 +114,9 @@ function _healthRenderPage($smarty, $h, $dir, $msg, $msgType)
             'id'        => $id,
             'category'  => $r['category'],
             'severity'  => $r['severity'],
-            'value'     => $r['value'],
-            'threshold' => $r['threshold'],
-            'detail'    => $r['detail'],
+            'value'     => issabelHealthMsg::valueText($r),
+            'threshold' => issabelHealthMsg::thresholdText($r),
+            'detail'    => issabelHealthMsg::render($r),
             'menu'      => _healthMenu($r['link']),
             'checked'   => _healthAgo($r['checked_at']),
         );
@@ -222,8 +222,9 @@ function _healthExportCSV($h)
     $buf = fopen('php://temp', 'r+');
     fputcsv($buf, array('check', 'category', 'severity', 'value', 'threshold', 'detail', 'checked_at'));
     foreach ($rows as $id => $r) {
-        fputcsv($buf, array($id, $r['category'], $r['severity'], $r['value'],
-                           $r['threshold'], $r['detail'], date('c', $r['checked_at'])));
+        fputcsv($buf, array($id, $r['category'], $r['severity'],
+                           issabelHealthMsg::valueText($r),
+                           issabelHealthMsg::thresholdText($r), issabelHealthMsg::render($r), date('c', $r['checked_at'])));
     }
     rewind($buf);
     $csv = stream_get_contents($buf);

@@ -36,6 +36,16 @@ function _issabelHealthFmtLib()
     return FALSE;
 }
 
+/**
+ * Los mensajes de los chequeos y las etiquetas de las acciones viven en el
+ * módulo `health`: se carga su idioma para poder traducir `detail_key`, el
+ * `value` y los avisos de impacto (DASHBOARDtodo §17).
+ */
+function _issabelHealthLang()
+{
+    if (function_exists('load_language_module')) load_language_module('health');
+}
+
 class Applet_HealthCenter
 {
     function handleJSON_getContent($smarty, $module_name, $appletlist)
@@ -59,6 +69,7 @@ class Applet_HealthCenter
             return _issabelHealthJson($respuesta);
         }
         _issabelHealthFmtLib();
+        _issabelHealthLang();
 
         $smarty->assign(array(
             'LABEL_ATTENTION' => _tr('Requires attention'),
@@ -111,10 +122,11 @@ class Applet_HealthCenter
             if (is_array($action)) {
                 $action['btnlabel'] = ($action['type'] === 'service') ? _tr('Start') : _tr('Renew');
             }
+            $detail = issabelHealthMsg::render($r);
             $attention[] = array(
                 'severity' => $r['severity'],
-                'detail'   => $r['detail'] !== '' ? $r['detail'] : $r['check_id'],
-                'value'    => $r['value'],
+                'detail'   => $detail !== '' ? $detail : $r['check_id'],
+                'value'    => issabelHealthMsg::valueText($r),
                 'menu'     => _issabelHealthMenuFromLink($r['link']),
                 'action'   => $action,
             );
@@ -133,7 +145,7 @@ class Applet_HealthCenter
                 'mount'   => substr($id, strlen('storage.disk:')),
                 'percent' => (float)rtrim($r['value'], '%'),
                 'value'   => $r['value'],
-                'detail'  => $r['detail'],
+                'detail'  => issabelHealthMsg::render($r),
                 'severity'=> $r['severity'],
             );
         }
@@ -141,7 +153,7 @@ class Applet_HealthCenter
 
         // --- Comunicación (de los chequeos de telefonía) ---
         $tel = array('asterisk' => '–', 'trunks' => '–', 'extensions' => '–');
-        if (isset($rows['telephony.asterisk']))   $tel['asterisk']   = $rows['telephony.asterisk']['value'];
+        if (isset($rows['telephony.asterisk']))   $tel['asterisk']   = issabelHealthMsg::valueText($rows['telephony.asterisk']);
         if (isset($rows['telephony.trunks']))     $tel['trunks']     = $rows['telephony.trunks']['value'];
         if (isset($rows['telephony.extensions'])) $tel['extensions'] = $rows['telephony.extensions']['value'];
 
@@ -284,6 +296,7 @@ class Applet_HealthCenter
             $respuesta['message'] = _tr('Health module is not installed');
             return _issabelHealthJson($respuesta);
         }
+        _issabelHealthLang();
 
         $h = new issabelHealth();
         if ($kind === 'service') {

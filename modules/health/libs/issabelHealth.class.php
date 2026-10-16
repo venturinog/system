@@ -34,6 +34,7 @@ if (!class_exists('paloDB')) {
         if (file_exists($f)) { require_once $f; break; }
     }
 }
+if (!class_exists('issabelHealthMsg')) require_once __DIR__.'/issabelHealthMsg.class.php';
 class issabelHealth
 {
     const SEV_CRITICAL = 'critical';
@@ -295,13 +296,14 @@ class issabelHealth
                          'args' => array($unit, $required, $label));
         };
         return array(
-            $svc('asterisk.service', TRUE,  'Asterisk PBX'),
-            $svc('httpd.service',    TRUE,  'Web server'),
-            $svc('mariadb.service',  TRUE,  'Database'),
-            $svc('crond.service',    FALSE, 'Cron'),
-            $svc('chronyd.service',  FALSE, 'NTP (chrony)'),
-            $svc('fail2ban.service', FALSE, 'Fail2ban'),
-            $svc('postfix.service',  FALSE, 'SMTP relay'),
+            // El tercer argumento es la clave de traducción de la etiqueta.
+            $svc('asterisk.service', TRUE,  'label.asterisk'),
+            $svc('httpd.service',    TRUE,  'label.httpd'),
+            $svc('mariadb.service',  TRUE,  'label.mariadb'),
+            $svc('crond.service',    FALSE, 'label.crond'),
+            $svc('chronyd.service',  FALSE, 'label.chronyd'),
+            $svc('fail2ban.service', FALSE, 'label.fail2ban'),
+            $svc('postfix.service',  FALSE, 'label.postfix'),
             array('group' => 'platform',  'call' => 'checkSystemdFailed'),
             array('group' => 'platform',  'call' => 'checkClock'),
             array('group' => 'backup',    'category' => 'platform', 'id' => 'platform.backup', 'call' => 'checkBackups'),
@@ -328,6 +330,9 @@ class issabelHealth
      */
     private function _normalizeRows($def, $res, $now)
     {
+        // Un chequeo puede devolver 'msg' => array($key, $args, $count) y/o
+        // 'thr' => array($key, $args).
+        if (isset($res['msg']) || isset($res['thr'])) $res = $this->_applyMsgs($res);
         $base = array(
             'group_id'  => $def['group'],
             'category'  => isset($def['category']) ? $def['category'] : $def['group'],
@@ -338,12 +343,37 @@ class issabelHealth
         if (isset($res['rows']) && is_array($res['rows'])) {
             $out = array();
             foreach ($res['rows'] as $id => $row) {
+                if (isset($row['msg']) || isset($row['thr'])) $row = $this->_applyMsgs($row);
                 $out[] = array_merge($base, array('check_id' => $id), $row);
             }
             return $out;
         }
         $id = isset($def['id']) ? $def['id'] : $this->_checkIdFromCall($def['call']);
         return array(array_merge($base, array('check_id' => $id), $res));
+    }
+
+    /**
+     * Convierte 'msg' => array($clave, $args, $cuenta) y 'thr' => array($clave,
+     * $args) en las columnas `detail_key`/`detail_args`/`detail_count` y
+     * `threshold_key`/`threshold_args`, y calcula el texto en inglés
+     * (respaldo determinista para CSV y /health). Applet y página traducen con
+     * la clave; ver DASHBOARDtodo.md §17.
+     */
+    private function _applyMsgs($res)
+    {
+        foreach (array('msg' => array('detail', TRUE), 'thr' => array('threshold', FALSE)) as $src => $dst) {
+            if (!isset($res[$src]) || !is_array($res[$src])) continue;
+            $m     = $res[$src];
+            $key   = isset($m[0]) ? (string)$m[0] : '';
+            $args  = isset($m[1]) ? $m[1] : array();
+            $count = isset($m[2]) ? (int)$m[2] : -1;
+            $res[$dst[0].'_key']  = $key;
+            $res[$dst[0].'_args'] = json_encode($args);
+            if ($dst[1]) $res['detail_count'] = $count;
+            $res[$dst[0]] = issabelHealthMsg::englishMsg($key, $args, $count);
+            unset($res[$src]);
+        }
+        return $res;
     }
 
     private function _checkIdFromCall($call)
@@ -372,13 +402,14 @@ class issabelHealth
     //  Chequeos: plataforma
     // =====================================================================
 
-    function checkService($cfg, $unit, $required, $label)
+    function checkService($cfg, $unit, $required, $labelKey)
     {
+        $label = '@'.$labelKey;
         $r = $this->_run("systemctl show -p ActiveState -p LoadState -- $unit", 10);
         $out = implode("\n", $r['out']);
         if (!preg_match('/ActiveState=(\S+)/', $out, $m)) {
             return array('severity' => self::SEV_UNKNOWN, 'value' => '?',
-                         'detail' => "$label: no se pudo consultar systemd", 'error' => 'systemctl');
+                         'msg' => array('svc.probe', array($label)), 'error' => 'systemctl');
         }
         $state = $m[1];
         $load = preg_match('/LoadState=(\S+)/', $out, $m2) ? $m2[1] : 'loaded';
@@ -386,22 +417,29 @@ class issabelHealth
 
         if ($load === 'not-found') {
             $sev = self::SEV_OK;
-            $detail = "$label: no instalado";
+            $msg = array('svc.notinstalled', array($label));
         } elseif ($state === 'active') {
             $sev = self::SEV_OK;
-            $detail = "$label: activo";
+            $msg = array('svc.active', array($label));
         } else {
             $sev = $required ? self::SEV_CRITICAL : self::SEV_WARNING;
-            $detail = "$label: $state";
+            $msg = array('svc.state', array($label, self::_stateKey($state)));
         }
-        return array('severity' => $sev, 'value' => $value, 'detail' => $detail,
+        return array('severity' => $sev, 'value' => $value, 'msg' => $msg,
                      'source' => 'systemctl', 'action_id' => 'service_start:'.$unit);
+    }
+
+    /** Convierte un estado de systemd en una clave traducible ("@state.x"). */
+    private static function _stateKey($state)
+    {
+        $map = array('active', 'inactive', 'failed');
+        return in_array($state, $map, TRUE) ? '@state.'.$state : $state;
     }
 
     function checkSystemdFailed()
     {
         $r = $this->_run("systemctl --failed --no-legend --plain", 10);
-        if ($r['rc'] === 127) return array('severity' => self::SEV_UNKNOWN, 'detail' => 'systemctl no disponible');
+        if ($r['rc'] === 127) return array('severity' => self::SEV_UNKNOWN, 'msg' => array('systemd.unavailable'));
         $n = 0; $names = array();
         foreach ($r['out'] as $line) {
             $line = trim($line);
@@ -410,7 +448,9 @@ class issabelHealth
         return array(
             'severity' => $n > 0 ? self::SEV_WARNING : self::SEV_OK,
             'value'    => $n,
-            'detail'   => $n > 0 ? ('unidades fallidas: '.implode(', ', $names)) : 'sin unidades fallidas',
+            'msg'      => $n > 0
+                ? array('systemd.failed', array($n, implode(', ', $names)), $n)
+                : array('systemd.ok'),
             'source'   => 'systemctl',
         );
     }
@@ -418,18 +458,18 @@ class issabelHealth
     function checkClock()
     {
         if (trim((string)shell_exec('command -v chronyc 2>/dev/null')) === '') {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'chronyc no instalado');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('clock.nochrony'));
         }
         $r = $this->_run("chronyc tracking", 10);
         $out = implode("\n", $r['out']);
         if (!preg_match('/Leap status\s*:\s*(\S+)/i', $out, $m)) {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'sin respuesta de chrony', 'error' => 'chronyc');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('clock.noresponse'), 'error' => 'chronyc');
         }
         $ok = (strcasecmp($m[1], 'Normal') === 0);
         return array(
             'severity' => $ok ? self::SEV_OK : self::SEV_CRITICAL,
             'value'    => $m[1],
-            'detail'   => 'Reloj: '.$m[1],
+            'msg'      => array('clock.ok', array($m[1])),
             'source'   => 'chronyc',
         );
     }
@@ -458,7 +498,8 @@ class issabelHealth
                 'severity'  => self::SEV_WARNING,
                 'value'     => 'none',
                 'threshold' => "> {$warnHours} h warning",
-                'detail'    => "no backups found in $dir",
+                'thr'       => array('thr.backup', array("> {$warnHours} h")),
+                'msg'       => array('bk.none', array($dir)),
                 'source'    => 'backup',
                 'link'      => 'menu=backup_restore',
             );
@@ -467,9 +508,10 @@ class issabelHealth
         $ageH = (time() - $newestTs) / 3600.0;
         return array(
             'severity'  => ($ageH > $warnHours) ? self::SEV_WARNING : self::SEV_OK,
-            'value'     => self::_ageStr($newestTs).' old',
+            'value'     => self::_ageStr($newestTs),
             'threshold' => "> {$warnHours} h warning",
-            'detail'    => basename($newest).' ('.self::_ageStr($newestTs).' old)',
+            'thr'       => array('thr.backup', array("> {$warnHours} h")),
+            'msg'       => array('bk.age', array(basename($newest), self::_ageStr($newestTs))),
             'source'    => 'backup',
             'link'      => 'menu=backup_restore',
         );
@@ -519,26 +561,28 @@ class issabelHealth
                 'severity'  => $sev,
                 'value'     => number_format($pctNum, 0).'%',
                 'threshold' => ">{$warn}% warn, >{$crit}% crit",
-                'detail'    => "$mount (".$g($used)."/".$g($total)." GB usados, ".$g($avail)." GB libres)",
+                'thr'       => array('thr.warncrit', array(">{$warn}%", ">{$crit}%")),
+                'msg'       => array('disk.mount', array($mount, $g($used), $g($total), $g($avail))),
                 'source'    => 'df',
             );
         }
         if (empty($rows)) {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'sin datos de df');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('disk.nodata'));
         }
         return array('severity' => $worst, 'value' => number_format($worstPct, 0).'%',
-                     'detail' => count($rows).' montajes', 'source' => 'df', 'rows' => $rows);
+                     'msg' => array('disk.mounts', array(count($rows)), count($rows)),
+                     'source' => 'df', 'rows' => $rows);
     }
 
     function checkDirSpace()
     {
         $helper = '/usr/bin/issabel-helper';
         if (!is_executable($helper)) {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'issabel-helper no disponible');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('dirspace.unavailable'));
         }
         $r = $this->_run("$helper dirspacereport", 60);
         if ($r['rc'] !== 0) {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'dirspacereport falló', 'error' => 'dirspacereport');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('dirspace.failed'), 'error' => 'dirspacereport');
         }
         $parts = array();
         foreach ($r['out'] as $line) {
@@ -548,6 +592,8 @@ class issabelHealth
         return array(
             'severity' => self::SEV_OK,
             'value'    => count($parts),
+            // El detalle es un dato (nombres de directorio y tamaños), no texto
+            // traducible: se guarda tal cual.
             'detail'   => implode(' · ', array_slice($parts, 0, 6)),
             'source'   => 'dirspacereport',
         );
@@ -561,7 +607,7 @@ class issabelHealth
     {
         $fw = '/usr/share/issabel/privileged/fwconfig';
         if (!file_exists($fw)) {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'módulo security no instalado');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('sec.missing'));
         }
         $r = $this->_run("$fw --isactive", 15);
         // 0 = activo, !=0 = inactivo o error.
@@ -569,7 +615,7 @@ class issabelHealth
         return array(
             'severity' => $active ? self::SEV_OK : self::SEV_CRITICAL,
             'value'    => $active ? 'active' : 'inactive',
-            'detail'   => $active ? 'firewall activo' : 'firewall inactivo',
+            'msg'      => array($active ? 'fw.active' : 'fw.inactive'),
             'source'   => 'fwconfig', 'link' => 'menu=sec_rules',
         );
     }
@@ -578,21 +624,23 @@ class issabelHealth
     {
         $svc = $this->_serviceState('fail2ban.service');
         if ($svc === 'not-found') {
-            return array('severity' => self::SEV_OK, 'value' => 'not installed', 'detail' => 'fail2ban no instalado');
+            return array('severity' => self::SEV_OK, 'value' => 'not installed', 'msg' => array('f2b.notinstalled'));
         }
         if ($svc !== 'active') {
-            return array('severity' => self::SEV_CRITICAL, 'value' => $svc, 'detail' => 'fail2ban no activo', 'link' => 'menu=sec_fb_admin');
+            return array('severity' => self::SEV_CRITICAL, 'value' => $svc,
+                         'msg' => array('f2b.inactive', array(self::_stateKey($svc))),
+                         'link' => 'menu=sec_fb_admin');
         }
         $r = $this->_run("fail2ban-client status", 10);
         $out = implode("\n", $r['out']);
         $jails = array();
         if (preg_match('/Jail list:\s*(.+)/', $out, $m)) {
-            $jails = array_filter(array_map('trim', explode(',', $m[1])));
+            $jails = array_values(array_filter(array_map('trim', explode(',', $m[1]))));
         }
         return array(
             'severity' => self::SEV_OK,
             'value'    => count($jails),
-            'detail'   => count($jails).' jaulas: '.implode(', ', $jails),
+            'msg'      => array('f2b.jails', array(count($jails), implode(', ', $jails)), count($jails)),
             'source'   => 'fail2ban-client', 'link' => 'menu=sec_fb_admin',
         );
     }
@@ -601,25 +649,26 @@ class issabelHealth
     {
         $state = $this->_serviceState('packetbl.service');
         if ($state === 'not-found') {
-            return array('severity' => self::SEV_OK, 'value' => 'not installed', 'detail' => 'packetbl no instalado (opcional)');
+            return array('severity' => self::SEV_OK, 'value' => 'not installed', 'msg' => array('pbl.notinstalled'));
         }
         $sev = ($state === 'active') ? self::SEV_OK : self::SEV_WARNING;
-        return array('severity' => $sev, 'value' => $state, 'detail' => "packetbl: $state", 'source' => 'systemctl');
+        return array('severity' => $sev, 'value' => $state,
+                     'msg' => array('pbl.state', array(self::_stateKey($state))), 'source' => 'systemctl');
     }
 
     function checkCertificate($cfg)
     {
         $file = $this->_webCertFile();
         if (is_null($file)) {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'no se ubicó el certificado web');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('cert.missing'));
         }
         $r = $this->_run("openssl x509 -enddate -noout -in ".escapeshellarg($file), 10);
         $out = implode("\n", $r['out']);
         if (!preg_match('/notAfter=(.+)/', $out, $m)) {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'no se pudo leer el certificado', 'error' => 'openssl');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('cert.unreadable'), 'error' => 'openssl');
         }
         $exp = strtotime(trim($m[1]));
-        if ($exp === FALSE) return array('severity' => self::SEV_UNKNOWN, 'detail' => 'fecha de certificado inválida');
+        if ($exp === FALSE) return array('severity' => self::SEV_UNKNOWN, 'msg' => array('cert.baddate'));
         $days = (int)floor(($exp - time()) / 86400);
         $warn = (int)$cfg['thresholds']['cert_warn_days'];
         $crit = (int)$cfg['thresholds']['cert_crit_days'];
@@ -630,7 +679,8 @@ class issabelHealth
             'severity'  => $sev,
             'value'     => max($days, 0).'d',
             'threshold' => "<{$warn}d warn, <{$crit}d crit",
-            'detail'    => basename($file).' expira en '.$days.' días',
+            'thr'       => array('thr.warncrit', array("<{$warn}d", "<{$crit}d")),
+            'msg'       => array('cert.expires', array(basename($file), $days), $days),
             'source'    => 'openssl', 'action_id' => 'cert_renew',
             'link'      => 'menu=sec_letsencrypt',
         );
@@ -654,24 +704,24 @@ class issabelHealth
 
     function checkUpdatesIssabel()
     {
-        return $this->_dnfCount("dnf -q check-update", '/^issabel/i', 'paquetes issabel*');
+        return $this->_dnfCount("dnf -q check-update", '/^issabel/i', 'updates.issabel');
     }
 
     function checkUpdatesSecurity()
     {
-        return $this->_dnfCount("dnf -q --security check-update", NULL, 'parches de seguridad');
+        return $this->_dnfCount("dnf -q --security check-update", NULL, 'updates.security');
     }
 
-    private function _dnfCount($cmd, $filterRe, $label)
+    private function _dnfCount($cmd, $filterRe, $msgKey)
     {
         if (trim((string)shell_exec('command -v dnf 2>/dev/null')) === '') {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'dnf no disponible');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('dnf.unavailable'));
         }
         $r = $this->_run($cmd, 120);
-        if ($r['rc'] === 124) return array('severity' => self::SEV_UNKNOWN, 'detail' => "$label: dnf agotó el tiempo");
+        if ($r['rc'] === 124) return array('severity' => self::SEV_UNKNOWN, 'msg' => array('dnf.timeout'));
         // rc 100 = hay actualizaciones; 0 = no hay.
         if ($r['rc'] !== 0 && $r['rc'] !== 100) {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => "$label: dnf falló (rc={$r['rc']})", 'error' => 'dnf');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('dnf.failed', array($r['rc'])), 'error' => 'dnf');
         }
         $n = 0;
         foreach ($r['out'] as $line) {
@@ -681,7 +731,7 @@ class issabelHealth
         return array(
             'severity' => $n > 0 ? self::SEV_WARNING : self::SEV_OK,
             'value'    => $n,
-            'detail'   => "$label: $n pendientes",
+            'msg'      => array($msgKey, array($n), $n),
             'source'   => 'dnf', 'link' => 'menu=betachannel',
         );
     }
@@ -690,14 +740,14 @@ class issabelHealth
     {
         $r = $this->_run("dnf -q repolist", 60);
         if ($r['rc'] !== 0) {
-            return array('severity' => self::SEV_CRITICAL, 'value' => 'error', 'detail' => 'no se pudo listar repositorios', 'error' => 'dnf');
+            return array('severity' => self::SEV_CRITICAL, 'value' => 'error', 'msg' => array('repos.failed'), 'error' => 'dnf');
         }
         $n = 0;
         foreach ($r['out'] as $line) if (preg_match('/^\S+\s+\S+/', $line) && strpos($line, 'repo id') === FALSE) $n++;
         return array(
             'severity' => $n > 0 ? self::SEV_OK : self::SEV_WARNING,
             'value'    => $n,
-            'detail'   => $n.' repositorios',
+            'msg'      => array('repos.count', array($n), $n),
             'source'   => 'dnf',
         );
     }
@@ -705,14 +755,14 @@ class issabelHealth
     function checkReboot()
     {
         if (trim((string)shell_exec('command -v dnf 2>/dev/null')) === '') {
-            return array('severity' => self::SEV_UNKNOWN, 'detail' => 'dnf no disponible');
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('dnf.unavailable'));
         }
         $r = $this->_run("dnf -q needs-restarting -r", 60);
-        if ($r['rc'] === 0) return array('severity' => self::SEV_OK, 'value' => 'no', 'detail' => 'sin reinicio requerido');
+        if ($r['rc'] === 0) return array('severity' => self::SEV_OK, 'value' => 'no', 'msg' => array('reboot.none'));
         if ($r['rc'] === 1) {
-            return array('severity' => self::SEV_WARNING, 'value' => 'yes', 'detail' => 'se recomienda reiniciar el sistema');
+            return array('severity' => self::SEV_WARNING, 'value' => 'yes', 'msg' => array('reboot.needed'));
         }
-        return array('severity' => self::SEV_UNKNOWN, 'detail' => 'needs-restarting no concluyente');
+        return array('severity' => self::SEV_UNKNOWN, 'msg' => array('reboot.unknown'));
     }
 
     // =====================================================================
@@ -752,11 +802,11 @@ class issabelHealth
     function checkAsterisk()
     {
         $r = $this->_asterisk('core show uptime');
-        if (is_null($r)) return array('severity' => self::SEV_UNKNOWN, 'detail' => 'asterisk no instalado');
+        if (is_null($r)) return array('severity' => self::SEV_UNKNOWN, 'msg' => array('ast.missing'));
         if ($r['rc'] !== 0 || empty($r['out'])) {
-            return array('severity' => self::SEV_CRITICAL, 'value' => 'down', 'detail' => 'sin respuesta de Asterisk (CLI)', 'error' => 'asterisk');
+            return array('severity' => self::SEV_CRITICAL, 'value' => 'down', 'msg' => array('ast.down'), 'error' => 'asterisk');
         }
-        return array('severity' => self::SEV_OK, 'value' => 'up', 'detail' => 'Asterisk responde',
+        return array('severity' => self::SEV_OK, 'value' => 'up', 'msg' => array('ast.ok'),
                      'source' => 'asterisk-cli', 'action_id' => 'service_start:asterisk.service');
     }
 
@@ -1031,10 +1081,10 @@ class issabelHealth
     {
         if (is_null($this->_trunkNames())) {
             return array('severity' => self::SEV_UNKNOWN, 'value' => '?',
-                         'detail' => 'no se pudo determinar la lista de troncales');
+                         'msg' => array('tr.nolist'));
         }
         $observed = $this->_observedEndpoints();
-        if (empty($observed)) return array('severity' => self::SEV_UNKNOWN, 'detail' => 'sin datos de troncales');
+        if (empty($observed)) return array('severity' => self::SEV_UNKNOWN, 'msg' => array('tr.unknown'));
 
         $now   = time();
         $state = $this->_endpointState($now);
@@ -1047,21 +1097,23 @@ class issabelHealth
         foreach ($armed as $t) if ($this->_isCritical($t, $cfg['critical_trunks'])) $critDown[] = $t;
         $sev = $critDown ? self::SEV_CRITICAL : ($armed ? self::SEV_WARNING : self::SEV_OK);
         $total = $up + count($down);
-        if ($armed)      $detail = 'down: '.implode(', ', $armed);
-        elseif ($down)   $detail = count($down).' down (within grace)';
-        else             $detail = ($total ? 'trunks registered' : 'no trunks');
-        return array(
+        if ($armed)      $msg = array('tr.down', array(implode(', ', $armed)));
+        elseif ($down)   $msg = array('tr.grace', array(count($down)), count($down));
+        else             $msg = array($total ? 'tr.ok' : 'tr.none');
+        $res = array(
             'severity' => $sev, 'value' => $up.'/'.$total,
             'threshold'=> $cfg['critical_trunks']['mode'],
-            'detail'   => $detail,
+            'msg'      => $msg,
             'source'   => 'asterisk-cli', 'link' => 'menu=pbxconfig',
         );
+        if (in_array($res['threshold'], array('all', 'list'), TRUE)) $res['thr'] = array('mode.'.$res['threshold']);
+        return $res;
     }
 
     function checkExtensions($cfg)
     {
         $observed = $this->_observedEndpoints();
-        if (empty($observed)) return array('severity' => self::SEV_UNKNOWN, 'detail' => 'sin datos de extensiones');
+        if (empty($observed)) return array('severity' => self::SEV_UNKNOWN, 'msg' => array('ext.unknown'));
 
         $now   = time();
         $state = $this->_endpointState($now);
@@ -1076,15 +1128,18 @@ class issabelHealth
         foreach ($armed as $e) if ($this->_isCritical($e, $cfg['critical_extensions'])) $critDown[] = $e;
         $total = $reg + count($down);
         $sev = $critDown ? self::SEV_CRITICAL : ($armed ? self::SEV_WARNING : self::SEV_OK);
-        if ($armed)    $detail = count($armed).' unregistered'.($critDown ? (' (critical: '.implode(', ', $critDown).')') : '');
-        elseif ($down) $detail = count($down).' down (within grace)';
-        else           $detail = 'extensions registered';
-        return array(
+        if ($armed && $critDown) $msg = array('ext.unregcrit', array(count($armed), implode(', ', $critDown)), count($armed));
+        elseif ($armed)          $msg = array('ext.unreg', array(count($armed)), count($armed));
+        elseif ($down)           $msg = array('ext.grace', array(count($down)), count($down));
+        else                     $msg = array('ext.ok');
+        $res = array(
             'severity' => $sev, 'value' => $reg.'/'.$total,
             'threshold'=> $cfg['critical_extensions']['mode'],
-            'detail'   => $detail,
+            'msg'      => $msg,
             'source'   => 'asterisk-cli', 'link' => 'menu=pbxconfig',
         );
+        if (in_array($res['threshold'], array('all', 'list'), TRUE)) $res['thr'] = array('mode.'.$res['threshold']);
+        return $res;
     }
 
     // =====================================================================
@@ -1262,14 +1317,15 @@ class issabelHealth
      */
     function allowedServices()
     {
+        // `label` es una clave de traducción (el idioma base está en en.lang).
         return array(
-            'asterisk' => array('label' => 'Asterisk PBX',  'impact' => 'Restarting Asterisk can drop active calls.'),
-            'httpd'    => array('label' => 'Web server',    'impact' => 'The web panel will be briefly unavailable.'),
-            'mariadb'  => array('label' => 'Database',      'impact' => 'The panel and reports may be briefly unavailable.'),
-            'crond'    => array('label' => 'Cron',          'impact' => 'Scheduled tasks pause briefly.'),
-            'chronyd'  => array('label' => 'NTP (chrony)',  'impact' => 'Clock synchronization pauses briefly.'),
-            'fail2ban' => array('label' => 'Fail2ban',      'impact' => 'IP blocking pauses briefly.'),
-            'postfix'  => array('label' => 'SMTP relay',    'impact' => 'Outgoing mail pauses briefly.'),
+            'asterisk' => array('label' => 'label.asterisk',  'impact' => 'Restarting Asterisk can drop active calls.'),
+            'httpd'    => array('label' => 'label.httpd',     'impact' => 'The web panel will be briefly unavailable.'),
+            'mariadb'  => array('label' => 'label.mariadb',   'impact' => 'The panel and reports may be briefly unavailable.'),
+            'crond'    => array('label' => 'label.crond',     'impact' => 'Scheduled tasks pause briefly.'),
+            'chronyd'  => array('label' => 'label.chronyd',   'impact' => 'Clock synchronization pauses briefly.'),
+            'fail2ban' => array('label' => 'label.fail2ban',  'impact' => 'IP blocking pauses briefly.'),
+            'postfix'  => array('label' => 'label.postfix',   'impact' => 'Outgoing mail pauses briefly.'),
         );
     }
 
@@ -1301,12 +1357,13 @@ class issabelHealth
             $svcs = $this->allowedServices();
             if (!isset($svcs[$svc])) return NULL;
             return array('type' => 'service', 'service' => $svc, 'action' => 'start',
-                         'label' => $svcs[$svc]['label'], 'impact' => $svcs[$svc]['impact']);
+                         'label' => $this->_t($svcs[$svc]['label']),
+                         'impact' => $this->_t($svcs[$svc]['impact']));
         }
         if ($actionId === 'cert_renew') {
             return array('type' => 'cert', 'action' => 'renew',
-                         'label' => 'TLS certificate',
-                         'impact' => 'The web server is reloaded after the certificate is renewed.');
+                         'label' => $this->_t('TLS certificate'),
+                         'impact' => $this->_t('The web server is reloaded after the certificate is renewed.'));
         }
         return NULL;
     }
@@ -1325,7 +1382,7 @@ class issabelHealth
              ' 1>/dev/null 2>/dev/null', $out, $rc);
         $ok = ($rc === 0);
         $this->_audit($user, 'health.'.$action, 'service:'.$service, $ok ? 'ok' : 'error');
-        $msg = $ok ? sprintf($this->_t('%s: action sent'), $svcs[$service]['label'])
+        $msg = $ok ? sprintf($this->_t('%s: action sent'), $this->_t($svcs[$service]['label']))
                    : $this->_t('The action could not be completed');
         return $this->_actionResult($ok, $msg);
     }
@@ -1599,8 +1656,8 @@ class issabelHealth
             foreach ($rows as $r) {
                 $this->_db->genQuery(
                     'INSERT OR REPLACE INTO health_check
-                     (check_id, group_id, category, severity, value, threshold, detail, link, action_id, source, error, checked_at)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+                     (check_id, group_id, category, severity, value, threshold, detail, link, action_id, source, error, checked_at, detail_key, detail_args, detail_count, threshold_key, threshold_args)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                     array(
                         $r['check_id'], $r['group_id'], $r['category'],
                         $r['severity'],
@@ -1612,6 +1669,11 @@ class issabelHealth
                         $r['source'],
                         isset($r['error']) ? $r['error'] : '',
                         $r['checked_at'],
+                        isset($r['detail_key']) ? $r['detail_key'] : '',
+                        isset($r['detail_args']) ? $r['detail_args'] : '[]',
+                        isset($r['detail_count']) ? $r['detail_count'] : -1,
+                        isset($r['threshold_key']) ? $r['threshold_key'] : '',
+                        isset($r['threshold_args']) ? $r['threshold_args'] : '[]',
                     ));
             }
         }
@@ -1645,7 +1707,19 @@ class issabelHealth
                 category varchar(32) not null, severity varchar(16) not null,
                 value varchar(128), threshold varchar(64), detail varchar(255),
                 link varchar(255), action_id varchar(64), source varchar(64),
-                error varchar(255), checked_at integer not null)', array());
+                error varchar(255), checked_at integer not null,
+                detail_key varchar(64), detail_args varchar(512), detail_count integer,
+                threshold_key varchar(64), threshold_args varchar(255))', array());
+        // Bases existentes (health.db es caché): agregar las columnas si faltan.
+        $cols = array();
+        $t = $this->_db->fetchTable('PRAGMA table_info(health_check)', TRUE, array());
+        if (is_array($t)) foreach ($t as $c) $cols[$c['name']] = TRUE;
+        foreach (array('detail_key' => 'varchar(64)', 'detail_args' => 'varchar(512)',
+                       'detail_count' => 'integer',
+                       'threshold_key' => 'varchar(64)', 'threshold_args' => 'varchar(255)') as $name => $type) {
+            if (!isset($cols[$name]))
+                $this->_db->genQuery("ALTER TABLE health_check ADD COLUMN $name $type", array());
+        }
         $this->_db->genQuery(
             'CREATE TABLE IF NOT EXISTS health_run (
                 id integer primary key, started_at integer not null,

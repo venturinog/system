@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 51
+Release: 52
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -207,6 +207,21 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-52
+- Health: the check messages are no longer hardcoded Spanish. The collector now
+  stores a message key plus its arguments in health.db and the applet, the page
+  and the CSV render them in the view language (bg, br, en, es, fa, fr, ru),
+  with proper plurals (including the Russian one/few/many forms). /health and
+  the CSV keep working, and the API keeps the English fallback.
+- Health: translate the module and the HealthCenter applet to bg, br, fa, fr and
+  ru (they only shipped en and es). The service action labels and impact notices
+  are translated too.
+- Health: the "value" column of the page and the applet translates state words
+  ("active", "not installed", ...), leaving numbers untouched.
+- Health: translate the "threshold" column too (disk, certificate and backup
+  limits, and the all/selected critical mode), so no English wording is left in
+  a non-English panel.
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-51
 - Health Center: show a subtle "last update" stamp (relative to the view, with
   the absolute time in the tooltip) to the right of the Resources, Storage,
