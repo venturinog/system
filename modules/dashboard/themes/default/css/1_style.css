@@ -250,50 +250,20 @@ img.fullwidth {
     .iss-appletgrid .appletcolumn { flex: 1 1 auto; width: 100%; }
 }
 
-/* Applet Calls (lista de llamadas) */
-.iss-calls { list-style: none; margin: 0; padding: 0; }
-.iss-calls__item {
-    padding: 6px 0;
-    border-top: 1px dashed var(--tblr-border-color, #e3e8ef);
+/* Estados compartidos de los applets (Calls/Calendar/Voicemails) */
+.iss-empty {
+    color: var(--tblr-secondary-color, #74838f);
     font-size: 13px;
-    color: var(--tblr-body-color, #22303e);
-}
-.iss-calls__item:first-child { border-top: 0; }
-.iss-calls .badge { margin-right: 4px; }
-
-/* Applet Calendar (eventos) */
-.iss-events { list-style: none; margin: 0; padding: 0; }
-.iss-events__item {
     padding: 6px 0;
+}
+.iss-applet-more {
+    margin-top: 10px;
+    padding-top: 8px;
     border-top: 1px dashed var(--tblr-border-color, #e3e8ef);
-    font-size: 13px;
+    font-size: 12.5px;
 }
-.iss-events__item:first-child { border-top: 0; }
-.iss-events__title { color: var(--iss-brand-ink, #572364); text-decoration: none; font-weight: 500; }
-.iss-events__title:hover { text-decoration: underline; }
-.iss-events__meta { display: block; color: var(--tblr-secondary-color, #74838f); font-size: 12px; margin-top: 2px; }
-
-/* Applet Voicemails */
-.iss-vm { list-style: none; margin: 0; padding: 0; }
-.iss-vm__item {
-    padding: 6px 0;
-    border-top: 1px dashed var(--tblr-border-color, #e3e8ef);
-    font-size: 13px;
-    color: var(--tblr-body-color, #22303e);
-}
-.iss-vm__item:first-child { border-top: 0; }
-
-/* Applet Performance Graphic (flot) — legend HTML estilizable (dark mode) */
-.iss-perf-legend { margin-top: 8px; font-size: 12.5px; }
-.iss-perf-legend table { margin: 0; width: auto; background: transparent; }
-.iss-perf-legend td {
-    border: 0 !important;
-    padding: 1px 6px;
-    background: transparent !important;
-    color: var(--tblr-body-color, #22303e);
-}
-.iss-perf-legend .legendLabel { color: var(--tblr-body-color, #22303e); }
-.iss-perf-legend .legendColorBox > div { border: 0 !important; }
+.iss-applet-more a { color: var(--iss-brand-ink, #572364); text-decoration: none; }
+.iss-applet-more a:hover { text-decoration: underline; }
 
 /* Ticker de noticias (DASHBOARDtodo.md §9) */
 .iss-news-ticker {

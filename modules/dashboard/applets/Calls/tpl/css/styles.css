@@ -1,0 +1,14 @@
+/* Applet Calls (tema Modern) */
+.iss-calls-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.iss-calls-table th {
+    text-align: left; font-weight: 600; color: var(--tblr-secondary-color, #74838f);
+    padding: 0 4px 6px 0; border-bottom: 1px solid var(--tblr-border-color, #e3e8ef);
+}
+.iss-calls-table td {
+    padding: 6px 4px 6px 0; border-top: 1px dashed var(--tblr-border-color, #e3e8ef);
+    color: var(--tblr-body-color, #22303e);
+}
+.iss-calls-table__when { color: var(--tblr-secondary-color, #74838f); white-space: nowrap; }
+.iss-calls-table__dir  { color: var(--tblr-secondary-color, #74838f); }
+.iss-calls-table__peer { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+.iss-calls-table__dur  { text-align: right; color: var(--tblr-secondary-color, #74838f); white-space: nowrap; }

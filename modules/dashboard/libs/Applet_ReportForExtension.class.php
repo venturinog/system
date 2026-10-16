@@ -46,9 +46,14 @@ abstract class Applet_ReportForExtension
         $pACL  = new paloACL($dbAcl);
         $extension = $pACL->getUserExtension($issabeluser);
         if (empty($extension) || !ctype_digit($extension)) {
-            $respuesta['status'] = 'error';
-            $respuesta['message'] = _tr("You haven't extension");
-            if (!empty($pACL->errMsg)) $respuesta['message'] = $pACL->errMsg;
+            // Estado "amable", no error: el usuario simplemente no tiene extensión.
+            $respuesta['html'] = '<div class="iss-empty">'
+                . htmlspecialchars(_tr("You haven't extension"), ENT_COMPAT, 'UTF-8')
+                . '</div>';
+            if (!empty($pACL->errMsg)) {
+                $respuesta['status']  = 'error';
+                $respuesta['message'] = $pACL->errMsg;
+            }
         } else {
             $this->_formatReportForExtension($smarty, $module_name, $extension, $respuesta);
         }

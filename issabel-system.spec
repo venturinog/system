@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 49
+Release: 50
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -207,6 +207,21 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-50
+- Dashboard: redesign the Calls, Calendar and Voicemails applets. They now
+  render from Smarty templates (no HTML built with str_replace on translated
+  strings, and no <font> in the lang files), use the theme tokens and Tabler
+  badges, and show a friendly empty state instead of a raw error.
+- Calls: recent calls in a compact table with direction (incoming/outgoing),
+  the peer number, a status badge (answered / no answer / busy / failed /
+  congestion) and the duration. The CDR query now also covers outgoing calls.
+- Calendar: each occurrence shows a day/month chip, the start time and a badge
+  when the event launches an Asterisk call.
+- Voicemails: unread count, caller, relative time, duration and mailbox; each
+  row links to the voicemail module (inline playback is a later phase).
+- New shared helper issabelDashboardFormat (relative time and mm:ss duration)
+  plus the new strings translated to bg, br, en, es, fa, fr and ru.
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-49
 - Health: the /health API example no longer prints the real token. The curl
   snippet now shows a <TOKEN> placeholder; the actual value stays in the masked

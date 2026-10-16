@@ -51,10 +51,10 @@ class Applet_Calendar
         $listaEventos = $this->_leerRegistrosEventos($userId);
         $listaEventosDias = $this->_expandirRegistrosEventos($listaEventos);
         $smarty->assign(array(
-            'NO_EVENTOS'    =>  _tr("You don't have events"),
-            'EVENTOS_DIAS'  =>  $listaEventosDias,
-            'tag_date' => _tr("Date"),  
-            'tag_call' => _tr("Call"),
+            'NO_EVENTOS'     =>  _tr("You don't have events"),
+            'EVENTOS_DIAS'   =>  $listaEventosDias,
+            'LABEL_CALL'     =>  _tr("Call"),
+            'LABEL_VIEW_CAL' =>  _tr("View calendar"),
         ));
         
         $local_templates_dir = dirname($_SERVER['SCRIPT_FILENAME'])."/modules/$module_name/applets/Calendar/tpl";
@@ -109,8 +109,11 @@ SQL_EVENTOS;
                     $listaEventosDias[$sFechaEvento] = array(
                         "date"      =>  $sFechaEvento,
                         'dateshort' =>  date('Y-m-d', $iStartTimestamp),
+                        'day'       =>  date('d', $iStartTimestamp),
+                        'month'     =>  date('m', $iStartTimestamp),
+                        'time'      =>  date('H:i', $iStartTimestamp),
                         "subject"   =>  $evento['subject'],
-                        "call"      =>  $evento['asterisk_call'],
+                        "call"      =>  (!empty($evento['asterisk_call'])),
                         "id"        =>  $evento['id']
                     );
                 }

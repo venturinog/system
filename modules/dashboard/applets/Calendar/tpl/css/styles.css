@@ -1,0 +1,18 @@
+/* Applet Calendar (tema Modern) */
+.iss-events { list-style: none; margin: 0; padding: 0; }
+.iss-events__item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-top: 1px dashed var(--tblr-border-color, #e3e8ef);
+}
+.iss-events__item:first-child { border-top: 0; }
+.iss-events__date {
+    flex: 0 0 auto; width: 40px; text-align: center;
+    border: 1px solid var(--tblr-border-color, #e3e8ef); border-radius: 8px;
+    padding: 4px 0; line-height: 1.1;
+}
+.iss-events__date strong { display: block; font-size: 15px; }
+.iss-events__date small { display: block; font-size: 10px; color: var(--tblr-secondary-color, #74838f); }
+.iss-events__main { flex: 1 1 auto; min-width: 0; }
+.iss-events__title { color: var(--iss-brand-ink, #572364); text-decoration: none; font-weight: 500; }
+.iss-events__title:hover { text-decoration: underline; }
+.iss-events__meta { display: block; color: var(--tblr-secondary-color, #74838f); font-size: 12px; margin-top: 2px; }
