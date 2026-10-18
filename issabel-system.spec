@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 57
+Release: 58
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Sun Oct 18 2026 Issabel Foundation <info@issabel.org> - 6.0.0-58
+- Updates: fix the Select all label. It used the state before the click, so
+  after checking every package it still read "Select all"; it now reflects the
+  result ("Select none" when the packages end up checked).
+- Updates: append the javascript.js mtime as a ?v= cache-buster so a new build
+  is not masked by a browser-cached copy of the old script.
+
 * Sun Oct 18 2026 Issabel Foundation <info@issabel.org> - 6.0.0-57
 - Updates: new System module that lists the packages with a pending update and
   lets an administrator apply them. It is a direct child of System, last in the

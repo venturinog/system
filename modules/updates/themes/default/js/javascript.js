@@ -67,8 +67,11 @@
                 var boxes = getBoxes();
                 var allChecked = boxes.length > 0;
                 for (var i = 0; i < boxes.length; i++) if (!boxes[i].checked) allChecked = false;
-                for (var j = 0; j < boxes.length; j++) boxes[j].checked = !allChecked;
-                toggle.textContent = allChecked
+                // La etiqueta refleja el estado RESULTANTE: si quedaron marcadas,
+                // el próximo click desmarca (Select none), y al revés.
+                var checkThem = !allChecked;
+                for (var j = 0; j < boxes.length; j++) boxes[j].checked = checkThem;
+                toggle.textContent = checkThem
                     ? (toggle.getAttribute('data-selectnone') || '')
                     : (toggle.getAttribute('data-selectall') || '');
             });

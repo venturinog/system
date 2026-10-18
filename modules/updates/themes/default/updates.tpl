@@ -1,4 +1,4 @@
-<script src="modules/{$module_name}/themes/default/js/javascript.js"></script>
+<script src="modules/{$module_name}/themes/default/js/javascript.js?v={$ASSET_V}"></script>
 
 <div class="iss-updates" id="iss-updates" data-job-state="{$job_state|escape:'html'}">
 
