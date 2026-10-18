@@ -1,0 +1,59 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel version 6.0                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2026 Issabel Foundation                                |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2 (the "License"); you may not use this file except in |
+  | compliance with the License. You may obtain a copy of the License at |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  +----------------------------------------------------------------------+
+  | Página Updates — Español.                                            |
+  +----------------------------------------------------------------------+
+  $Id$ */
+global $arrLangModule;
+$arrLangModule = array(
+    'Updates' => 'Actualizaciones',
+    'Package' => 'Paquete',
+    'Installed' => 'Instalada',
+    'Available' => 'Disponible',
+    'Repository' => 'Repositorio',
+    'Type' => 'Tipo',
+    'Issabel' => 'Issabel',
+    'Security' => 'Seguridad',
+    'Other' => 'Otros',
+    'Filter' => 'Filtro',
+    'All' => 'Todas',
+    'Select all' => 'Seleccionar todo',
+    'Select none' => 'Deseleccionar todo',
+    'Update selected' => 'Actualizar seleccionados',
+    'Refresh' => 'Refrescar',
+    'Last check' => 'Último chequeo',
+    'No updates available' => 'No hay actualizaciones disponibles',
+    'No data yet' => 'Aún no hay datos',
+    'Waiting for the first health check.' => 'Esperando el primer chequeo de salud.',
+    'Update in progress' => 'Actualización en curso',
+    'View log' => 'Ver registro',
+    'A reboot is recommended because the kernel or core libraries were updated.' => 'Se recomienda reiniciar porque se actualizaron el kernel o bibliotecas del sistema.',
+    'Update the selected packages now?' => '¿Actualizar los paquetes seleccionados ahora?',
+    'Select at least one package' => 'Seleccione al menos un paquete',
+    'You do not have permission to view this page' => 'No tiene permiso para ver esta página',
+    'Updates module is not installed' => 'El módulo de actualizaciones no está instalado',
+    'Not authorized' => 'No autorizado',
+    'An update is already in progress' => 'Ya hay una actualización en curso',
+    'Update started' => 'Actualización iniciada',
+    'The update could not be started' => 'No se pudo iniciar la actualización',
+    'Update list refreshed' => 'Lista de actualizaciones refrescada',
+    'The update list could not be refreshed' => 'No se pudo refrescar la lista de actualizaciones',
+    'Update status cleared' => 'Estado de actualización borrado',
+    'The status could not be cleared' => 'No se pudo borrar el estado',
+    'just now' => 'ahora mismo',
+    'minute(s)' => 'minuto(s)',
+    'hour(s)' => 'hora(s)',
+    'day(s)' => 'día(s)',
+);
+?>

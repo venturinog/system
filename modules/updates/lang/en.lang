@@ -1,0 +1,59 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel version 6.0                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2026 Issabel Foundation                                |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2 (the "License"); you may not use this file except in |
+  | compliance with the License. You may obtain a copy of the License at |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  +----------------------------------------------------------------------+
+  | Página Updates — English (base).                                     |
+  +----------------------------------------------------------------------+
+  $Id$ */
+global $arrLangModule;
+$arrLangModule = array(
+    'Updates' => 'Updates',
+    'Package' => 'Package',
+    'Installed' => 'Installed',
+    'Available' => 'Available',
+    'Repository' => 'Repository',
+    'Type' => 'Type',
+    'Issabel' => 'Issabel',
+    'Security' => 'Security',
+    'Other' => 'Other',
+    'Filter' => 'Filter',
+    'All' => 'All',
+    'Select all' => 'Select all',
+    'Select none' => 'Select none',
+    'Update selected' => 'Update selected',
+    'Refresh' => 'Refresh',
+    'Last check' => 'Last check',
+    'No updates available' => 'No updates available',
+    'No data yet' => 'No data yet',
+    'Waiting for the first health check.' => 'Waiting for the first health check.',
+    'Update in progress' => 'Update in progress',
+    'View log' => 'View log',
+    'A reboot is recommended because the kernel or core libraries were updated.' => 'A reboot is recommended because the kernel or core libraries were updated.',
+    'Update the selected packages now?' => 'Update the selected packages now?',
+    'Select at least one package' => 'Select at least one package',
+    'You do not have permission to view this page' => 'You do not have permission to view this page',
+    'Updates module is not installed' => 'Updates module is not installed',
+    'Not authorized' => 'Not authorized',
+    'An update is already in progress' => 'An update is already in progress',
+    'Update started' => 'Update started',
+    'The update could not be started' => 'The update could not be started',
+    'Update list refreshed' => 'Update list refreshed',
+    'The update list could not be refreshed' => 'The update list could not be refreshed',
+    'Update status cleared' => 'Update status cleared',
+    'The status could not be cleared' => 'The status could not be cleared',
+    'just now' => 'just now',
+    'minute(s)' => 'minute(s)',
+    'hour(s)' => 'hour(s)',
+    'day(s)' => 'day(s)',
+);
+?>

@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 55
+Release: 57
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -159,6 +159,10 @@ rm -rf /tmp/new_module
 # Network Parameters (NetworkManager): state dir for pending changes + boot recovery
 mkdir -p /var/lib/issabel/netconfig-rollback
 chmod 700 /var/lib/issabel/netconfig-rollback
+
+# Updates: estado del job de actualización (helper pkgupdate). Root-only.
+mkdir -p /var/lib/issabel/updates
+chmod 700 /var/lib/issabel/updates
 systemctl daemon-reload &>/dev/null || :
 systemctl enable issabel-netconfig-recover.service &>/dev/null || :
 
@@ -193,6 +197,21 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Sun Oct 18 2026 Issabel Foundation <info@issabel.org> - 6.0.0-57
+- Updates: new System module that lists the packages with a pending update and
+  lets an administrator apply them. It is a direct child of System, last in the
+  menu, and admin-only.
+- The package list comes from the health snapshot: the collector now runs
+  `dnf check-update` once per run (shared by the issabel and security checks)
+  and stores it in the new health_update_pkg table, so the Health Center
+  counters and the Updates grid can never disagree.
+- New privileged helper pkgupdate runs `dnf -y update` in a detached background
+  job with its state under /var/lib/issabel/updates, so the "working" banner
+  survives the session. It validates every package against the snapshot before
+  running dnf, refreshes the health snapshot when it finishes and leaves a
+  reboot notice in the notifications bell when needed.
+- The health updates checks now link to the new Updates module (menu=updates).
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-55
 - Remove the Hardware Detector module and the legacy DAHDI/wanpipe cluster that
   only existed to serve it: modules/hardware_detector, the privileged helpers

@@ -1,0 +1,254 @@
+#!/usr/bin/php
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel version 6.0                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2026 Issabel Foundation                                |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2 (the "License"); you may not use this file except in |
+  | compliance with the License. You may obtain a copy of the License at |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  +----------------------------------------------------------------------+
+  | The Initial Developer of the Original Code is PaloSanto Solutions    |
+  +----------------------------------------------------------------------+
+  | Helper privilegiado del módulo Updates (UPDATESmodule.md §5).        |
+  |                                                                     |
+  | Aplica actualizaciones RPM solicitadas desde la GUI. El job se      |
+  | lanza en segundo plano y deja su estado en /var/lib/issabel/updates |
+  | para que la página "working" sobreviva a la sesión.                 |
+  |                                                                     |
+  | Uso: pkgupdate { start <pkg>... | status | log [--lines=N] | reset } |
+  |                                                                     |
+  | Seguridad: los nombres llegan del navegador pero NO se confía en    |
+  | ellos: se validan contra el snapshot vigente de health.db (lista    |
+  | cerrada) antes de ejecutar dnf.                                     |
+  +----------------------------------------------------------------------+
+*/
+
+if (posix_geteuid() !== 0) {
+    fputs(STDERR, "pkgupdate: must be run as root\n");
+    exit(1);
+}
+
+$root = getenv('ISSABEL_ROOT');
+if (!$root) $root = '/var/www/html';
+@chdir($root);
+
+require_once "$root/libs/misc.lib.php";
+require_once "$root/configs/default.conf.php";
+require_once "$root/libs/paloSantoDB.class.php";
+require_once "$root/modules/health/libs/issabelHealth.class.php";
+
+define('STATE_DIR',  '/var/lib/issabel/updates');
+define('STATE_FILE', STATE_DIR.'/state.json');
+define('LOG_FILE',   STATE_DIR.'/job.log');
+define('LOCK_FILE',  STATE_DIR.'/job.lock');
+
+$cmd = isset($argv[1]) ? $argv[1] : '';
+switch ($cmd) {
+case 'start':  exit(action_start(array_slice($argv, 2)));
+case 'status': exit(action_status());
+case 'log':    exit(action_log(array_slice($argv, 2)));
+case 'reset':  exit(action_reset());
+default:
+    fputs(STDERR, "Usage: pkgupdate { start <pkg>... | status | log [--lines=N] | reset }\n");
+    exit(2);
+}
+
+// ---------------------------------------------------------------------------
+//  Acciones
+// ---------------------------------------------------------------------------
+
+function action_start($pkgs)
+{
+    $pkgs = array_values(array_filter(array_map('trim', (array)$pkgs), 'strlen'));
+    if (count($pkgs) === 0) { fputs(STDERR, "pkgupdate: no packages given\n"); return 1; }
+
+    // Allowlist cerrada: solo se aceptan paquetes que figuran hoy en el
+    // snapshot de health.db. El navegador no elige el comando.
+    $h = new issabelHealth();
+    $snap = $h->readUpdatePackages();
+    $allowed = array();
+    foreach ($snap['packages'] as $p) {
+        $allowed[strtolower($p['pkg'].'.'.$p['arch'])] = TRUE;
+    }
+
+    $clean = array();
+    foreach ($pkgs as $spec) {
+        $s = strtolower(trim($spec));
+        if (!preg_match('/^[a-z0-9][a-z0-9._+-]*$/', $s)) {
+            fputs(STDERR, "pkgupdate: invalid package name: $spec\n");
+            return 1;
+        }
+        if (!isset($allowed[$s])) {
+            fputs(STDERR, "pkgupdate: not a pending update: $spec\n");
+            return 1;
+        }
+        $clean[$s] = TRUE;
+    }
+    $clean = array_keys($clean);
+
+    ensure_dir();
+
+    // Un único job a la vez.
+    $lock = fopen(LOCK_FILE, 'c');
+    if ($lock === FALSE || !flock($lock, LOCK_EX | LOCK_NB)) {
+        out_json(array('ok' => FALSE, 'message' => 'already running'));
+        return 1;
+    }
+    $st = read_state();
+    if ($st['state'] === 'running') {
+        out_json(array('ok' => FALSE, 'message' => 'already running'));
+        return 1;
+    }
+
+    if (file_exists(LOG_FILE)) @unlink(LOG_FILE);
+
+    $pid = pcntl_fork();
+    if ($pid < 0) {
+        fputs(STDERR, "pkgupdate: fork failed\n");
+        return 1;
+    }
+    if ($pid > 0) {
+        // Padre: responde de inmediato. El hijo hereda el fd del lock, así que
+        // el lock no se libera hasta que el job termina.
+        out_json(array('ok' => TRUE, 'packages' => $clean));
+        return 0;
+    }
+
+    // Hijo: se desprende de la terminal y ejecuta el job.
+    posix_setsid();
+    run_job($clean, $lock);
+    exit(0);
+}
+
+function run_job($pkgs, $lock)
+{
+    $started = time();
+    write_state(array(
+        'state' => 'running', 'pid' => posix_getpid(),
+        'started' => $started, 'finished' => 0, 'rc' => 0,
+        'reboot_needed' => FALSE, 'packages' => $pkgs, 'message' => '',
+    ));
+
+    $log = array(); $rc = 0;
+    $cmd = 'dnf -y update '.implode(' ', array_map('escapeshellarg', $pkgs));
+    exec($cmd.' 2>&1', $log, $rc);
+    @file_put_contents(LOG_FILE, implode("\n", $log)."\n");
+    @chown(LOG_FILE, 'root'); @chmod(LOG_FILE, 0600);
+
+    // Refresca el snapshot y los contadores de health (solo el grupo updates),
+    // para que la grilla y el warning queden sincronizados al terminar.
+    $o = array(); $r2 = 0;
+    exec('/usr/bin/issabel-helper healthcollect --only=updates --force 2>&1', $o, $r2);
+
+    // ¿Hace falta reiniciar? Deja el aviso en la campanita (notificación
+    // pública) además del warning updates.reboot del Health Center.
+    $o3 = array(); $r3 = 0;
+    exec('dnf -q needs-restarting -r >/dev/null 2>&1', $o3, $r3);
+    $reboot = ($r3 === 1);
+    if ($reboot) notify_reboot();
+
+    write_state(array(
+        'state' => ($rc === 0 ? 'done' : 'failed'), 'pid' => 0,
+        'started' => $started, 'finished' => time(), 'rc' => $rc,
+        'reboot_needed' => $reboot, 'packages' => $pkgs,
+        'message' => ($rc === 0 ? 'ok' : 'dnf failed'),
+    ));
+
+    if (is_resource($lock)) flock($lock, LOCK_UN);
+    return ($rc === 0 ? 0 : 1);
+}
+
+function action_status()
+{
+    $st = read_state();
+    // Job colgado (p. ej. tras un reinicio del host): `running` sin proceso.
+    if ($st['state'] === 'running' && !empty($st['pid'])) {
+        if (!posix_kill((int)$st['pid'], 0)) {
+            $st['state']   = 'failed';
+            $st['message'] = 'stale';
+            $st['pid']     = 0;
+            $st['finished'] = time();
+            write_state($st);
+        }
+    }
+    out_json($st);
+    return 0;
+}
+
+function action_log($args)
+{
+    $lines = 200;
+    foreach ((array)$args as $a) {
+        if (strpos($a, '--lines=') === 0) $lines = max(1, (int)substr($a, strlen('--lines=')));
+    }
+    if (!is_readable(LOG_FILE)) { echo ''; return 0; }
+    $all = file(LOG_FILE, FILE_IGNORE_NEW_LINES);
+    if (!is_array($all)) $all = array();
+    echo implode("\n", array_slice($all, -$lines))."\n";
+    return 0;
+}
+
+function action_reset()
+{
+    write_state(array(
+        'state' => 'idle', 'pid' => 0, 'started' => 0, 'finished' => 0,
+        'rc' => 0, 'reboot_needed' => FALSE, 'packages' => array(), 'message' => '',
+    ));
+    out_json(array('ok' => TRUE));
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+//  Estado en disco y utilidades
+// ---------------------------------------------------------------------------
+
+function read_state()
+{
+    $default = array(
+        'state' => 'idle', 'pid' => 0, 'started' => 0, 'finished' => 0,
+        'rc' => 0, 'reboot_needed' => FALSE, 'packages' => array(), 'message' => '',
+    );
+    if (!is_readable(STATE_FILE)) return $default;
+    $j = json_decode((string)@file_get_contents(STATE_FILE), TRUE);
+    if (!is_array($j)) return $default;
+    return array_merge($default, $j);
+}
+
+function write_state($st)
+{
+    ensure_dir();
+    $tmp = STATE_FILE.'.tmp';
+    if (@file_put_contents($tmp, json_encode($st)) === FALSE) return FALSE;
+    @chown($tmp, 'root');
+    @chgrp($tmp, 'asterisk');
+    @chmod($tmp, 0640);   // la web (asterisk) solo necesita leerlo
+    return @rename($tmp, STATE_FILE);
+}
+
+function ensure_dir()
+{
+    if (!is_dir(STATE_DIR)) @mkdir(STATE_DIR, 0700, TRUE);
+    @chown(STATE_DIR, 'root');
+    @chgrp(STATE_DIR, 'root');
+    @chmod(STATE_DIR, 0700);
+}
+
+function notify_reboot()
+{
+    $msg = 'System updates were applied. A reboot is recommended because the '
+         . 'kernel or core libraries were updated.';
+    exec('/usr/bin/issabel-notification --level warning --resource updates --message '
+         . escapeshellarg($msg).' 2>&1');
+}
+
+function out_json($a)
+{
+    echo json_encode($a)."\n";
+}
+?>

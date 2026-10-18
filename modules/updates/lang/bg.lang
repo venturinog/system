@@ -1,0 +1,59 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel version 6.0                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2026 Issabel Foundation                                |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2 (the "License"); you may not use this file except in |
+  | compliance with the License. You may obtain a copy of the License at |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  +----------------------------------------------------------------------+
+  | Página Updates — Български.                                          |
+  +----------------------------------------------------------------------+
+  $Id$ */
+global $arrLangModule;
+$arrLangModule = array(
+    'Updates' => 'Актуализации',
+    'Package' => 'Пакет',
+    'Installed' => 'Инсталирана',
+    'Available' => 'Налична',
+    'Repository' => 'Хранилище',
+    'Type' => 'Тип',
+    'Issabel' => 'Issabel',
+    'Security' => 'Сигурност',
+    'Other' => 'Други',
+    'Filter' => 'Филтър',
+    'All' => 'Всички',
+    'Select all' => 'Избор на всички',
+    'Select none' => 'Изчистване на избора',
+    'Update selected' => 'Актуализиране на избраните',
+    'Refresh' => 'Опресняване',
+    'Last check' => 'Последна проверка',
+    'No updates available' => 'Няма налични актуализации',
+    'No data yet' => 'Все още няма данни',
+    'Waiting for the first health check.' => 'Изчакване на първата проверка на състоянието.',
+    'Update in progress' => 'Актуализацията е в ход',
+    'View log' => 'Преглед на журнала',
+    'A reboot is recommended because the kernel or core libraries were updated.' => 'Препоръчва се рестартиране, защото ядрото или системните библиотеки бяха актуализирани.',
+    'Update the selected packages now?' => 'Да се актуализират ли избраните пакети сега?',
+    'Select at least one package' => 'Изберете поне един пакет',
+    'You do not have permission to view this page' => 'Нямате права да преглеждате тази страница',
+    'Updates module is not installed' => 'Модулът за актуализации не е инсталиран',
+    'Not authorized' => 'Няма разрешение',
+    'An update is already in progress' => 'Вече има актуализация в ход',
+    'Update started' => 'Актуализацията е стартирана',
+    'The update could not be started' => 'Актуализацията не можа да бъде стартирана',
+    'Update list refreshed' => 'Списъкът с актуализации е опреснен',
+    'The update list could not be refreshed' => 'Списъкът с актуализации не можа да бъде опреснен',
+    'Update status cleared' => 'Състоянието на актуализацията е изчистено',
+    'The status could not be cleared' => 'Състоянието не можа да бъде изчистено',
+    'just now' => 'току-що',
+    'minute(s)' => 'минута(и)',
+    'hour(s)' => 'час(а)',
+    'day(s)' => 'ден(дни)',
+);
+?>

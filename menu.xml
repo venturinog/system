@@ -119,5 +119,10 @@
             <group id="1" name="administrator" desc="total access"></group>
         </permissions>
     </menuitem>
+    <menuitem menuid="updates"              desc="Updates"            parent="system"      module="yes" link="" order="99">
+        <permissions>
+            <group id="1" name="administrator" desc="total access"></group>
+        </permissions>
+    </menuitem>
   </menulist>
 </module>
