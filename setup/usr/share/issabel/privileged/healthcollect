@@ -19,8 +19,11 @@
   Lo invoca /etc/cron.d/issabel-healthcollect cada 5 minutos; el propio
   recolector respeta el TTL de cada grupo de chequeos (DASHBOARDtodo.md §6.6).
 
-  Uso: healthcollect [--force]
-      --force  ignora el TTL y ejecuta todos los chequeos.
+  Uso: healthcollect [--force] [--only=grupo[,grupo…]]
+      --force          ignora el TTL y ejecuta todos los chequeos.
+      --only=<grupos>  ejecuta solo los grupos indicados (p. ej. `updates`);
+                       se usa para refrescar el estado de paquetes desde la
+                       página Updates sin correr los chequeos caros.
 */
 
 if (posix_geteuid() !== 0) {
@@ -41,9 +44,16 @@ require_once "$root/modules/health/libs/issabelHealth.class.php";
 
 $force = in_array('--force', $argv);
 
+$only = NULL;
+foreach ($argv as $a) {
+    if (strpos($a, '--only=') === 0) {
+        $only = preg_split('/[,\s]+/', substr($a, strlen('--only=')), -1, PREG_SPLIT_NO_EMPTY);
+    }
+}
+
 try {
     $h = new issabelHealth();
-    $r = $h->collect($force);
+    $r = $h->collect($force, $only);
     printf("healthcollect: ran=%d skipped=%d errors=%d (%d ms)\n",
         $r['ran'], $r['skipped'], $r['errors'], $r['duration_ms']);
     // Los fallos de recolección son datos (se guardan como unknown); no hacemos

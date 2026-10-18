@@ -37,4 +37,21 @@ CREATE TABLE health_run (
     message     varchar(255)
 );
 
+-- Paquetes con actualización disponible (una sola escapada de `dnf
+-- check-update` por corrida). Alimenta los contadores updates.issabel /
+-- updates.security de health_check y la página Updates. Ver UPDATESmodule.md.
+-- `is_issabel` e `is_security` son banderas independientes: un paquete puede
+-- ser las dos cosas.
+CREATE TABLE health_update_pkg (
+    pkg          varchar(128) not null,
+    arch         varchar(32)  not null,
+    repo         varchar(64),
+    installed    varchar(64),
+    available    varchar(64),
+    is_issabel   integer      not null default 0,
+    is_security  integer      not null default 0,
+    checked_at   integer      not null,
+    PRIMARY KEY (pkg, arch)
+);
+
 COMMIT;

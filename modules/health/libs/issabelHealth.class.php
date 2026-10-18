@@ -58,6 +58,10 @@ class issabelHealth
     private $_stateRows        = NULL;   // endpoint_state tras actualizarlo
     private $_observed         = NULL;   // foto de endpoints de esta corrida
 
+    // Snapshot de `dnf check-update` compartido por los chequeos de updates
+    // (una sola ejecución de dnf por corrida). Ver UPDATESmodule.md §4.1.
+    private $_updateSnap       = NULL;
+
     // Etiquetas "humanas" de endpoints (nombres del PBX), también cacheadas.
     private $_pbxDb            = NULL;
     private $_pbxDbLoaded      = FALSE;
@@ -225,17 +229,24 @@ class issabelHealth
 
     /**
      * Ejecuta los chequeos cuyo TTL venció y escribe los resultados.
-     * @param bool $force  Ignora el TTL y corre todo.
-     * @return array       Resumen de la corrida.
+     * @param bool       $force  Ignora el TTL y corre todo.
+     * @param array|null $only   Grupos a ejecutar (NULL = todos). Permite el
+     *                           refresco puntual del grupo `updates`.
+     * @return array             Resumen de la corrida.
      */
-    function collect($force = FALSE)
+    function collect($force = FALSE, $only = NULL)
     {
         $started = microtime(TRUE);
         $cfg  = $this->getConfig(FALSE);
         $now  = time();
 
+        $this->_updateSnap = NULL;   // snapshot nuevo de paquetes por corrida
+
         $this->seedDefaults();
         $this->_ensureSchema();
+
+        $only = is_null($only) ? NULL
+              : array_values(array_filter(array_map('strval', (array)$only), 'strlen'));
 
         $existing = $this->_readRows(NULL);   // indexado por check_id
         $groupLast = array();
@@ -249,6 +260,7 @@ class issabelHealth
 
         foreach ($this->_checks() as $def) {
             $group = $def['group'];
+            if (!is_null($only) && !in_array($group, $only, TRUE)) continue;
             $ttl   = isset($cfg['ttl'][$def['group']]) ? $cfg['ttl'][$def['group']] : 300;
             if (!$force && isset($groupLast[$group]) && ($now - $groupLast[$group]) < $ttl) {
                 $skipped++;
@@ -710,38 +722,165 @@ class issabelHealth
     //  Chequeos: actualizaciones
     // =====================================================================
 
-    function checkUpdatesIssabel()
+    /**
+     * Paquetes con actualización (columna is_issabel). No ejecuta dnf por su
+     * cuenta: comparte el snapshot de la corrida con checkUpdatesSecurity.
+     */
+    function checkUpdatesIssabel($cfg = NULL)
     {
-        return $this->_dnfCount("dnf -q check-update", '/^issabel/i', 'updates.issabel');
+        return $this->_updateCheck('updates.issabel', 'is_issabel');
     }
 
-    function checkUpdatesSecurity()
+    /** Parches de seguridad pendientes (columna is_security). */
+    function checkUpdatesSecurity($cfg = NULL)
     {
-        return $this->_dnfCount("dnf -q --security check-update", NULL, 'updates.security');
+        return $this->_updateCheck('updates.security', 'is_security');
     }
 
-    private function _dnfCount($cmd, $filterRe, $msgKey)
+    private function _updateCheck($msgKey, $flag)
     {
-        if (trim((string)shell_exec('command -v dnf 2>/dev/null')) === '') {
-            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('dnf.unavailable'));
-        }
-        $r = $this->_run($cmd, 120);
-        if ($r['rc'] === 124) return array('severity' => self::SEV_UNKNOWN, 'msg' => array('dnf.timeout'));
-        // rc 100 = hay actualizaciones; 0 = no hay.
-        if ($r['rc'] !== 0 && $r['rc'] !== 100) {
-            return array('severity' => self::SEV_UNKNOWN, 'msg' => array('dnf.failed', array($r['rc'])), 'error' => 'dnf');
+        $snap = $this->_updateSnapshot();
+        if (!$snap['ok']) {
+            $msg = ($snap['error'] === 'dnf.failed')
+                ? array('dnf.failed', array($snap['rc']))
+                : array($snap['error']);
+            return array('severity' => self::SEV_UNKNOWN, 'msg' => $msg, 'error' => 'dnf');
         }
         $n = 0;
-        foreach ($r['out'] as $line) {
-            if (trim($line) === '' || strpos($line, 'Obsoleting') === 0) continue;
-            if ($filterRe === NULL || preg_match($filterRe, $line)) $n++;
-        }
+        foreach ($snap['packages'] as $p) if (!empty($p[$flag])) $n++;
         return array(
             'severity' => $n > 0 ? self::SEV_WARNING : self::SEV_OK,
             'value'    => $n,
             'msg'      => array($msgKey, array($n), $n),
-            'source'   => 'dnf', 'link' => 'menu=betachannel',
+            'source'   => 'dnf', 'link' => 'menu=updates',
         );
+    }
+
+    /**
+     * Captura de `dnf check-update` compartida por los dos chequeos y persistida
+     * en `health_update_pkg`. Se ejecuta UNA vez por corrida (UPDATESmodule.md
+     * §4.1); la página Updates la lee de la base sin volver a correr dnf.
+     *
+     * @return array {ok, checked_at, packages[], error, rc}
+     */
+    private function _updateSnapshot()
+    {
+        if (is_array($this->_updateSnap)) return $this->_updateSnap;
+
+        $snap = array('ok' => FALSE, 'checked_at' => 0, 'packages' => array(),
+                      'error' => NULL, 'rc' => 0);
+
+        if (trim((string)shell_exec('command -v dnf 2>/dev/null')) === '') {
+            $snap['error'] = 'dnf.unavailable';
+            $this->_updateSnap = $snap;
+            return $snap;
+        }
+
+        $r = $this->_run("dnf -q check-update", 300);
+        if ($r['rc'] === 124) {
+            $snap['error'] = 'dnf.timeout';
+            $this->_updateSnap = $snap;
+            return $snap;
+        }
+        // rc 100 = hay actualizaciones; 0 = no hay.
+        if ($r['rc'] !== 0 && $r['rc'] !== 100) {
+            $snap['error'] = 'dnf.failed';
+            $snap['rc']    = $r['rc'];
+            $this->_updateSnap = $snap;
+            return $snap;
+        }
+
+        $packages = $this->_parseCheckUpdate($r['out']);
+
+        // El conjunto de seguridad exige una segunda corrida: dnf no etiqueta
+        // los parches en la salida normal.
+        $security = array();
+        $rs = $this->_run("dnf -q --security check-update", 300);
+        if ($rs['rc'] === 0 || $rs['rc'] === 100) {
+            foreach (array_keys($this->_parseCheckUpdate($rs['out'])) as $k) $security[$k] = TRUE;
+        }
+
+        $installed = $this->_installedVersions();
+        $rows = array();
+        foreach ($packages as $key => $p) {
+            $p['installed']   = isset($installed[$key]) ? $installed[$key] : '';
+            // Misma regla que el chequeo anterior ("paquetes issabel*").
+            $p['is_issabel']  = preg_match('/^issabel/i', $p['pkg']) ? 1 : 0;
+            $p['is_security'] = isset($security[$key]) ? 1 : 0;
+            $rows[$key] = $p;
+        }
+
+        $now = time();
+        $this->_writeUpdatePackages($rows, $now);
+
+        $snap['ok']         = TRUE;
+        $snap['checked_at'] = $now;
+        $snap['packages']   = array_values($rows);
+        $this->_updateSnap  = $snap;
+        return $snap;
+    }
+
+    /**
+     * Parser de `dnf check-update`: `name.arch  epoch:version-release  repo`.
+     * @return array  [name.arch => fila]
+     */
+    private function _parseCheckUpdate($out)
+    {
+        $rows = array();
+        foreach ((array)$out as $line) {
+            if (trim($line) === '') continue;
+            if (strpos($line, 'Obsoleting') === 0) break;   // el resto son obsoletos
+            if ($line[0] === ' ' || $line[0] === "\t") continue;
+            $cols = preg_split('/\s+/', trim($line));
+            if (count($cols) < 3) continue;
+            $na = $cols[0]; $ver = $cols[1]; $repo = $cols[2];
+            $dot = strrpos($na, '.');
+            if ($dot === FALSE || $dot === 0) continue;
+            $name = substr($na, 0, $dot);
+            $arch = substr($na, $dot + 1);
+            if ($name === '' || $arch === '') continue;
+            $rows[$na] = array(
+                'pkg' => $name, 'arch' => $arch, 'repo' => $repo,
+                'available' => $ver, 'installed' => '',
+                'is_issabel' => 0, 'is_security' => 0,
+            );
+        }
+        return $rows;
+    }
+
+    /** Versiones instaladas: [name.arch => "epoch:version-release"] (una sola llamada). */
+    private function _installedVersions()
+    {
+        $out = array();
+        $r = $this->_run("rpm -qa --qf '%{NAME}.%{ARCH} %{EPOCH}:%{VERSION}-%{RELEASE}\\n'", 120);
+        foreach ((array)$r['out'] as $line) {
+            $line = trim($line);
+            $sp = strpos($line, ' ');
+            if ($sp === FALSE) continue;
+            $na  = substr($line, 0, $sp);
+            $ver = substr($line, $sp + 1);
+            // `(none)` = sin epoch; el `0:` se omite igual que hace dnf.
+            $out[$na] = preg_replace('/^(\(none\)|0):/', '', $ver);
+        }
+        return $out;
+    }
+
+    /** Reemplaza la lista de paquetes con actualización (transacción). */
+    private function _writeUpdatePackages($rows, $now)
+    {
+        if (!$this->_openDb(TRUE)) return FALSE;
+        $this->_db->beginTransaction();
+        $this->_db->genQuery('DELETE FROM health_update_pkg', array());
+        foreach ($rows as $r) {
+            $this->_db->genQuery(
+                'INSERT OR REPLACE INTO health_update_pkg
+                 (pkg, arch, repo, installed, available, is_issabel, is_security, checked_at)
+                 VALUES (?,?,?,?,?,?,?,?)',
+                array($r['pkg'], $r['arch'], $r['repo'], $r['installed'], $r['available'],
+                      $r['is_issabel'], $r['is_security'], $now));
+        }
+        $this->_db->commit();
+        return TRUE;
     }
 
     function checkRepos()
@@ -1377,6 +1516,31 @@ class issabelHealth
         return $this->_readRows(NULL);
     }
 
+    /**
+     * Lista de paquetes con actualización, para la página Updates. Es de solo
+     * lectura: no ejecuta dnf. Devuelve vacío si health.db o la tabla todavía
+     * no existen (la web no debe fallar por eso). Ver UPDATESmodule.md §4.4.
+     *
+     * @return array {checked_at:int, packages:array}
+     */
+    function readUpdatePackages()
+    {
+        $out = array('checked_at' => 0, 'packages' => array());
+        if (!$this->_openDb(FALSE)) return $out;
+
+        $t = $this->_db->fetchTable(
+            'SELECT pkg, arch, repo, installed, available, is_issabel, is_security, checked_at
+             FROM health_update_pkg ORDER BY pkg', TRUE, array());
+        if (!is_array($t)) return $out;
+
+        foreach ($t as $row) {
+            $ts = (int)$row['checked_at'];
+            if ($ts > $out['checked_at']) $out['checked_at'] = $ts;
+            $out['packages'][] = $row;
+        }
+        return $out;
+    }
+
     private function _readRows($group)
     {
         if (!$this->_openDb(FALSE)) return array();
@@ -1864,6 +2028,16 @@ class issabelHealth
                 first_seen integer, last_seen integer, last_up integer,
                 last_state varchar(8), down_since integer, last_change integer,
                 flap_count integer)', array());
+        // Paquetes con actualización: alimenta los contadores updates.* y la
+        // página Updates. UPDATESmodule.md §3.
+        $this->_db->genQuery(
+            'CREATE TABLE IF NOT EXISTS health_update_pkg (
+                pkg varchar(128) not null, arch varchar(32) not null,
+                repo varchar(64), installed varchar(64), available varchar(64),
+                is_issabel integer not null default 0,
+                is_security integer not null default 0,
+                checked_at integer not null,
+                PRIMARY KEY (pkg, arch))', array());
         return TRUE;
     }
 
