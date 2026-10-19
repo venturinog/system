@@ -1,3 +1,4 @@
+<form method="POST" action="?menu={$module_name}">
 <div class="iss-form">
     <div class="iss-form__toolbar">
         <div class="iss-form__buttons">
@@ -13,3 +14,4 @@
         </div>
     </section>
 </div>
+</form>

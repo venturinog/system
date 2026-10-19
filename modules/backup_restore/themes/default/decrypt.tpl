@@ -1,4 +1,5 @@
 <form method="POST" enctype="multipart/form-data" id="submit_decrypt">
+{$ISSABEL_CSRF_FIELD}
     <table width="99%" border="0" cellspacing="0" cellpadding="0" align="center">
                     <tr>
                         <td align="left">{$ERROR_MSG}</td>

@@ -193,11 +193,11 @@ function viewFormDhcpClientlist($smarty, $module_name, $local_templates_dir, &$p
     $smarty->assign("CANCEL", _tr("Cancel"));
     $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
     $smarty->assign("icon", "modules/$module_name/images/system_network_dhcp_client_list.png");
+    $smarty->assign("module_name", $module_name);
 
     $htmlForm = $oForm->fetchForm("$local_templates_dir/form.tpl",_tr("View Details"), $_DATA);
-    $content = "<form  method='POST' style='margin-bottom:0;' action='?menu=$module_name'>".$htmlForm."</form>";
 
-    return $content;
+    return $htmlForm;
 }
 
 function saveNewDhcpClient($smarty, $module_name, $local_templates_dir, &$pDB, $arrConf)

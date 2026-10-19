@@ -8,6 +8,7 @@ $(document).ready(function() {
 });
 </script>
 {/literal}
+<form method="POST" action="?menu={$module_name}">
 <div class="iss-form">
     <div class="iss-form__toolbar">
         <div class="iss-form__buttons">
@@ -44,3 +45,4 @@ $(document).ready(function() {
     </section>
     {/if}
 </div>
+</form>

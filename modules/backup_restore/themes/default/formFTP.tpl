@@ -1,3 +1,4 @@
+<form method="POST" action="?menu={$module_name}">
 <div class="iss-form">
     <div class="iss-form__toolbar">
         <span class="iss-form__hint"><span class="iss-required">*</span> {$REQUIRED_FIELD}</span>
@@ -61,3 +62,4 @@
         </div>
     </div>
 </div>
+</form>

@@ -928,7 +928,8 @@ function viewFormFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB)
 
     $oForm = new paloForm($smarty, createFieldForm());
     $htmlForm = $oForm->fetchForm("$local_templates_dir/formFTP.tpl", _tr('FTP Backup'), $ftpcred);
-    return "<form  method='POST' style='margin-bottom:0;' action='?menu=$module_name'>".$htmlForm."</form>";
+
+    return $htmlForm;
 }
 
 function saveNewFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB)

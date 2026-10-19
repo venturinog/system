@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 61
+Release: 62
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-62
+- Applet admin, currency, DHCP client list, shutdown and backup: send the
+  CSRF token with the forms. The token is injected into the first <form> of
+  the rendered template, so a form built in the PHP wrapper instead of the
+  template went out without one. The wrapper forms move to the template, and
+  the templates fetched raw print the field themselves.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-61
 - Health: use the theme severity tokens for the score border and the finding
   dots. The colours were hardcoded, so the mid tones the page picked washed

@@ -1,4 +1,5 @@
 <form method="POST">
+{$ISSABEL_CSRF_FIELD}
 <div class="iss-form">
     <section class="iss-card">
         <div class="iss-card__body">

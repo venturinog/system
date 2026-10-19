@@ -75,6 +75,7 @@ function showApplets_Admin($module_name)
     //
 
     $smarty->assign("applets",$arrApplets);
+    $smarty->assign("module_name", $module_name);
     $smarty->assign("SAVE", _tr("Save"));
     $smarty->assign("CANCEL", _tr("Cancel"));
     $smarty->assign("Applet", _tr("Applet"));
@@ -98,9 +99,8 @@ function showApplets_Admin($module_name)
     $templates_dir=(isset($arrConf['templates_dir']))?$arrConf['templates_dir']:'themes';
     $local_templates_dir="$base_dir/modules/$module_name/".$templates_dir.'/'.$arrConf['theme'];
     $htmlForm = $oForm->fetchForm("$local_templates_dir/applet_admin.tpl",_tr("Dashboard Applet Admin"), $_POST);
-    $content = "<form  method='POST' style='margin-bottom:0;' action='?menu=$module_name'>".$htmlForm."</form>";
 
-    return $content;
+    return $htmlForm;
 }
 
 function saveApplets_Admin($module_name)

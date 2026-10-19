@@ -75,12 +75,12 @@ function formCurrency($smarty, $module_name, $local_templates_dir, &$pDB, $arrCo
     $smarty->assign("SAVE", _tr("Save"));
     $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
     $smarty->assign("icon", "modules/$module_name/images/system_preferences_currency.png");
+    $smarty->assign("module_name", $module_name);
     $_POST['currency'] = $curr;
 
     $htmlForm = $oForm->fetchForm("$local_templates_dir/form.tpl",_tr("Currency"), $_POST);
-    $contenidoModulo = "<form  method='POST' style='margin-bottom:0;' action='?menu=$module_name'>".$htmlForm."</form>";
 
-    return $contenidoModulo;
+    return $htmlForm;
 }
 
 function saveCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrConf)

@@ -48,6 +48,7 @@ function popup_dif(content_popup)
 </script>
 {/literal}
 <form method="POST" enctype="multipart/form-data" id="backup_form">
+{$ISSABEL_CSRF_FIELD}
 <div class="iss-form">
     <div class="iss-form__toolbar">
         <div class="iss-form__buttons">
