@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 65
+Release: 66
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,16 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-66
+- DHCP client list: show the client details as plain text. The page used to
+  render the fields as disabled inputs, so the view was a form nobody could
+  use.
+- DHCP client list: drop the create and edit paths. The list comes from the
+  Kea lease file, so the page is a read only view of the leases Kea manages
+  and the half implemented forms could never save anything.
+- DHCP client list: remove the filter template. The filter had been
+  commented out for a long while.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-65
 - Currency: split the page into a view and an edit mode. The page used to
   render the live select straight away, so the current currency was never

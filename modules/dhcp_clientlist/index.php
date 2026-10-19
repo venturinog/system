@@ -50,18 +50,9 @@ function _moduleContent(&$smarty, $module_name)
     $content = "";
 
     switch($action){
-//         case "save_dhcpclient":
-//             $content = saveNewDhcpClient($smarty, $module_name, $local_templates_dir, $pDB, $arrConf);
-//             break;
-        case "new_dhcpclient":
-            $content = viewFormDhcpClientlist($smarty, $module_name, $local_templates_dir, $pDB, $arrConf);
-            break;
         case "see_dhcpclient":
             $content = viewFormDhcpClientlist($smarty, $module_name, $local_templates_dir, $pDB, $arrConf);
             break;
-//         case "delete_list":
-//             $content = delete_emailList($smarty, $module_name, $local_templates_dir, $pDB, $arrConf);
-//             break;
         default:
             $content = reportDhcpClientlist($smarty, $module_name, $local_templates_dir, $pDB, $arrConf);
             break;
@@ -159,81 +150,43 @@ function createFieldFilter(){
 }
 
 
+/*
+ * Detalle de un cliente DHCP. La lista viene del fichero de leases de Kea,
+ * asi que la pagina es de solo lectura: los valores se muestran como texto
+ * plano y no hay nada que validar ni guardar.
+ */
 function viewFormDhcpClientlist($smarty, $module_name, $local_templates_dir, &$pDB, $arrConf)
 {
     $pDhcpClientlist = new paloSantoDhcpClienList($pDB);
 
     $arrFormDhcplist = createFieldForm();
     $oForm = new paloForm($smarty,$arrFormDhcplist);
+    $oForm->setViewMode();
 
-    //begin, Form data persistence to errors and other events.
-    $_DATA  = $_POST;
-    $action = getParameter("action");
     $id     = getParameter("id");
-    $smarty->assign("ID", $id); //persistence id with input hidden in tpl
+    $smarty->assign("ID", $id);
 
-    if($action=="see_dhcpclient")
-        $oForm->setViewMode();
-    else if($action=="view_edit" || getParameter("save_edit"))
-        $oForm->setEditMode();
-    //end, Form data persistence to errors and other events.
-
-    if($action=="see_dhcpclient" || $action=="view_edit"){ // the action is to view or view_edit.
-        $dataDhcplist = $pDhcpClientlist->getDhcpClientListById($id);
-        if(is_array($dataDhcplist) & count($dataDhcplist)>0)
-            $_DATA = $dataDhcplist;
-        else{
-            $smarty->assign("mb_title", _tr("Error get Data"));
-            $smarty->assign("mb_message", $pDhcpClientlist->errMsg);
-        }
+    $dataDhcplist = $pDhcpClientlist->getDhcpClientListById($id);
+    if(!is_array($dataDhcplist) || count($dataDhcplist) === 0){
+        $smarty->assign("mb_title", _tr("Error get Data"));
+        $smarty->assign("mb_message", $pDhcpClientlist->errMsg);
+        $dataDhcplist = array();
     }
 
-    $smarty->assign("SAVE", _tr("Save"));
-    $smarty->assign("EDIT", _tr("Edit"));
+    // Vista compacta: los valores como texto plano, no inputs deshabilitados.
+    $arrView = array();
+    foreach (array('iphost','date_starts','date_ends','macaddress') as $f) {
+        $arrView[$f] = isset($dataDhcplist[$f]) ? (string)$dataDhcplist[$f] : '';
+    }
+    $smarty->assign("DHCP_VIEW", $arrView);
+
     $smarty->assign("CANCEL", _tr("Cancel"));
-    $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
     $smarty->assign("icon", "modules/$module_name/images/system_network_dhcp_client_list.png");
     $smarty->assign("module_name", $module_name);
 
-    $htmlForm = $oForm->fetchForm("$local_templates_dir/form.tpl",_tr("View Details"), $_DATA);
-
-    return $htmlForm;
+    return $oForm->fetchForm("$local_templates_dir/form.tpl",_tr("View Details"), $dataDhcplist);
 }
 
-function saveNewDhcpClient($smarty, $module_name, $local_templates_dir, &$pDB, $arrConf)
-{
-    $pDhcpClientlist = new paloSantoDhcpClienList($pDB);
-
-    $arrFormDhcplist = createFieldForm();
-    $oForm = new paloForm($smarty,$arrFormDhcplist);
-
-    if(!$oForm->validateForm($_POST)){
-        // Validation basic, not empty and VALIDATION_TYPE
-        $smarty->assign("mb_title", _tr("Validation Error"));
-        $arrErrores = $oForm->arrErroresValidacion;
-        $strErrorMsg = "<b>"._tr('The following fields contain errors').":</b><br/>";
-        if(is_array($arrErrores) && count($arrErrores) > 0){
-            foreach($arrErrores as $k=>$v)
-                $strErrorMsg .= "$k, ";
-        }
-        $smarty->assign("mb_message", $strErrorMsg);
-        //return $content = viewFormEmaillist($smarty, $module_name, $local_templates_dir, $pDB, $arrConf);
-    }else{
-        $dataDhcpClient = array();
-        $data = array();
-
-//         $dataDhcpClient['iphost'] = $pDB->DBCAMPO($_POST['iphost']);
-//         $dataDhcpClient['date_starts'] = $pDB->DBCAMPO($_POST['date_starts']);
-//         $dataDhcpClient['date_ends'] = $pDB->DBCAMPO($_POST['date_ends']);
-//
-//         $dataDhcpClient['macaddress'] = $pDB->DBCAMPO($_POST['macaddress']);
-//
-//         $pDhcpClientlist->addNewMailList($_POST['emailadmin'], $_POST['password'], $_POST['namelist']);
-        //$result = $pEmaillist->addEmailListDB($dataEmailList);
-
-        header("Location: ?menu=$module_name&action=");
-    }
-}
 
 function createFieldForm()
 {
@@ -272,11 +225,7 @@ function createFieldForm()
 
 function getAction()
 {
-    if(getParameter("save_dhcpclient")) //Get parameter by POST (submit)
-        return "save_dhcpclient";
-    else if(getParameter("new_dhcpclient"))
-        return "new_dhcpclient";
-    else if(getParameter("delete_dhcpclient"))
+    if(getParameter("delete_dhcpclient"))
         return "delete_dhcpclient";
     else if(getParameter("action")=="see_dhcpclient")
         return "see_dhcpclient";

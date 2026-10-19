@@ -1,39 +1,27 @@
-<form method="POST" action="?menu={$module_name}">
 <div class="iss-form">
     <div class="iss-form__toolbar">
-        <span class="iss-form__hint"><span class="iss-required">*</span> {$REQUIRED_FIELD}</span>
         <div class="iss-form__buttons">
-            {if $mode eq 'input'}
-            <input class="button" type="submit" name="save_dhcpclient" value="{$SAVE}">
-            <input class="button" type="submit" name="cancel" value="{$CANCEL}">
-            {elseif $mode eq 'view'}
-            <input class="button" type="submit" name="cancel" value="{$CANCEL}">
-            {elseif $mode eq 'edit'}
-            <input class="button" type="submit" name="save_edit" value="{$EDIT}">
-            <input class="button" type="submit" name="cancel" value="{$CANCEL}">
-            {/if}
+            <a class="button" href="?menu={$module_name}">{$CANCEL}</a>
         </div>
     </div>
     <section class="iss-card">
-        <div class="iss-card__body iss-formgrid">
+        <div class="iss-card__body iss-formgrid iss-formgrid--readonly">
             <div class="iss-field">
                 <span class="iss-field__label">{$iphost.LABEL}</span>
-                <span class="iss-field__control">{$iphost.INPUT}</span>
-            </div>
-            <div class="iss-field">
-                <span class="iss-field__label">{$date_starts.LABEL}</span>
-                <span class="iss-field__control">{$date_starts.INPUT}</span>
-            </div>
-            <div class="iss-field">
-                <span class="iss-field__label">{$date_ends.LABEL}</span>
-                <span class="iss-field__control">{$date_ends.INPUT}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.iphost eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.iphost eq ''}&mdash;{else}{$DHCP_VIEW.iphost|escape}{/if}</span>
             </div>
             <div class="iss-field">
                 <span class="iss-field__label">{$macaddress.LABEL}</span>
-                <span class="iss-field__control">{$macaddress.INPUT}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.macaddress eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.macaddress eq ''}&mdash;{else}{$DHCP_VIEW.macaddress|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$date_starts.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.date_starts eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.date_starts eq ''}&mdash;{else}{$DHCP_VIEW.date_starts|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$date_ends.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.date_ends eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.date_ends eq ''}&mdash;{else}{$DHCP_VIEW.date_ends|escape}{/if}</span>
             </div>
         </div>
     </section>
 </div>
-<input class="button" type="hidden" name="id" value="{$ID}" />
-</form>
