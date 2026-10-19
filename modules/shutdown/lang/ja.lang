@@ -28,6 +28,7 @@ $arrLangModule=array(
 "Accept" => "承認",
 "Halt" => "停止",
 "Reboot" => "リブート",
+"Invalid shutdown mode" => "無効なシャットダウンモードです",
 "Shutdown in progress" => "シャットダウン中",
 "Your system in shutting down now. Please, try again later." => "システムのシャットダウン中です。しばらくしてから再トライしてください。",
 "The reboot signal has been sent correctly." => "The reboot signal has been sent correctly.",

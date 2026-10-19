@@ -84,6 +84,5 @@ $arrLangModule=array(
 "Gateway" => "Poveznik",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "Gateway je obavezan (koristite 0.0.0.0 za on-link rutu)",
 "IPv4" => "IPv4",
-"The operation could not be completed." => "Radnju nije bilo moguće dovršiti.",
 );
 ?>

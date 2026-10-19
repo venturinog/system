@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 67
+Release: 68
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,17 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-68
+- Applet admin: show the error in the page. The message was only assigned
+  to mb_message, which the shell paints and the module page does not, so the
+  operator never saw why the applets were not saved.
+- Applet admin: drop the "letra12" class. It is not defined in any theme
+  and only the script that selects the checkboxes was looking for it.
+- Shutdown: report an invalid shutdown mode in the page. The page printed
+  the Spanish string "Modo invalido" outside the template.
+- Shutdown: use the /usr/sbin path of the shutdown command. Rocky Linux 10
+  merged /sbin into /usr/sbin.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-67
 - Date and time: split the page into a view and an edit mode. The page used
   to render the live controls straight away, so the current time was never

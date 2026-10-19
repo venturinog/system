@@ -84,6 +84,5 @@ $arrLangModule=array(
 "Gateway" => "Шлюз",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "Шлюзът е задължителен (използвайте 0.0.0.0 за on-link маршрут)",
 "IPv4" => "IPv4",
-"The operation could not be completed." => "Операцията не можа да бъде завършена.",
 );
 ?>

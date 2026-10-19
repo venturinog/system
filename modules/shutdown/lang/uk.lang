@@ -30,6 +30,7 @@ $arrLangModule=array(
 	"Accept" => "Відправити Команду...",
 	"Halt" => "Вимкнути Систему",
 	"Reboot" => "Перезавантажити",
+"Invalid shutdown mode" => "Недійсний режим виключення",
 	"Shutdown in progress" => "Вимкнення триває",
 	"Your system in shutting down now. Please, try again later." => "Сигнал вимкнення надіслано правильно.",
 	"The reboot signal has been sent correctly." => "Сигнал перезавантаження надіслано правильно.",

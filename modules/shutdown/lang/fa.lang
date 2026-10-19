@@ -30,6 +30,7 @@ $arrLangModule=array(
 "Accept" => "تایید",
 "Halt" => "خاموش",
 "Reboot" => "راه اندازی دوباره",
+"Invalid shutdown mode" => "حالت خاموش کردن نامعتبر است",
 "Shutdown in progress" => "سیستم در حال خاموش شدن",
 "Your system in shutting down now. Please, try again later." => "سیستم در حال خاموش شدن است لطفا بعدا تلاش کنید",
 "The reboot signal has been sent correctly." => "دستور راه‌اندازي دوباره با موفقيت ارسال شد",

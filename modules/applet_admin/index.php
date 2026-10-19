@@ -127,17 +127,32 @@ function saveApplets_Admin($module_name)
 
     $pAppletAdmin = new paloSantoAppletAdmin();
     if(count($arrIDs_DAU)==0){
-        $smarty->assign("mb_title", _tr("ERROR"));
-        $smarty->assign("mb_message", _tr("You must have at least one applet activated"));
+        // Aviso dentro de la pagina: bajo el layout de pestanas el
+        // mb_message solo lo pinta la shell.
+        appletAdminSetAlert($smarty, _tr("You must have at least one applet activated"), _tr("ERROR"));
     }
     else{
         $ok = $pAppletAdmin->setApplets_User($arrIDs_DAU, $_SESSION["issabel_user"]);
         if(!$ok){
-            $smarty->assign("mb_title", _tr("Validation Error"));
-            $smarty->assign("mb_message", $pAppletAdmin->errMsg);
+            appletAdminSetAlert($smarty, $pAppletAdmin->errMsg, _tr("Validation Error"));
         }
     }
     return showApplets_Admin($module_name);
+}
+
+/*
+ * Aviso visible dentro de la pagina del modulo, con la familia de avisos
+ * del tema.
+ */
+function appletAdminSetAlert(&$smarty, $sMessage, $sTitle = NULL)
+{
+    if (trim((string)$sMessage) === '') $sMessage = _tr('The operation could not be completed.');
+    if ($sTitle === NULL) $sTitle = _tr('ERROR');
+    $html = '<div class="iss-alert iss-alert--error">'
+        .'<div class="iss-alert__title">&nbsp;'.htmlspecialchars($sTitle, ENT_COMPAT, 'UTF-8').'</div>'
+        .'<div class="iss-alert__content">'.nl2br(htmlspecialchars((string)$sMessage, ENT_COMPAT, 'UTF-8')).'</div>'
+        .'</div>';
+    $smarty->assign("APPLET_ALERT", $html);
 }
 
 function _appletAdminIsAdmin()

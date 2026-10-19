@@ -30,6 +30,7 @@ $arrLangModule=array(
 "Accept" => "Accetta",
 "Halt" => "Spegnimento",
 "Reboot" => "Riavvio",
+"Invalid shutdown mode" => "Modalità di spegnimento non valida",
 "Shutdown in progress" => "Arresto in corso",
 "Your system in shutting down now. Please, try again later." => "Il vostro Sistema si stà arrestando. Riprovare più tardi.",
 "The reboot signal has been sent correctly." => "The reboot signal has been sent correctly.",

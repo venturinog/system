@@ -84,6 +84,5 @@ $arrLangModule=array(
 "Gateway" => "Πύλη",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "Η πύλη είναι υποχρεωτική (χρησιμοποιήστε 0.0.0.0 για διαδρομή on-link)",
 "IPv4" => "IPv4",
-"The operation could not be completed." => "Δεν ήταν δυνατή η ολοκλήρωση της ενέργειας.",
 );
 ?>

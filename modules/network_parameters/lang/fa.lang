@@ -84,6 +84,5 @@ $arrLangModule=array(
 "Gateway" => "دروازه",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "دروازه الزامی است (برای مسیر on-link از 0.0.0.0 استفاده کنید)",
 "IPv4" => "IPv4",
-"The operation could not be completed." => "عملیات تکمیل نشد.",
 );
 ?>

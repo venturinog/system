@@ -29,6 +29,7 @@ $arrLangModule=array(
 "Accept" => "Приеми",
 "Halt" => "Спиране",
 "Reboot" => "Рестартиране",
+"Invalid shutdown mode" => "Невалиден режим на изключване",
 "Shutdown in progress" => "В процес на изключване",
 "Your system in shutting down now. Please, try again later." => "Вашата система е изключена. Моля, опитайте по-късно.",
 "The reboot signal has been sent correctly." => "The reboot signal has been sent correctly.",

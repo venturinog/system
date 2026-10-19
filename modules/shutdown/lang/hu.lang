@@ -30,6 +30,7 @@ $arrLangModule=array(
 "Accept" => "Elfogadás",
 "Halt" => "Halt",
 "Reboot" => "Reboot",
+"Invalid shutdown mode" => "Érvénytelen leállítási mód",
 "Shutdown in progress" => "Leállítás folyamatban",
 "Your system in shutting down now. Please, try again later." => "A rendszer leállítva. Próbálkozzon később.",
 "The reboot signal has been sent correctly." => "The reboot signal has been sent correctly.",

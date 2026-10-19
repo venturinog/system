@@ -80,6 +80,5 @@ $arrLangModule=array(
 "Gateway" => "网关",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "网关为必填项（on-link 路由请使用 0.0.0.0）",
 "IPv4" => "IPv4",
-"The operation could not be completed." => "操作无法完成。",
 );
 ?>

@@ -29,6 +29,7 @@ $arrLangModule=array(
 "Accept"=>"Çalıştır...",
 "Halt"=>"Sunucuyu Kapat",
 "Reboot"=>"Yeniden Başlat",
+"Invalid shutdown mode" => "Geçersiz kapatma modu",
 "Shutdown in progress"=>"Kapatma işlemi uygulanıyor",
 "Your system in shutting down now. Please, try again later."=>"Sunucuya kapatma komutu gönderildi, bu ekranı kapatabilirsiniz.",
 "The reboot signal has been sent correctly." => "Sunucuya yeniden başlatma komutu gönderildi, bu ekranı kapatabilirsiniz.",

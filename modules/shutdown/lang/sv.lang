@@ -26,6 +26,7 @@ $arrLangModule=array(
 "Accept" => "Acceptera",
 "Halt" => "Halt",
 "Reboot" => "Omstart",
+"Invalid shutdown mode" => "Ogiltigt avstängningsläge",
 "Shutdown in progress" => "Avstängning på gång",
 "Your system in shutting down now. Please, try again later." => "Ditt system är påväg att stängas nu, vänligen försök senare.",
 "The reboot signal has been sent correctly." => "The reboot signal has been sent correctly.",

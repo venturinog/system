@@ -83,6 +83,5 @@ $arrLangModule=array(
 "Gateway" => "Gateway",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "Gateway is required (use 0.0.0.0 for an on-link route)",
 "IPv4" => "IPv4",
-"The operation could not be completed." => "The operation could not be completed.",
 );
 ?>

@@ -26,6 +26,7 @@ $arrLangModule=array(
 "Accept" => "Prihvati",
 "Halt" => "Halt",
 "Reboot" => "Reboot",
+"Invalid shutdown mode" => "Неисправан режим искључивања",
 "Shutdown in progress" => "Zatvaranje u toku",
 "Your system in shutting down now. Please, try again later." => "Sistem se trenutno zatvara. Molimo pokusahte kasnije.",
 "The reboot signal has been sent correctly." => "The reboot signal has been sent correctly.",

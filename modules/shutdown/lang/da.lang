@@ -30,6 +30,7 @@ $arrLangModule=array(
 "Accept" => "Accepter",
 "Halt" => "Stoppet",
 "Reboot" => "Genstart",
+"Invalid shutdown mode" => "Ugyldig nedlukningsmodus",
 "Shutdown in progress" => "Systemet er ved at lukke ned",
 "Your system in shutting down now. Please, try again later." => "Systemet er ved at lukke ned, prøv venligst senere",
 "The reboot signal has been sent correctly." => "The reboot signal has been sent correctly.",

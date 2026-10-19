@@ -6,6 +6,7 @@
             <input class="button" type="submit" name="submit_accept" value="{$ACCEPT}" onClick="return confirmSubmit('{$CONFIRM_CONTINUE}')">
         </div>
     </div>
+    {if $SHUTDOWN_ALERT}{$SHUTDOWN_ALERT}{/if}
     <section class="iss-card">
         <div class="iss-card__body">
             <div class="iss-field">

@@ -2,7 +2,7 @@
 <script type="text/javascript">
 $(document).ready(function() {
  $('.checkall').click(function () {
-     $(".letra12").find(':checkbox').prop('checked', $(this).is(':checked'));
+     $(".iss-appletlist").find(':checkbox').prop('checked', $(this).is(':checked'));
  });
 
 });
@@ -16,12 +16,13 @@ $(document).ready(function() {
             <input class="button" type="submit" name="cancel" value="{$CANCEL}">
         </div>
     </div>
+    {if $APPLET_ALERT}{$APPLET_ALERT}{/if}
     <section class="iss-card">
-        <div class="iss-card__body letra12">
+        <div class="iss-card__body">
             <div class="iss-field iss-field--full">
                 <span class="iss-field__control"><label class="iss-inline-field"><input name="checkall" class="checkall" type="checkbox"> {$checkall}</label></span>
             </div>
-            <br />
+            <div class="iss-appletlist">
             {foreach from=$applets key=q item=applet name=appletrow}
             <div class="iss-field">
                 <span class="iss-inline-field"><b>{$applet.name}:</b></span>
@@ -30,6 +31,7 @@ $(document).ready(function() {
                 </span>
             </div>
             {/foreach}
+            </div>
         </div>
     </section>
 

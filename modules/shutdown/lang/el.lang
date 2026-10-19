@@ -30,6 +30,7 @@ $arrLangModule=array(
 "Accept" => "Αποδοχή",
 "Halt" => "Στάση",
 "Reboot" => "Επανεκκίνηση",
+"Invalid shutdown mode" => "Μη έγκυρη λειτουργία τερματισμού",
 "Shutdown in progress" => "Τερματισμός σε εξέλιξη",
 "Your system in shutting down now. Please, try again later." => "Το σύστημα βρίσκετε διαδικασία τερματισμού. Παρακαλώ δοκιμάστε αργότερα.",
 "The reboot signal has been sent correctly." => "The reboot signal has been sent correctly.",

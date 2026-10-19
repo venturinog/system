@@ -83,6 +83,5 @@ $arrLangModule=array(
 "Gateway" => "Brama",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "Brama jest wymagana (użyj 0.0.0.0 dla trasy on-link)",
 "IPv4" => "IPv4",
-"The operation could not be completed." => "Nie udało się ukończyć operacji.",
 );
 ?>

@@ -29,6 +29,7 @@ $arrLangModule=array(
 "Accept"=>"Proceder...",
 "Halt"=>"Desligar",
 "Reboot"=>"Reiniciar",
+"Invalid shutdown mode" => "Modo de desligamento inválido",
 "Shutdown in progress"=>"Em progresso",
 "Your system in shutting down now. Please, try again later."=>"O comando de desligar foi enviado corretamente.",
 "The reboot signal has been sent correctly." => "O sinal de reinciar foi enviado corretamente.",

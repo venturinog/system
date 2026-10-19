@@ -84,6 +84,5 @@ $arrLangModule=array(
 "Gateway" => "Passerelle",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "La passerelle est obligatoire (utilisez 0.0.0.0 pour une route on-link)",
 "IPv4" => "IPv4",
-"The operation could not be completed." => "L'opération n'a pas pu être terminée.",
 );
 ?>

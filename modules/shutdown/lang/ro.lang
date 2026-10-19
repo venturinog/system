@@ -30,6 +30,7 @@ $arrLangModule=array(
 "Accept" => "Acceptare",
 "Halt" => "Oprire PC",
 "Reboot" => "Restartare PC",
+"Invalid shutdown mode" => "Mod de oprire invalid",
 "Shutdown in progress" => "Oprire Sistem in curs...",
 "Your system in shutting down now. Please, try again later." => "Sistemul dumneavoastra se inchide...Incercati mai tarziu",
 "The reboot signal has been sent correctly." => "The reboot signal has been sent correctly.",
