@@ -33,10 +33,10 @@
         {$ISSABEL_CSRF_FIELD}
         <input type="hidden" name="action" value="update">
 
-        <div class="card">
-            <div class="card-header d-flex flex-wrap align-items-center gap-2">
+        <section class="iss-card">
+            <div class="iss-card__header d-flex flex-wrap align-items-center gap-2">
                 <div class="d-flex align-items-center gap-2">
-                    <label class="form-label mb-0" for="iss-updates-filter">{$LABEL_FILTER}</label>
+                    <label class="iss-field__label" for="iss-updates-filter">{$LABEL_FILTER}</label>
                     <select class="form-select form-select-sm" id="iss-updates-filter">
                         <option value="">{$LABEL_ALL}</option>
                         <option value="issabel">{$LABEL_ISSABEL}</option>
@@ -53,7 +53,7 @@
             </div>
 
             <div class="table-responsive" id="iss-updates-table">
-                <table class="table table-vcenter card-table">
+                <table class="iss-table">
                     <thead>
                         <tr>
                             <th style="width: 2.5rem;"></th>
@@ -90,16 +90,16 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
-        <div class="text-secondary small mt-2">
+        <div class="iss-field__help mt-2">
             {$LABEL_LAST_CHECK}: {if $checked_at}{$checked_human} ({$checked_at}){else}{$LABEL_NO_DATA}{/if}
         </div>
     </form>
 
-    <div class="card d-none mt-3" id="iss-updates-logcard">
-        <div class="card-header">{$LABEL_VIEW_LOG}</div>
-        <div class="card-body"><pre id="iss-updates-log" class="mb-0" style="max-height: 24rem; overflow: auto;"></pre></div>
-    </div>
+    <section class="iss-card d-none mt-3" id="iss-updates-logcard">
+        <div class="iss-card__header">{$LABEL_VIEW_LOG}</div>
+        <div class="iss-card__body"><pre id="iss-updates-log" class="mb-0" style="max-height: 24rem; overflow: auto;"></pre></div>
+    </section>
 
 </div>

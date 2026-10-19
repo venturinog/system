@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 68
+Release: 69
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-69
+- Health: use the theme grid. The page used the raw Tabler markup, so the
+  cards, the label columns and the table did not follow the rest of the
+  interface.
+- Updates: use the theme grid, for the same reason. The package table now
+  uses the table of the theme.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-68
 - Applet admin: show the error in the page. The message was only assigned
   to mb_message, which the shell paints and the module page does not, so the

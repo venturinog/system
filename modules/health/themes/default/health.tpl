@@ -14,8 +14,8 @@
     <div class="iss-alert iss-alert--{$msgType}">{$msg|escape:'html'}</div>
     {/if}
 
-    <div class="card mb-3">
-        <div class="card-body d-flex align-items-center gap-4 flex-wrap">
+    <section class="iss-card">
+        <div class="iss-card__body d-flex align-items-center gap-4 flex-wrap">
             <div class="iss-health__score iss-health__score--{$state}">
                 <span class="iss-health__scoreval">{$score}</span>
                 <span class="iss-health__scorelbl">{$LABEL_SCORE}</span>
@@ -30,38 +30,46 @@
                 <div class="text-secondary">{$LABEL_LASTCHECK}: {$run_time}</div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <form method="post" action="" class="card mb-3">
+    <form method="post" action="">
         {$ISSABEL_CSRF_FIELD}
         <input type="hidden" name="action" value="filter">
-        <div class="card-body d-flex gap-3 flex-wrap align-items-end">
-            <div>
-                <label class="form-label">{$LABEL_CATEGORY}</label>
-                <select class="form-select" name="fcat">
-                    <option value="">{$LABEL_ALL}</option>
-                    {foreach from=$categories item=c}
-                    <option value="{$c|escape:'html'}" {if $fcat == $c}selected{/if}>{$c|escape:'html'}</option>
-                    {/foreach}
-                </select>
+        <section class="iss-card">
+            <div class="iss-card__body iss-formgrid">
+                <div class="iss-field">
+                    <span class="iss-field__label">{$LABEL_CATEGORY}</span>
+                    <span class="iss-field__control">
+                        <select class="form-select" name="fcat">
+                            <option value="">{$LABEL_ALL}</option>
+                            {foreach from=$categories item=c}
+                            <option value="{$c|escape:'html'}" {if $fcat == $c}selected{/if}>{$c|escape:'html'}</option>
+                            {/foreach}
+                        </select>
+                    </span>
+                </div>
+                <div class="iss-field">
+                    <span class="iss-field__label">{$LABEL_SEVERITY}</span>
+                    <span class="iss-field__control">
+                        <select class="form-select" name="fsev">
+                            <option value="">{$LABEL_ALL}</option>
+                            <option value="critical" {if $fsev == 'critical'}selected{/if}>{$LABEL_CRITICAL}</option>
+                            <option value="warning" {if $fsev == 'warning'}selected{/if}>{$LABEL_WARNING}</option>
+                            <option value="unknown" {if $fsev == 'unknown'}selected{/if}>{$LABEL_UNKNOWN}</option>
+                            <option value="ok" {if $fsev == 'ok'}selected{/if}>{$LABEL_OK}</option>
+                        </select>
+                    </span>
+                </div>
+                <div class="iss-field">
+                    <span class="iss-field__control"><button class="btn btn-primary">{$LABEL_FILTER}</button></span>
+                </div>
             </div>
-            <div>
-                <label class="form-label">{$LABEL_SEVERITY}</label>
-                <select class="form-select" name="fsev">
-                    <option value="">{$LABEL_ALL}</option>
-                    <option value="critical" {if $fsev == 'critical'}selected{/if}>{$LABEL_CRITICAL}</option>
-                    <option value="warning" {if $fsev == 'warning'}selected{/if}>{$LABEL_WARNING}</option>
-                    <option value="unknown" {if $fsev == 'unknown'}selected{/if}>{$LABEL_UNKNOWN}</option>
-                    <option value="ok" {if $fsev == 'ok'}selected{/if}>{$LABEL_OK}</option>
-                </select>
-            </div>
-            <div><button class="btn btn-primary">{$LABEL_FILTER}</button></div>
-        </div>
+        </section>
     </form>
 
-    <div class="card mb-3">
+    <section class="iss-card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table">
+            <table class="iss-table">
                 <thead>
                     <tr>
                         <th>{$LABEL_SEVERITY}</th>
@@ -92,172 +100,186 @@
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 
-    <form method="post" action="" class="card mb-3">
+    <form method="post" action="">
         {$ISSABEL_CSRF_FIELD}
         <input type="hidden" name="action" value="saveThresholds">
-        <div class="card-header"><h3 class="card-title">{$LABEL_THRESHOLDS}</h3></div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_WARN_DISK} (%)</label>
-                    <input class="form-control" type="number" name="disk_warn_percent" value="{$th.disk_warn_percent|escape:'html'}" min="0" max="100">
+        <section class="iss-card">
+            <div class="iss-card__header">{$LABEL_THRESHOLDS}</div>
+            <div class="iss-card__body">
+                <div class="iss-formgrid iss-formgrid--3col">
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_WARN_DISK} (%)</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" name="disk_warn_percent" value="{$th.disk_warn_percent|escape:'html'}" min="0" max="100"></span>
+                    </div>
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_CRIT_DISK} (%)</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" name="disk_crit_percent" value="{$th.disk_crit_percent|escape:'html'}" min="0" max="100"></span>
+                    </div>
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_WARN_SWAP} (%)</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" name="swap_warn_percent" value="{$th.swap_warn_percent|escape:'html'}" min="0" max="100"></span>
+                    </div>
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_LOAD_FACTOR}</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" step="0.1" name="load_warn_factor" value="{$th.load_warn_factor|escape:'html'}" min="0"></span>
+                    </div>
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_WARN_CERT} ({$LABEL_DAYS})</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" name="cert_warn_days" value="{$th.cert_warn_days|escape:'html'}" min="0"></span>
+                    </div>
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_CRIT_CERT} ({$LABEL_DAYS})</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" name="cert_crit_days" value="{$th.cert_crit_days|escape:'html'}" min="0"></span>
+                    </div>
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_CHANNELS_CAP}</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" name="channels_capacity" value="{$th.channels_capacity|escape:'html'}" min="0"></span>
+                    </div>
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_BACKUP_WARN} (h)</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" name="backup_warn_hours" value="{$th.backup_warn_hours|escape:'html'}" min="1"></span>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_CRIT_DISK} (%)</label>
-                    <input class="form-control" type="number" name="disk_crit_percent" value="{$th.disk_crit_percent|escape:'html'}" min="0" max="100">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_WARN_SWAP} (%)</label>
-                    <input class="form-control" type="number" name="swap_warn_percent" value="{$th.swap_warn_percent|escape:'html'}" min="0" max="100">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_LOAD_FACTOR}</label>
-                    <input class="form-control" type="number" step="0.1" name="load_warn_factor" value="{$th.load_warn_factor|escape:'html'}" min="0">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_WARN_CERT} ({$LABEL_DAYS})</label>
-                    <input class="form-control" type="number" name="cert_warn_days" value="{$th.cert_warn_days|escape:'html'}" min="0">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_CRIT_CERT} ({$LABEL_DAYS})</label>
-                    <input class="form-control" type="number" name="cert_crit_days" value="{$th.cert_crit_days|escape:'html'}" min="0">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_CHANNELS_CAP}</label>
-                    <input class="form-control" type="number" name="channels_capacity" value="{$th.channels_capacity|escape:'html'}" min="0">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_BACKUP_WARN} (h)</label>
-                    <input class="form-control" type="number" name="backup_warn_hours" value="{$th.backup_warn_hours|escape:'html'}" min="1">
-                </div>
+                <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
             </div>
-            <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
-        </div>
+        </section>
     </form>
 
-    <form method="post" action="" class="card mb-3">
+    <form method="post" action="">
         {$ISSABEL_CSRF_FIELD}
         <input type="hidden" name="action" value="saveEndpointPolicy">
-        <div class="card-header"><h3 class="card-title">{$LABEL_EP_POLICY}</h3></div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_DEBOUNCE}</label>
-                    <input class="form-control" type="number" name="ep_minutes" value="{$ep_minutes|escape:'html'}" min="0">
+        <section class="iss-card">
+            <div class="iss-card__header">{$LABEL_EP_POLICY}</div>
+            <div class="iss-card__body">
+                <div class="iss-formgrid">
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_DEBOUNCE}</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" name="ep_minutes" value="{$ep_minutes|escape:'html'}" min="0"></span>
+                    </div>
+                    <div class="iss-field">
+                        <span class="iss-field__label">{$LABEL_RECENT}</span>
+                        <span class="iss-field__control"><input class="form-control" type="number" name="ep_days" value="{$ep_days|escape:'html'}" min="0"></span>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">{$LABEL_RECENT}</label>
-                    <input class="form-control" type="number" name="ep_days" value="{$ep_days|escape:'html'}" min="0">
-                </div>
+                <div class="iss-field__help mt-2">{$LABEL_HINT_DEBOUNCE}</div>
+                <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
             </div>
-            <div class="text-secondary small mt-2">{$LABEL_HINT_DEBOUNCE}</div>
-            <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
-        </div>
+        </section>
     </form>
 
-    <form method="post" action="" class="card mb-3">
+    <form method="post" action="">
         {$ISSABEL_CSRF_FIELD}
         <input type="hidden" name="action" value="saveCritical">
         <input type="hidden" name="ctype" value="trunks">
-        <div class="card-header"><h3 class="card-title">{$LABEL_CRITICAL_ENDPOINTS}: {$LABEL_TRUNKS}</h3></div>
-        <div class="card-body">
-            <div class="mb-2">
-                <label class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="cmode" value="all" {if $trunk_mode == 'all'}checked{/if} onclick="issHealthToggleList(this)">
-                    <span class="form-check-label">{$LABEL_ALL_CRITICAL}</span>
-                </label>
-                <label class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="cmode" value="list" {if $trunk_mode != 'all'}checked{/if} onclick="issHealthToggleList(this)">
-                    <span class="form-check-label">{$LABEL_SELECTED}</span>
-                </label>
-            </div>
-            <div data-endpoints>
-                <input type="text" class="form-control mb-2" placeholder="{$LABEL_FILTER}..." oninput="issHealthFilterList(this)">
-                <div class="iss-health__list">
-                {foreach from=$trunk_options item=o}
-                    <label class="form-check" title="{$o.id|escape:'html'}">
-                        <input class="form-check-input" type="checkbox" name="cids[]" value="{$o.id|escape:'html'}" {if $o.checked}checked{/if}>
-                        <span class="form-check-label">{$o.label|escape:'html'}</span>
-                    </label>
-                {foreachelse}
-                    <div class="text-secondary">{$LABEL_NO_DATA}</div>
-                {/foreach}
+        <section class="iss-card">
+            <div class="iss-card__header">{$LABEL_CRITICAL_ENDPOINTS}: {$LABEL_TRUNKS}</div>
+            <div class="iss-card__body">
+                <div class="iss-field">
+                    <span class="iss-field__control">
+                        <label class="iss-inline-field"><input class="form-check-input" type="radio" name="cmode" value="all" {if $trunk_mode == 'all'}checked{/if} onclick="issHealthToggleList(this)"> {$LABEL_ALL_CRITICAL}</label>
+                        <label class="iss-inline-field"><input class="form-check-input" type="radio" name="cmode" value="list" {if $trunk_mode != 'all'}checked{/if} onclick="issHealthToggleList(this)"> {$LABEL_SELECTED}</label>
+                    </span>
                 </div>
+                <div data-endpoints>
+                    <div class="iss-field">
+                        <span class="iss-field__control"><input type="text" class="form-control" placeholder="{$LABEL_FILTER}..." oninput="issHealthFilterList(this)"></span>
+                    </div>
+                    <div class="iss-health__list">
+                    {foreach from=$trunk_options item=o}
+                        <label class="form-check" title="{$o.id|escape:'html'}">
+                            <input class="form-check-input" type="checkbox" name="cids[]" value="{$o.id|escape:'html'}" {if $o.checked}checked{/if}>
+                            <span class="form-check-label">{$o.label|escape:'html'}</span>
+                        </label>
+                    {foreachelse}
+                        <div class="text-secondary">{$LABEL_NO_DATA}</div>
+                    {/foreach}
+                    </div>
+                </div>
+                <div class="iss-field__help mt-2">{$LABEL_HINT_EP}</div>
+                <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
             </div>
-            <div class="text-secondary mt-2 small">{$LABEL_HINT_EP}</div>
-            <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
-        </div>
+        </section>
     </form>
 
-    <form method="post" action="" class="card mb-3">
+    <form method="post" action="">
         {$ISSABEL_CSRF_FIELD}
         <input type="hidden" name="action" value="saveCritical">
         <input type="hidden" name="ctype" value="extensions">
-        <div class="card-header"><h3 class="card-title">{$LABEL_CRITICAL_ENDPOINTS}: {$LABEL_EXTENSIONS}</h3></div>
-        <div class="card-body">
-            <div class="mb-2">
-                <label class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="cmode" value="all" {if $ext_mode == 'all'}checked{/if} onclick="issHealthToggleList(this)">
-                    <span class="form-check-label">{$LABEL_ALL_CRITICAL}</span>
-                </label>
-                <label class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="cmode" value="list" {if $ext_mode != 'all'}checked{/if} onclick="issHealthToggleList(this)">
-                    <span class="form-check-label">{$LABEL_SELECTED}</span>
-                </label>
-            </div>
-            <div data-endpoints>
-                <input type="text" class="form-control mb-2" placeholder="{$LABEL_FILTER}..." oninput="issHealthFilterList(this)">
-                <div class="iss-health__list">
-                {foreach from=$ext_options item=o}
-                    <label class="form-check" title="{$o.id|escape:'html'}">
-                        <input class="form-check-input" type="checkbox" name="cids[]" value="{$o.id|escape:'html'}" {if $o.checked}checked{/if}>
-                        <span class="form-check-label">{$o.label|escape:'html'}</span>
-                    </label>
-                {foreachelse}
-                    <div class="text-secondary">{$LABEL_NO_DATA}</div>
-                {/foreach}
+        <section class="iss-card">
+            <div class="iss-card__header">{$LABEL_CRITICAL_ENDPOINTS}: {$LABEL_EXTENSIONS}</div>
+            <div class="iss-card__body">
+                <div class="iss-field">
+                    <span class="iss-field__control">
+                        <label class="iss-inline-field"><input class="form-check-input" type="radio" name="cmode" value="all" {if $ext_mode == 'all'}checked{/if} onclick="issHealthToggleList(this)"> {$LABEL_ALL_CRITICAL}</label>
+                        <label class="iss-inline-field"><input class="form-check-input" type="radio" name="cmode" value="list" {if $ext_mode != 'all'}checked{/if} onclick="issHealthToggleList(this)"> {$LABEL_SELECTED}</label>
+                    </span>
                 </div>
+                <div data-endpoints>
+                    <div class="iss-field">
+                        <span class="iss-field__control"><input type="text" class="form-control" placeholder="{$LABEL_FILTER}..." oninput="issHealthFilterList(this)"></span>
+                    </div>
+                    <div class="iss-health__list">
+                    {foreach from=$ext_options item=o}
+                        <label class="form-check" title="{$o.id|escape:'html'}">
+                            <input class="form-check-input" type="checkbox" name="cids[]" value="{$o.id|escape:'html'}" {if $o.checked}checked{/if}>
+                            <span class="form-check-label">{$o.label|escape:'html'}</span>
+                        </label>
+                    {foreachelse}
+                        <div class="text-secondary">{$LABEL_NO_DATA}</div>
+                    {/foreach}
+                    </div>
+                </div>
+                <div class="iss-field__help mt-2">{$LABEL_HINT_EP}</div>
+                <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
             </div>
-            <div class="text-secondary mt-2 small">{$LABEL_HINT_EP}</div>
-            <div class="mt-3"><button class="btn btn-primary">{$LABEL_SAVE}</button></div>
-        </div>
+        </section>
     </form>
 
-    <form method="post" action="" class="card mb-3">
+    <form method="post" action="">
         {$ISSABEL_CSRF_FIELD}
         <input type="hidden" name="action" value="saveApi">
-        <div class="card-header"><h3 class="card-title">{$LABEL_API_TITLE}</h3></div>
-        <div class="card-body">
-            <p class="text-secondary">{$LABEL_API_DESC}</p>
+        <section class="iss-card">
+            <div class="iss-card__header">{$LABEL_API_TITLE}</div>
+            <div class="iss-card__body">
+                <div class="iss-field__help">{$LABEL_API_DESC}</div>
 
-            <label class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" name="api_enabled" value="1" {if $api_enabled}checked{/if}>
-                <span class="form-check-label">{if $api_enabled}{$LABEL_API_ON}{else}{$LABEL_API_OFF}{/if}</span>
-            </label>
-
-            <div class="mb-2">
-                <label class="form-label">{$LABEL_API_CONSUME}</label>
-                <input type="text" class="form-control font-monospace mb-1" readonly value="{$api_url|escape:'html'}">
-                <input type="text" class="form-control font-monospace" readonly value="{$api_curl|escape:'html'}">
-            </div>
-
-            <div class="mb-2">
-                <label class="form-label">{$LABEL_API_TOKEN}</label>
-                <div class="input-group">
-                    <input type="password" class="form-control font-monospace" id="iss-hc-token" readonly value="{$api_token|escape:'html'}">
-                    <button type="button" class="btn btn-outline-secondary" onclick="issHealthRevealToken()" title="{$LABEL_API_TOKEN}"><i class="ti ti-eye"></i></button>
-                    <button type="button" class="btn btn-outline-secondary" id="iss-hc-copy" onclick="issHealthCopyToken()" title="{$LABEL_COPY}"><i class="ti ti-copy"></i></button>
+                <div class="iss-field mt-3">
+                    <span class="iss-field__control">
+                        <label class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="api_enabled" value="1" {if $api_enabled}checked{/if}>
+                            <span class="form-check-label">{if $api_enabled}{$LABEL_API_ON}{else}{$LABEL_API_OFF}{/if}</span>
+                        </label>
+                    </span>
                 </div>
-                <div class="text-secondary small mt-1">{$LABEL_HINT_RETOKEN}</div>
-            </div>
 
-            <div class="mt-3 d-flex gap-2">
-                <button class="btn btn-primary" name="do" value="save">{$LABEL_SAVE}</button>
-                <button class="btn btn-outline-danger" name="do" value="regenerate">{$LABEL_REGENERATE}</button>
+                <div class="iss-field mt-3">
+                    <span class="iss-field__label">{$LABEL_API_CONSUME}</span>
+                    <span class="iss-field__control">
+                        <input type="text" class="form-control font-monospace mb-1" readonly value="{$api_url|escape:'html'}">
+                        <input type="text" class="form-control font-monospace" readonly value="{$api_curl|escape:'html'}">
+                    </span>
+                </div>
+
+                <div class="iss-field mt-3">
+                    <span class="iss-field__label">{$LABEL_API_TOKEN}</span>
+                    <span class="iss-field__control">
+                        <div class="input-group">
+                            <input type="password" class="form-control font-monospace" id="iss-hc-token" readonly value="{$api_token|escape:'html'}">
+                            <button type="button" class="btn btn-outline-secondary" onclick="issHealthRevealToken()" title="{$LABEL_API_TOKEN}"><i class="ti ti-eye"></i></button>
+                            <button type="button" class="btn btn-outline-secondary" id="iss-hc-copy" onclick="issHealthCopyToken()" title="{$LABEL_COPY}"><i class="ti ti-copy"></i></button>
+                        </div>
+                        <div class="iss-field__help mt-1">{$LABEL_HINT_RETOKEN}</div>
+                    </span>
+                </div>
+
+                <div class="mt-3 d-flex gap-2">
+                    <button class="btn btn-primary" name="do" value="save">{$LABEL_SAVE}</button>
+                    <button class="btn btn-outline-danger" name="do" value="regenerate">{$LABEL_REGENERATE}</button>
+                </div>
             </div>
-        </div>
+        </section>
     </form>
 
 </div>
