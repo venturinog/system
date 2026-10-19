@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 64
+Release: 65
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,19 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-65
+- Currency: split the page into a view and an edit mode. The page used to
+  render the live select straight away, so the current currency was never
+  readable at a glance.
+- Currency: validate the posted currency against the list before saving
+  it. The value is stored in the settings table and used when the billing
+  rates are shown.
+- Currency: save the value as a query parameter. The string used to be
+  interpolated into the statement.
+- Currency: use the colon sign for the Costa Rican colón. Both colóns used
+  the same cent sign, so the array kept only the last one and the Costa
+  Rican colón could never be picked.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-64
 - Drop the local copies of the "%s is required" and "%s is invalid" keys
   from the network parameters, DHCP by MAC, DHCP server and ping language
