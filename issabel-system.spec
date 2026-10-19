@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 75
+Release: 76
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,22 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-76
+- Backup and restore: complete the language files. The keys the code looks for
+  were missing in most of the languages, so the error messages of the backup,
+  restore and migration fell back to the English text.
+- Backup and restore: translate the keys that were present in every language
+  but still held the English text, which left nine languages with a third of
+  the page in English.
+- Backup and restore: repair the language files, where a few keys had been
+  split by an apostrophe and were overriding the correct ones, and where the
+  same key was repeated.
+- Backup and restore: the automatic backup setting confirmed the change with
+  the placeholder "NOHEAVYCONTENT" instead of a message.
+- Backup and restore: drop the inline font tag with a hardcoded red colour
+  from the restore warnings. They are shown inside the theme alert, which
+  already carries the severity.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-75
 - Backup and restore: replace the file upload control, drawn by a third party
   plugin with its own colours, with the theme button and a hidden file input.

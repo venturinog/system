@@ -323,8 +323,8 @@ function automatic_backup($smarty, $module_name, $local_templates_dir, $dir_back
         if ($id == 2 && $time != "DISABLED") {
             $smarty->assign("mb_message", _tr('SUCCESSFUL').". "._tr('EVERYDAYBACKUP')." ".$time." "._tr('WILLBEDELETED'));
         } elseif ( $id == 1) {
-            $smarty->assign("mb_message", _tr('SUCCESSFUL').". "._tr('NOHEAVYCONTENT'));
-        } else { 
+            $smarty->assign("mb_message", _tr('SUCCESSFUL').". "._tr('Automatic backup configured'));
+        } else {
            $smarty->assign("mb_message", _tr('SUCCESSFUL'));
         }
     $pFTPBackup->createCronFile($id,$time);
@@ -464,8 +464,6 @@ function decrypt_form($smarty, $local_templates_dir, $path_backup, $module_name)
     $smarty->assign("DECRYPT_HELP", _tr("Decrypt Desc"));
     $smarty->assign("PROCESS", _tr("Process"));
     $smarty->assign("BACK", _tr("Cancel"));
-    //$smarty->assign("ERROR_MSG", _tr("Un error por aqui"));
-    //$smarty->assign("mb_message", _tr("Un error por aqui"));
     if(isset($_POST["dodecrypt"])) {
         if (isset($_REQUEST['passphrase']) && isset($_REQUEST['filename'])){
             $filename = escapeshellarg($_REQUEST['filename']);
