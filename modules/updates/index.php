@@ -106,15 +106,9 @@ function _updatesRenderPage($smarty, $u, $dir, $msg, $msgType)
 
     $checkedAt = (int)$snap['checked_at'];
 
-    // Cache-buster: la mtime del JS cambia con cada upgrade del RPM, así que la
-    // URL del recurso cambia y el navegador no reutiliza el archivo viejo.
-    $jsFile = dirname($_SERVER['SCRIPT_FILENAME']).'/modules/updates/themes/default/js/javascript.js';
-    $assetV = is_file($jsFile) ? (string)@filemtime($jsFile) : '0';
-
     $smarty->assign(array(
         'title'             => _tr('Updates'),
         'module_name'       => 'updates',
-        'ASSET_V'           => $assetV,
 
         'LABEL_PACKAGE'     => _tr('Package'),
         'LABEL_INSTALLED'   => _tr('Installed'),

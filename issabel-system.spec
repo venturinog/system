@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 58
+Release: 59
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,14 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-59
+- Updates: stop loading the module script twice. paloSantoNavigation already
+  injects every .js from modules/<id>/themes/default/js into the iframe head, so
+  the extra <script> in updates.tpl registered a second click handler and the
+  two cancelled each other (Select all marked and immediately unmarked every
+  package). Rename the file to updates.js, drop the manual include and the
+  unused ASSET_V cache-buster.
+
 * Sun Oct 18 2026 Issabel Foundation <info@issabel.org> - 6.0.0-58
 - Updates: fix the Select all label. It used the state before the click, so
   after checking every package it still read "Select all"; it now reflects the
