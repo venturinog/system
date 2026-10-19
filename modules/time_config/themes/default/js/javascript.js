@@ -1,13 +1,9 @@
 $(document).ready(function() {
+    // El formato tiene que llevar el año de cuatro digitos: es el que
+    // espera translateDate() para convertir la fecha a yyyy-mm-dd.
     $("#datepicker").datepicker({
         changeMonth: true,
         changeYear: true,
-        dateFormat:'dd M yy'
+        dateFormat: 'dd M yyyy'
     });
-    setInterval(function() {
-    	var browser_date = new Date();
-    	var server_date = new Date();
-    	server_date.setTime(browser_date.getTime() - serv_msecdiff);
-    	$('#SERVER_TIME').text(server_date.toLocaleString());
-    }, 500);
 });

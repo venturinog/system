@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 66
+Release: 67
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,20 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-67
+- Date and time: split the page into a view and an edit mode. The page used
+  to render the live controls straight away, so the current time was never
+  readable at a glance.
+- Date and time: validate every field and mark the one that is wrong. The
+  page used a single boolean and a global message, and the timezone was
+  silently replaced by the current one when it was not in the list.
+- Date and time: use a 24 hour clock. The selector showed a 12 hour clock
+  and the meridian was never saved, so any afternoon time was stored as the
+  matching morning time.
+- Date and time: the date picker wrote a two digit year while the parser
+  expects four, so a date picked in the calendar never validated.
+- Date and time: replace strftime(), deprecated since PHP 8.1.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-66
 - DHCP client list: show the client details as plain text. The page used to
   render the fields as disabled inputs, so the view was a form nobody could
