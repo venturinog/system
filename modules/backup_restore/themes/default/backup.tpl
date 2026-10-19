@@ -68,7 +68,7 @@ function popup_dif(content_popup)
             </div>
             {foreach key=key item=item from=$backup_endpoint}
             <div class="iss-field">
-                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_endpoint');" {$item.check}> <span {if !empty($item.disable)}style="text-decoration: line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
+                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_endpoint');" {$item.check}> <span {if !empty($item.disable)}class="text-decoration-line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
             </div>
             {/foreach}
         </div>
@@ -81,7 +81,7 @@ function popup_dif(content_popup)
             </div>
             {foreach key=key item=item from=$backup_fax}
             <div class="iss-field">
-                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_fax');" {$item.check}> <span {if !empty($item.disable)}style="text-decoration: line-through"{/if}>{$item.desc}&nbsp;{$item.msg}<span></span></label>
+                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_fax');" {$item.check}> <span {if !empty($item.disable)}class="text-decoration-line-through"{/if}>{$item.desc}&nbsp;{$item.msg}<span></span></label>
             </div>
             {/foreach}
         </div>
@@ -94,7 +94,7 @@ function popup_dif(content_popup)
             </div>
             {foreach key=key item=item from=$backup_email}
             <div class="iss-field">
-                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_email');" {$item.check}> <span {if !empty($item.disable)}style="text-decoration: line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
+                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_email');" {$item.check}> <span {if !empty($item.disable)}class="text-decoration-line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
             </div>
             {/foreach}
         </div>
@@ -107,7 +107,7 @@ function popup_dif(content_popup)
             </div>
             {foreach key=key item=item from=$backup_asterisk}
             <div class="iss-field">
-                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_asterisk');" {$item.check}> <span {if !empty($item.disable)}style="text-decoration: line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
+                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_asterisk');" {$item.check}> <span {if !empty($item.disable)}class="text-decoration-line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
             </div>
             {/foreach}
         </div>
@@ -120,7 +120,7 @@ function popup_dif(content_popup)
             </div>
             {foreach key=key item=item from=$backup_otros}
             <div class="iss-field">
-                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_others');" {$item.check}> <span {if !empty($item.disable)}style="text-decoration: line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
+                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_others');" {$item.check}> <span {if !empty($item.disable)}class="text-decoration-line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
             </div>
             {/foreach}
         </div>
@@ -133,7 +133,7 @@ function popup_dif(content_popup)
             </div>
             {foreach key=key item=item from=$backup_otros_new}
             <div class="iss-field">
-                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_others_new');" {$item.check}> <span {if !empty($item.disable)}style="text-decoration: line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
+                <label class="iss-inline-field"><INPUT type="checkbox" {$item.disable} name="{$key}" id="{$key}" value="{$key}" onClick="VerificarCheck(this, 'backup_others_new');" {$item.check}> <span {if !empty($item.disable)}class="text-decoration-line-through"{/if}>{$item.desc}&nbsp;{$item.msg}</span></label>
             </div>
             {/foreach}
         </div>

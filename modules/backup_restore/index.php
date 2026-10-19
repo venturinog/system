@@ -718,14 +718,14 @@ function boxAlert($smarty, $local_templates_dir, $versionList_current, $versionL
 
         if (!isset($versionList_torestore[$key]['version']) || !isset($versionList_torestore[$key]['release']) ||
             $versionList_torestore[$key]['version'] == $versionList_torestore[$key]['release']){
-            $tupla['version_backup'] = "<span style='font-style: italic; color: red;'>"._tr("Package not installed")."</span>";
+            $tupla['version_backup'] = "<span class='fst-italic text-danger'>"._tr("Package not installed")."</span>";
         } else {
             $tupla['version_backup'] = $versionList_torestore[$key]['version']."-".$versionList_torestore[$key]['release'];
         }
 
         $tupla['version_current'] = $versionList_current[$key]['version']."-".$versionList_current[$key]['release'];
         if ($versionList_current[$key]['version'] == $versionList_current[$key]['release']){
-            $tupla['version_current'] = "<span style='font-style: italic; color: red;'>"._tr("Package not installed")."</span>";
+            $tupla['version_current'] = "<span class='fst-italic text-danger'>"._tr("Package not installed")."</span>";
         }
 
         $packagereport[] = array_merge($tupla, getValueofBackupOption($key));
@@ -882,7 +882,7 @@ function comparePackageVersions($versionList_current, $versionList_torestore)
 }
 
 /************************  FUNCIONES PARA FTP BACKUP ***********************************/
-function viewFormFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB)
+function viewFormFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB, $errors = array())
 {
     global $arrConf;
 
@@ -926,7 +926,21 @@ function viewFormFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB)
     $smarty->assign('remote_files', $pFTPBackup->listarArchivosTarFTP());
     if ($pFTPBackup->errMsg != '') $smarty->assign('mb_message', $pFTPBackup->errMsg);
 
-    $oForm = new paloForm($smarty, createFieldForm());
+    $arrForm = createFieldForm();
+    $campos = array('server','port','user','password','pathServer');
+    foreach ($campos as $f) {
+        if (!isset($errors[$f])) continue;
+        if (!isset($arrForm[$f]['INPUT_EXTRA_PARAM']) || !is_array($arrForm[$f]['INPUT_EXTRA_PARAM']))
+            $arrForm[$f]['INPUT_EXTRA_PARAM'] = array();
+        $cls = isset($arrForm[$f]['INPUT_EXTRA_PARAM']['class'])
+            ? $arrForm[$f]['INPUT_EXTRA_PARAM']['class'].' ' : 'form-control ';
+        $arrForm[$f]['INPUT_EXTRA_PARAM']['class'] = $cls.'is-invalid';
+    }
+    $arrErrors = array();
+    foreach ($campos as $f) $arrErrors[$f] = isset($errors[$f]) ? $errors[$f] : '';
+    $smarty->assign('ERRORS', $arrErrors);
+
+    $oForm = new paloForm($smarty, $arrForm);
     $htmlForm = $oForm->fetchForm("$local_templates_dir/formFTP.tpl", _tr('FTP Backup'), $ftpcred);
 
     return $htmlForm;
@@ -936,32 +950,49 @@ function saveNewFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB)
 {
     $pFTPBackup = new paloSantoFTPBackup($pDB);
 
-    $oForm = new paloForm($smarty, createFieldForm());
-    if(!$oForm->validateForm($_POST)){
-        // Validation basic, not empty and VALIDATION_TYPE
-        $smarty->assign("mb_title", _tr('Validation Error'));
-        $arrErrores = $oForm->arrErroresValidacion;
-        $strErrorMsg = "<b>"._tr('The following fields contain errors').":</b><br/>";
-        if (is_array($arrErrores) && count($arrErrores) > 0) {
-            $strErrorMsg .= implode(', ', array_keys($arrErrores));
-        }
-        $smarty->assign("mb_message", $strErrorMsg);
-    } else {
-        $server = getParameter("server");
-        $port = getParameter("port");
-        $user = getParameter("user");
-        $password = getParameter("password");
-        $path = getParameter("pathServer");
+    $errors = validateFTPForm($_POST);
+    if (count($errors) > 0)
+        return viewFormFTPBackup($smarty, $module_name, $local_templates_dir, $pDB, $errors);
 
-        //deben estar llenos todos los campos
-        if ($server &&  $port &&  $user  &&  $password &&  $path) {
-            $r = $pFTPBackup->asignarCredencialesFTP($server, $port, $user, $password, $path);
-            if (!$r) $smarty->assign("mb_message", $pFTPBackup->errMsg);
-        } else
-            $smarty->assign("mb_message", _tr('Error to save'));
-    }
+    $server   = getParameter("server");
+    $port     = getParameter("port");
+    $user     = getParameter("user");
+    $password = getParameter("password");
+    $path     = getParameter("pathServer");
+
+    $r = $pFTPBackup->asignarCredencialesFTP($server, $port, $user, $password, $path);
+    if (!$r) $smarty->assign("mb_message", $pFTPBackup->errMsg);
+
     return viewFormFTPBackup($smarty, $module_name, $local_templates_dir, $pDB);
 }
+
+/*
+ * Validacion por campo de las credenciales FTP: todas son obligatorias,
+ * sin ellas no se pueden guardar.
+ */
+function validateFTPForm($post)
+{
+    $errors = array();
+    $campos = array(
+        'server'     => _tr('Server FTP'),
+        'port'       => _tr('Port'),
+        'user'       => _tr('User'),
+        'password'   => _tr('Password'),
+        'pathServer' => _tr('Path Server FTP'),
+    );
+    foreach ($campos as $campo => $label) {
+        $valor = isset($post[$campo]) ? trim($post[$campo]) : '';
+        if ($valor === '')
+            $errors[$campo] = sprintf(_tr('%s is required'), $label);
+    }
+    if (!isset($errors['port'])) {
+        $port = (int)$post['port'];
+        if ($port < 1 || $port > 65535)
+            $errors['port'] = sprintf(_tr('%s is invalid'), _tr('Port'));
+    }
+    return $errors;
+}
+
 /*****************************************************************************************/
 /*************** FUNCIONES PARA HACER UN BACKUP/RESTORE A UN SERVIDOR FTP ****************/
 

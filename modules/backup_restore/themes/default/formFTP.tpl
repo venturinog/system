@@ -38,22 +38,27 @@
                             <div class="iss-field">
                                 <span class="iss-field__label">{$server.LABEL}&nbsp;<span class="iss-required">*</span></span>
                                 <span class="iss-field__control">{$server.INPUT}</span>
+                                {if $ERRORS.server}<div class="invalid-feedback d-block">{$ERRORS.server}</div>{/if}
                             </div>
                             <div class="iss-field">
                                 <span class="iss-field__label">{$port.LABEL}&nbsp;<span class="iss-required">*</span></span>
                                 <span class="iss-field__control">{$port.INPUT}</span>
+                                {if $ERRORS.port}<div class="invalid-feedback d-block">{$ERRORS.port}</div>{/if}
                             </div>
                             <div class="iss-field">
                                 <span class="iss-field__label">{$user.LABEL}&nbsp;<span class="iss-required">*</span></span>
                                 <span class="iss-field__control">{$user.INPUT}</span>
+                                {if $ERRORS.user}<div class="invalid-feedback d-block">{$ERRORS.user}</div>{/if}
                             </div>
                             <div class="iss-field">
                                 <span class="iss-field__label">{$password.LABEL}&nbsp;<span class="iss-required">*</span></span>
                                 <span class="iss-field__control">{$password.INPUT}</span>
+                                {if $ERRORS.password}<div class="invalid-feedback d-block">{$ERRORS.password}</div>{/if}
                             </div>
                             <div class="iss-field">
                                 <span class="iss-field__label">{$pathServer.LABEL}&nbsp;<span class="iss-required">*</span></span>
                                 <span class="iss-field__control">{$pathServer.INPUT}</span>
+                                {if $ERRORS.pathServer}<div class="invalid-feedback d-block">{$ERRORS.pathServer}</div>{/if}
                             </div>
                         </div>
                     </div>

@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 69
+Release: 70
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,16 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-70
+- Backup: use the theme grid in the decrypt form, the version comparison and
+  the migration page. They used raw tables and a class that no theme defines.
+- Backup: the version comparison was a whole HTML document of its own, nested
+  inside the module page.
+- Backup: validate the FTP credentials per field. The page used the legacy
+  validation, which reports the errors keyed by the label, and the messages
+  went to a global notice the module page does not show.
+- Backup: remove the filter template, it was not referenced.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-69
 - Health: use the theme grid. The page used the raw Tabler markup, so the
   cards, the label columns and the table did not follow the rest of the
