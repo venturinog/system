@@ -151,6 +151,10 @@ La <i>Passphrase</i> debería ser la contraseña de administrador web del sistem
 'Restoring Faxes...'=>'Restaurando faxes...',
 'Restoring Emails...'=>'Restaurando emails...',
 'Restoring Monitor files...'=>'Restaurando archivos de monitoreo...',
-'Restoring Voicemail files...'=>'Rrestaurando correo de voz...'
+'Restoring Voicemail files...'=>'Rrestaurando correo de voz...',
+"Maximum allowed file size is 3 GB" => "Maximum allowed file size is 3 GB",
+"Invalid file name" => "Invalid file name",
+"Are you sure?" => "Are you sure?",
+"Please allow ActiveX Scripting File System Object!" => "Please allow ActiveX Scripting File System Object!",
 );
 ?>

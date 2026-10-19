@@ -128,5 +128,9 @@ $arrLangModule=array(
 "Package not installed" => "Não instalado",
 "Version" => "Versão",
 "Progress" => "Progresso",
+"Maximum allowed file size is 3 GB" => "Maximum allowed file size is 3 GB",
+"Invalid file name" => "Invalid file name",
+"Are you sure?" => "Are you sure?",
+"Please allow ActiveX Scripting File System Object!" => "Please allow ActiveX Scripting File System Object!",
 );
 ?>

@@ -131,5 +131,9 @@ $arrLangModule=array(
 "wanpipe-util" => "Wanpipe-Util",
 "freepbx" => "Freepbx",
 "elastix" => "الستيكس",
+"Maximum allowed file size is 3 GB" => "Maximum allowed file size is 3 GB",
+"Invalid file name" => "Invalid file name",
+"Are you sure?" => "Are you sure?",
+"Please allow ActiveX Scripting File System Object!" => "Please allow ActiveX Scripting File System Object!",
 );
 ?>

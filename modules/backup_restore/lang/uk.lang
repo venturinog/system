@@ -133,5 +133,9 @@ $arrLangModule=array(
 	"File doesn" => "Файл не існує",
 	"Folder backup doesn" => "Папка резервного копіювання не існує",
 	"No records match the filter criteria" => "Немає записів які відповідають критеріям фільтра",
+"Maximum allowed file size is 3 GB" => "Maximum allowed file size is 3 GB",
+"Invalid file name" => "Invalid file name",
+"Are you sure?" => "Are you sure?",
+"Please allow ActiveX Scripting File System Object!" => "Please allow ActiveX Scripting File System Object!",
 );
 ?>

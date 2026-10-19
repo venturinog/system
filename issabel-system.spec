@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 74
+Release: 75
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-75
+- Backup and restore: replace the file upload control, drawn by a third party
+  plugin with its own colours, with the theme button and a hidden file input.
+  The plugin is no longer shipped.
+- Backup and restore: translate the messages of the upload check, which were
+  hardcoded in English in the JavaScript.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-74
 - Updates and Health: give the table the full width of the card. The theme
   table primitive only sets the colours, the width came from the Bootstrap

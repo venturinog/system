@@ -10,7 +10,7 @@ function confirm_upload(obj) {
         Sys.notid=true;
     }
 
-    if(typeof obj.files[0] == 'undefined') { 
+    if(typeof obj.files[0] == 'undefined') {
         return false;
     }
 
@@ -21,16 +21,15 @@ function confirm_upload(obj) {
             obj.select();
             var realpath   = document.selection.createRange().text;
             var fileobject = new ActiveXObject ("Scripting.FileSystemObject");
-            var file       = fileobject.GetFile (realpath);
-            var filesize   = file.Size;
+            var filesize   = fileobject.GetFile(realpath).Size;
         } catch(e){
-            alert("Please allow ActiveX Scripting File System Object!");
+            alert(backupUploadLang.ACTIVE_X);
             return false;
         }
     }
 
     if(filesize > 3072*1024*1024) {
-        alert("Maximum allowed file size is 3 GB");
+        alert(backupUploadLang.MAX_SIZE);
         return false;
     }
 
@@ -40,12 +39,12 @@ function confirm_upload(obj) {
     if(res === null) {
         var res = filename.match(/(\d{8})-(\d{6})-(\d{10})-(.*).tgz/);
 	if(res === null) {
-        	alert("Invalid file name");
+        	alert(backupUploadLang.BAD_NAME);
         	return false;
 	}
     }
 
-    if (window.confirm("Are you sure?")) {
+    if (window.confirm(backupUploadLang.CONFIRM)) {
         var $hiddenInput = $('<input/>',{type:'hidden',name:'uploadbk',value:'uploadbk'});
         $hiddenInput.appendTo("#idformgrid");
         $("form#idformgrid" )
@@ -54,4 +53,3 @@ function confirm_upload(obj) {
         document.getElementById('idformgrid').submit();
     }
 }
-

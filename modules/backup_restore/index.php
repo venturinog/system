@@ -267,7 +267,20 @@ function report_backup_restore($smarty, $module_name, $local_templates_dir, $dir
     $oGrid->addNew("backup",_tr("Backup"));
     $oGrid->deleteList(_tr("Are you sure you wish to delete backup (s)?"),'delete_backup',_tr("Delete"));
     $oGrid->customAction("view_form_FTP",_tr("FTP Backup"), "cloud");
-    $oGrid->addHTMLAction("<input name='upload_backup_file' type=file class='jfilestyle' data-input='false' data-buttonText='Upload' onchange='return confirm_upload(this)'> ");
+    // El boton de subir un archivo de backup: el del tema, con el input de
+    // fichero escondido detras. Antes lo dibujaba un plugin de terceros con
+    // sus propios colores, que no encajaban con el resto de la barra.
+    $arrUploadLang = array(
+        'MAX_SIZE' => _tr('Maximum allowed file size is 3 GB'),
+        'BAD_NAME' => _tr('Invalid file name'),
+        'CONFIRM'  => _tr('Are you sure?'),
+        'ACTIVE_X' => _tr('Please allow ActiveX Scripting File System Object!'),
+    );
+    $oGrid->addHTMLAction(
+        '<script>var backupUploadLang = '.json_encode($arrUploadLang, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS).';</script>'
+        .'<label class="btn btn-sm btn-outline-primary" for="iss-upload-backup"><i class="ti ti-upload"></i> '
+        .htmlspecialchars(_tr('Upload'), ENT_COMPAT, 'UTF-8').'</label>'
+        .'<input id="iss-upload-backup" type="file" name="upload_backup_file" class="visually-hidden" onchange="return confirm_upload(this)">');
 
     $backupIntervals = array(
         'DISABLED'  =>  _tr('DISABLED'),
