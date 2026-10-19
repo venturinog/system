@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 70
+Release: 71
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,11 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-71
+- Beta channel: show the result of the switch with the theme alert. The
+  script prepended the message to a container that no theme defines, so the
+  operator never saw whether the change had worked.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-70
 - Backup: use the theme grid in the decrypt form, the version comparison and
   the migration page. They used raw tables and a class that no theme defines.

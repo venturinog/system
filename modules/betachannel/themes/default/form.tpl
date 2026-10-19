@@ -1,4 +1,5 @@
 <div class="iss-form">
+    <div id="iss-betachannel-alert"></div>
     <section class="iss-card">
         <header class="iss-card__header"><i class="ti ti-git-pull-request"></i> {$subtittle1}</header>
         <div class="iss-card__body iss-formgrid">
