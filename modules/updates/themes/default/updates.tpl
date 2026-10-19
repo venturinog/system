@@ -53,7 +53,7 @@
             </div>
 
             <div class="table-responsive" id="iss-updates-table">
-                <table class="iss-table">
+                <table class="table align-middle iss-table" width="100%">
                     <thead>
                         <tr>
                             <th style="width: 2.5rem;"></th>

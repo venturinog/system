@@ -1,7 +1,7 @@
 <section class="iss-card">
     <div class="iss-card__header">{$warning_details}</div>
     <div class="table-responsive">
-        <table class="iss-table">
+        <table class="table align-middle iss-table" width="100%">
             <thead>
                 <tr>
                     <th>{$programs}</th>

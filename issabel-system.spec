@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 73
+Release: 74
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-74
+- Updates and Health: give the table the full width of the card. The theme
+  table primitive only sets the colours, the width came from the Bootstrap
+  table class, which the migration to the theme grid dropped.
+- Backup: the version comparison table now fills the card instead of keeping
+  the fixed 750 pixels it had.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-73
 - Complete the language files of the date and time, applet admin, DHCP
   client list, dashboard and backup pages. The keys the code looks for were
