@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 62
+Release: 63
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-63
+- DHCP server: split the page into a view and an edit mode. The page used to
+  render the live inputs straight away, so the configuration was never
+  readable at a glance. The default view is now a compact card with the
+  values as plain text, and the edit mode is a separate step reached with a
+  POST. The service start and stop buttons stay in the view.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-62
 - Applet admin, currency, DHCP client list, shutdown and backup: send the
   CSRF token with the forms. The token is injected into the first <form> of

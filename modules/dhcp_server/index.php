@@ -51,12 +51,15 @@ function _moduleContent(&$smarty, $module_name)
     $smarty->assign("SERVICE_START", _tr("Service Start"));
     $smarty->assign("SERVICE_STOP", _tr("Service Stop"));
     $smarty->assign("STATUS", _tr("Status"));
+    $smarty->assign("EDIT_CONFIGURATION", _tr("Edit"));
+    $smarty->assign("CANCEL", _tr("Cancel"));
     $smarty->assign("OF_1_TO_50000_SECONDS", _tr("Of 1 to 50000 Seconds"));
     $smarty->assign("icon", "modules/$module_name/images/system_network_dhcp_server.png");
 
     if(isset($_POST["in_iniciar"])) $accion ="service_start";
     else if(isset($_POST["in_finalizar"])) $accion ="service_stop";
     else if(isset($_POST["in_actualizar_conf_red"])) $accion ="service_update";
+    else if(isset($_POST["edit"])) $accion ="service_edit";
     else $accion ="service_show";
     $content = "";
     switch($accion){
@@ -68,6 +71,9 @@ function _moduleContent(&$smarty, $module_name)
             break;
         case "service_update":
             $content = serviceUpdateDHCP($smarty, $module_name, $local_templates_dir, $arrFormDHCP);
+            break;
+        case "service_edit":
+            $content = serviceEditDHCP($smarty, $module_name, $local_templates_dir, $arrFormDHCP);
             break;
         default: //service_show
             $content = serviceShowDHCP($smarty, $module_name, $local_templates_dir, $arrFormDHCP);
@@ -152,8 +158,11 @@ function dhcpConfigValues()
  * Render unico de la pagina: marca los campos con error, resuelve el estado del
  * servicio y devuelve el formulario. Lo usan las cuatro acciones, de modo que un
  * error de validacion re-renderiza la pagina sin redirigir ni perder valores.
+ *
+ * $mode 'view' deja la pagina en modo lectura: los valores se muestran como
+ * texto plano en una tarjeta compacta y la edicion es un paso aparte (POST).
  */
-function renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, $data, $errors = array())
+function renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, $data, $mode = 'view', $errors = array())
 {
     $fields = array('in_ip_ini','in_ip_fin','in_lease_time','in_dns1','in_dns2','in_wins','in_gw','in_next');
 
@@ -167,6 +176,10 @@ function renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, $data, $err
     }
 
     $oForm = new paloForm($smarty, $arrFormDHCP);
+    // En modo lectura los controles no se imprimen: la plantilla muestra el
+    // valor como texto plano. El modo del form se ajusta para que el
+    // ahorcado no arrastre permisos de edicion.
+    if ($mode !== 'input') $oForm->setViewMode();
 
     $paloDHCP = new PaloSantoDHCP();
     $bActive = ($paloDHCP->getStatusServiceDHCP() == "active");
@@ -178,6 +191,13 @@ function renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, $data, $err
     foreach ($fields as $f) $arrErrors[$f] = isset($errors[$f]) ? $errors[$f] : '';
     $smarty->assign("ERRORS", $arrErrors);
 
+    // Valores para la vista compacta: texto plano, nunca un input deshabilitado.
+    $arrView = array();
+    foreach ($fields as $f) {
+        $arrView[$f] = isset($data[$f]) ? (string)$data[$f] : '';
+    }
+    $smarty->assign("DHCP_VIEW", $arrView);
+
     return $oForm->fetchForm("$local_templates_dir/dhcp.tpl", _tr("DHCP Configuration"), $data);
 }
 
@@ -187,7 +207,7 @@ function serviceStartDHCP($smarty, $module_name, $local_templates_dir, $arrFormD
     if(!$paloDHCP->startServiceDHCP()){
         $smarty->assign("mb_title",_tr('Information'));
         $smarty->assign("mb_message",_tr("The DHCP service can't start"));
-        return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, dhcpConfigValues());
+        return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, dhcpConfigValues(), 'view');
     }
     header("Location: ?menu=$module_name");
 }
@@ -199,14 +219,23 @@ function serviceStopDHCP($smarty, $module_name, $local_templates_dir, $arrFormDH
     if(!$paloDHCP->stopServiceDHCP()){
         $smarty->assign("mb_title",_tr('Information'));
         $smarty->assign("mb_message",_tr("The DHCP service can't stop"));
-        return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, dhcpConfigValues());
+        return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, dhcpConfigValues(), 'view');
     }
     header("Location: ?menu=$module_name");
 }
 
 function serviceShowDHCP($smarty, $module_name, $local_templates_dir, $arrFormDHCP)
 {
-    return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, dhcpConfigValues());
+    return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, dhcpConfigValues(), 'view');
+}
+
+/*
+ * Modo edicion: la configuracion guardada se carga en los controles. Se
+ * alcanza con un POST, no con un enlace.
+ */
+function serviceEditDHCP($smarty, $module_name, $local_templates_dir, $arrFormDHCP)
+{
+    return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, dhcpConfigValues(), 'input');
 }
 
 function serviceUpdateDHCP($smarty, $module_name, $local_templates_dir, $arrFormDHCP)
@@ -302,7 +331,7 @@ function serviceUpdateDHCP($smarty, $module_name, $local_templates_dir, $arrForm
     }
 
     if (count($errors) > 0) {
-        return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, $_POST, $errors);
+        return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, $_POST, 'input', $errors);
     }
 
     if ($ip_next !== '' && $in_filename === '') {
@@ -315,7 +344,7 @@ function serviceUpdateDHCP($smarty, $module_name, $local_templates_dir, $arrForm
                                       $ip_ini,$ip_fin,$in_lease_time,$ip_next,$in_filename)){
         $smarty->assign("mb_title",_tr("Update Error").":");
         $smarty->assign("mb_message",$paloDHCP->errMsg);
-        return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, $_POST);
+        return renderDHCPPage($smarty, $local_templates_dir, $arrFormDHCP, $_POST, 'input');
     }
     header("Location: ?menu=$module_name");
 }

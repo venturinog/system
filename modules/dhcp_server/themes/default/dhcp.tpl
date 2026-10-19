@@ -1,17 +1,63 @@
 <form method="post">
 <div class="iss-form">
     <div class="iss-form__toolbar">
-        <span class="iss-form__hint"><span class="iss-required">*</span> {$REQUIRED_FIELD}</span>
+        {if $mode eq 'input'}<span class="iss-form__hint"><span class="iss-required">*</span> {$REQUIRED_FIELD}</span>{/if}
         <div class="iss-form__buttons">
+            {if $mode eq 'input'}
             <input class="button" name="in_actualizar_conf_red" value="{$CONFIGURATION_UPDATE}" type="submit" />
+            <input class="button" name="cancel" value="{$CANCEL}" type="submit" />
+            {else}
             {if $SERVICE_STARING}
             <input class="button" name="in_finalizar" value="{$SERVICE_STOP}" type="submit" />
             {else}
             <input class="button" name="in_iniciar" value="{$SERVICE_START}" type="submit" />
             {/if}
+            <input class="button" name="edit" value="{$EDIT_CONFIGURATION}" type="submit" />
+            {/if}
         </div>
     </div>
+    {if $mode eq 'input'}<div class="iss-reveal">{/if}
     <section class="iss-card">
+        {if $mode eq 'view'}
+        <div class="iss-card__body iss-formgrid iss-formgrid--3col iss-formgrid--readonly">
+            <div class="iss-field iss-field--full">
+                <span class="iss-field__label">{$STATUS}</span>
+                <span class="iss-field__control iss-field__value{if !$DHCP_STATUS_ACTIVE} iss-field__value--empty{/if}">{$DHCP_STATUS}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_ip_ini.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.in_ip_ini eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.in_ip_ini eq ''}&mdash;{else}{$DHCP_VIEW.in_ip_ini|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_ip_fin.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.in_ip_fin eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.in_ip_fin eq ''}&mdash;{else}{$DHCP_VIEW.in_ip_fin|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_lease_time.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.in_lease_time eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.in_lease_time eq ''}&mdash;{else}{$DHCP_VIEW.in_lease_time|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_dns1.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.in_dns1 eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.in_dns1 eq ''}&mdash;{else}{$DHCP_VIEW.in_dns1|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_dns2.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.in_dns2 eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.in_dns2 eq ''}&mdash;{else}{$DHCP_VIEW.in_dns2|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_wins.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.in_wins eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.in_wins eq ''}&mdash;{else}{$DHCP_VIEW.in_wins|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_gw.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.in_gw eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.in_gw eq ''}&mdash;{else}{$DHCP_VIEW.in_gw|escape}{/if}</span>
+            </div>
+            <div class="iss-field">
+                <span class="iss-field__label">{$in_next.LABEL}</span>
+                <span class="iss-field__control iss-field__value{if $DHCP_VIEW.in_next eq ''} iss-field__value--empty{/if}">{if $DHCP_VIEW.in_next eq ''}&mdash;{else}{$DHCP_VIEW.in_next|escape}{/if}</span>
+            </div>
+        </div>
+        {else}
         <div class="iss-card__body iss-formgrid">
             <div class="iss-field iss-field--full">
                 <span class="iss-field__label">{$STATUS}</span>
@@ -59,7 +105,9 @@
                 {if $ERRORS.in_next}<div class="invalid-feedback d-block">{$ERRORS.in_next}</div>{/if}
             </div>
         </div>
+        {/if}
     </section>
+    {if $mode eq 'input'}</div>{/if}
 </div>
 </form>
 <script>
@@ -121,7 +169,8 @@
     });
 
     form.addEventListener('submit', function (e) {
-        // Solo el boton de guardado valida; Start/Stop del servicio no.
+        // Solo el boton de guardado valida; Start/Stop del servicio y
+        // Cancel no validan.
         if (e.submitter && e.submitter.name !== 'in_actualizar_conf_red') return;
         if (!checkAll(true)) { e.preventDefault(); return false; }
     });
