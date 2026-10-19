@@ -24,20 +24,9 @@ global $arrLangModule;
 $arrLangModule = array(
     "Dashboard" => "Панель Состояния",
     "Loading" => "Загрузка",
-    "System Resources" => "Системные Ресурсы",
-    "Processes Status" => "Состояние Процессов",
-    "Hard Drives" => "Жёсткие Диски",
-    "Calls" => "Вызовы",
     "You haven't extension" => "У вас нет внутреннего номера",
-    "Performance Graphic" => "График Производительности",
     "News" => "Новости",
-    "Communication Activity" => "Коммуникационная Активность",
-    "Calendar" => "Календарь",
-    "Faxes" => "Факсы",
-    "Telephony Hardware" => "Телефонное Оборудование",
     "Unimplemented method" => "Метод не реализован",
     "Invalid request" => "Не верный запрос",
-    "Emails" => "Электронная Почта",
-    "Voicemails" => "Голосовая Почта",
 );
 ?>

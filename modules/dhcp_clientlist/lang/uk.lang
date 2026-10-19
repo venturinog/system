@@ -26,17 +26,10 @@
   $Id: uk.lang,v 1.7 2023-10-28 02:02:10 LLC LENET support@lenet.ua Exp $ */
 global $arrLangModule;
 $arrLangModule=array(
-	"New Email list" => "Новий Список Електронної Пошти",
-	"Are you sure you wish to delete the email list." => "Ви впевнені що хочете видалити список адрес електронної пошти?",
-	"Email List Name" => "Назва Списку Електронної Пошти",
-	"Email Member" => "Електронна Пошта Учаснику",
-	"Email List Members" => "Учасники Списку Електронної Пошти",
-	"Number of Accounts" => "Кількість Акаунтів",
 	"DHCP Client List" => "Список Клієнтів DHCP",
 	"New Dhcp client" => "Новий Клієнт Dhcp",
 	"Are you sure you wish to delete the Ip." => "Ви впевнені, що хочете видалити цей IP ?",
 	"Action" => "Дія",
-	"See All DHCP Info" => "Перегляньте Всю Інформацію про DHCP",
 	"IP Address" => "IP Адреса",
 	"Start Date" => "Початкова Дата",
 	"End Date" => "Кінцева Дата",

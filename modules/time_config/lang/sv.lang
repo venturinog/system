@@ -22,6 +22,7 @@
   $Id: sv.lang,v 0.1 2008/03/25 00:36:42 IFIT DATA - http://www.ifit.se Exp $ */
 global $arrLangModule;
 $arrLangModule=array(
+"System time changed successfully" => "Systemtiden ändrades",
 "Date and Time Configuration" => "Datum/Tid",
 "Current Datetime" => "Nuvarande Datumtid",
 "New Date" => "Nytt Datum",
@@ -33,6 +34,5 @@ $arrLangModule=array(
 "The change of date and time can concern important  system processes." => "Ändringar av datum och tid kan påverkra viktiga system processer!",
 "System time changed correctly" => "System time changed correctly",
 "You can not change the system time" => "You can not change the system time",
-"Can not find file" => "Can not find file",
 );
 ?>

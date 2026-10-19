@@ -27,22 +27,11 @@
 global $arrLangModule;
 $arrLangModule=array(
 	"Loading" => "Завантаження",
-	"System Resources" => "Системні Ресурси",
-	"Processes Status" => "Статус Процесів",
-	"Hard Drives" => "Жорсткі Диски",
-	"Calls" => "Дзвінки",
 	"Dashboard" => "Панель Приладів",
 	"You haven't extension" => "Extension has not been assigned.",
-	"Performance Graphic" => "Графік Продуктивності",
 	"News" => "Новини",
-	"Communication Activity" => "Комунікаційна Активність",
-	"Calendar" => "Календар",
-	"Faxes" => "Факси",
-	"Telephony Hardware" => "Телефонне Обладнання",
 	"Unimplemented method" => "Нереалізований Метод",
 	"Invalid request" => "Невірний запит",
-	"Emails" => "Електронна Пошта",
-	"Voicemails" => "Голосова Пошта",
 	"You haven" => "Внутрішній номер не призначено.",
 	"Issabel Network" => "Мережа Ізабель",
 );

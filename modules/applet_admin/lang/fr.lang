@@ -25,6 +25,8 @@
   $Id: fr.lang, October 25, 2010, 5:39 pm kleber andres loayza Exp $ */
 global $arrLangModule;
 $arrLangModule=array(  
+"Dashboard options" => "Options du tableau de bord",
+"Show the news ticker" => "Afficher le fil d'actualités",
 "Applet Admin" => "Gestion des Applets",
 "Applet" => "Applet",
 "Activated" => "Activé",

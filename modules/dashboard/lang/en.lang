@@ -23,21 +23,10 @@
 global $arrLangModule;
 $arrLangModule = array(
     "Loading" => "Loading",
-    "System Resources" => "System Resources",
-    "Processes Status" => "Processes Status",
-    "Hard Drives" => "Hard Drives",
-    "Calls" => "Calls",
     "Dashboard" => "Dashboard",
     "You haven't extension" => "Extension has not been assigned.",
-    "Performance Graphic" => "Performance Graphic",
     "News" => "News",
-    "Communication Activity" => "Communication Activity",
-    "Calendar" => "Calendar",
-    "Faxes" => "Faxes",
-    "Telephony Hardware" => "Telephony Hardware",
     "Unimplemented method" => "Unimplemented method",
     "Invalid request" => "Invalid request",
-    "Emails" => "Emails",
-    "Voicemails" => "Voicemails",
 );
 ?>

@@ -29,7 +29,6 @@ $arrLangModule=array(
 "New Dhcp client" => "Nuevo Cliente DHCP",
 "Are you sure you wish to delete the Ip." => "¿Está seguro que desea eliminar la dirección IP?",
 "Action" => "Acción",
-"See All DHCP Info" => "Ver todo DHCP Info",
 "IP Address" => "Dirección IP",
 "Start Date" => "Fecha Inicio",
 "End Date" => "Fecha Fin",

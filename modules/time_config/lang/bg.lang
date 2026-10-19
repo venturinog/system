@@ -26,7 +26,7 @@
 global $arrLangModule;
 $arrLangModule=array(
 /*system - date/time*/
-"Date/Time" => "Дата/Час",
+"System time changed successfully" => "Системното време е променено успешно",
 "Date and Time Configuration" => "Настройване на Дата и Час",
 "Current Datetime" => "Текущи Дата/Час",
 "New Date" => "Нова Дата",
@@ -38,6 +38,5 @@ $arrLangModule=array(
 "The change of date and time can concern important  system processes." => "Промяната на часът и датата може да засегне важни системни процеси.",
 "System time changed correctly" => "System time changed correctly",
 "You can not change the system time" => "You can not change the system time",
-"Can not find file" => "Can not find file",
 );
 ?>

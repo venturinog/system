@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 72
+Release: 73
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,15 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-73
+- Complete the language files of the date and time, applet admin, DHCP
+  client list, dashboard and backup pages. The keys the code looks for were
+  missing in most of the languages, so those pages fell back to the English
+  text.
+- Remove the keys no code uses any more: the fragments of an old message
+  scheme, the email list leftovers of the DHCP client list and the applet
+  names the dashboard menu already provides.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-72
 - Currency: name the currencies in English. The English base file held the
   Spanish names as keys and, for half of them, as values too.

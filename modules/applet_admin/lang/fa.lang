@@ -26,6 +26,9 @@
 */
 global $arrLangModule;
 $arrLangModule=array(
+"Dashboard options" => "گزینه‌های داشبورد",
+"Show the news ticker" => "نمایش نوار اخبار",
+"Check All" => "انتخاب/لغو همه",
 "Dashboard Applet Admin" => "مديريت اپلت داشبورد",
 "Applet" => "اپلت",
 "Activated" => "فعال شده",

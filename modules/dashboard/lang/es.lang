@@ -22,21 +22,11 @@
   $Id: es.lang,v 1.7 2007/09/05 00:36:42 alex Exp $ */
 global $arrLangModule;
 $arrLangModule = array(
+"Dashboard" => "Panel de control",
     "Loading" => "Cargando",
-    "System Resources" => "Recursos del Sistema",
-    "Processes Status" => "Estado de Procesos",
-    "Hard Drives" => "Discos Duros",
-    "Calls" => "Llamadas",
     "You haven't extension" => "No se ha asignado una extensión",
-    "Performance Graphic" => "Gráfico de Rendimiento",
     "News" => "Anuncios",
-    "Communication Activity" => "Actividad de Comunicación",
-    "Calendar" => "Calendario",
-    "Faxes" => "Faxes",
-    "Telephony Hardware" => "Hardware Telefónico",
     "Unimplemented method" => "Método no implementado",
     "Invalid request" => "Petición inválida",
-    "Emails" => "Correos",
-    "Voicemails" => "Mensajes de voz",
 );
 ?>

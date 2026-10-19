@@ -26,6 +26,7 @@
 */
 global $arrLangModule;
 $arrLangModule=array(
+"System time changed successfully" => "ساعت سیستم با موفقیت تغییر کرد",
 "Date and Time Configuration" => "تاریخ/زمان",
 "Current Datetime" => "تاریخ و زمان جاری",
 "New Date" => "تاریخ جدید",
@@ -37,6 +38,5 @@ $arrLangModule=array(
 "The change of date and time can concern important  system processes." => "تغییر تاریخ و زمان می تواند موجب مشکل در پردازش های سیستمی شود",
 "System time changed correctly" => "زمان سيستم به درستي تغيير كرد",
 "You can not change the system time" => "شما نمي‌توانيد زمان سيستم را تغيير دهيد",
-"Can not find file" => "فايل پيدا نشد",
 );
 ?>

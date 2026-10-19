@@ -23,7 +23,6 @@
 global $arrLangModule;
 $arrLangModule=array(
 /*system - date/time*/
-"Date/Time" => "Data/Hora",
 "Date and Time Configuration" => "Data/Hora",
 "Current Datetime" => "Data e hora atual",
 "New Date" => "Nova data",
@@ -32,19 +31,8 @@ $arrLangModule=array(
 "Minute" => "Minuto",
 "Second" => "Segundo",
 "New Timezone" => "Novo fuso horário",
-"Date not valid" => "Data inválida",
-"Unable to locate file" => "Não foi possível localizar o arquivo",
-"Internal has failed" => "(internal) chown/etc/localtime falhou",
-"Internal reading" => "(internal) leitura",
-"Internal aperture" => "(internal) abertura (w) /etc/localtime falhou",
-"Internal chown" => "(internal) chown /var/spool/postfix/etc/localtime falhou",
-"Internal aperture localtime" => "(internal) abertura (w) /var/spool/postfix/etc/localtime falhou",
-"Internal chown clock" => "(internal) chown /etc/sysconfig/clock falhou",
-"Internal aperture clock" => "(internal) abertura (w) /etc/sysconfig/clock falhou",
-"has failed" => "falhou",
 "System time changed successfully" => "Data e hora do sistema alterada com sucesso",
 "The change of date and time can concern important  system processes." => "Alterar a data e a hora no sistema pode criar valores inesperados ou inconsistentes nos processos cujos cálculos dependem, como na geração de Relatórios, Condições de Tempo, etc.",
-"Can not find file" => "Não é possível encontrar o arquivo",
 /*end system - date/time*/
 );
 ?>

@@ -26,6 +26,7 @@
   $Id: el.lang,v 1.6 2008/02/11 11:07:22 bmacias@palosanto.com Exp $ */
 global $arrLangModule;
 $arrLangModule=array(
+"System time changed successfully" => "Η ώρα του συστήματος άλλαξε με επιτυχία",
 "Date and Time Configuration" => "Date/Time",
 "Current Datetime" => "Current Datetime",
 "New Date" => "New Date",
@@ -37,6 +38,5 @@ $arrLangModule=array(
 "The change of date and time can concern important  system processes." => "Η αλλαγή της ημερομηνίας και της ώρας επηρεάζουν διαδικασίες του συστήματος.",
 "System time changed correctly" => "System time changed correctly",
 "You can not change the system time" => "You can not change the system time",
-"Can not find file" => "Can not find file",
 );
 ?>

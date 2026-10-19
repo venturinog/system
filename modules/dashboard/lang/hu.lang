@@ -22,7 +22,11 @@
   $Id: es.lang,v 1.7 2007/09/05 00:36:42 alex Exp $ */
 global $arrLangModule;
 $arrLangModule = array(
-    "System Resources" => "Rendszer erőforrások",
-    "Hard Drives" => "Merevlemezek",
+"Loading" => "Betöltés",
+"Dashboard" => "Vezérlőpult",
+"You haven't extension" => "Nincs hozzárendelt kiterjesztés",
+"News" => "Hírek",
+"Unimplemented method" => "Nem implementált metódus",
+"Invalid request" => "Érvénytelen kérés",
 );
 ?>

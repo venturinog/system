@@ -27,15 +27,11 @@
 global $arrLangModule;
 $arrLangModule=array(
 
-"New Email list" => "ليست ايميل جديد",
-"Are you sure you wish to delete the email list." => "آيا براي حذف ليست ايميل مطمئن هستيد",
-"Email List Name" => "نام لسيت ايميل",
 
-"Email Member" => "اعضا ايميل",
-"Email List Members" => "اعضا ليست ايميل",
 
-"Number of Accounts" => "شماره اكانت ها",
 //nuevos
+"DHCP Client List" => "فهرست کلاینت‌های DHCP",
+"MAC Address" => "نشانی MAC",
 "Dhcp Client List" => "DHCP ليست كلاينت هاي ",
 "New Dhcp client" => "DHCP كلاينت جديد",
 "Are you sure you wish to delete the Ip." => "آيا براي حذف اي پي مطمئن هستيد",

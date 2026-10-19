@@ -22,6 +22,8 @@
   $Id: ru.lang,v 1.0 2015/10/11 00:07:49 Andrey Exp $ */
 global $arrLangModule;
 $arrLangModule=array(
+"Dashboard options" => "Настройки панели",
+"Show the news ticker" => "Показывать бегущую строку новостей",
 "Dashboard Applet Admin" => "Настройка Панели Состояния",
 "Applet" => "Апплет",
 "Activated" => "Активирован",

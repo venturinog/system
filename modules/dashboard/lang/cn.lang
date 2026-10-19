@@ -22,11 +22,12 @@
 */
 global $arrLangModule;
 $arrLangModule = array(
-    "System Resources" => "系统资源",
-    "Hard Drives" => "硬盘",
-	"Communication Activity" => "通信状态",
-	"Performance Graphic" => "性能图示",
-	"Processes Status" => "进程状态",
+"Loading" => "加载中",
+"Dashboard" => "控制面板",
+"You haven't extension" => "未分配分机",
+"News" => "新闻",
+"Unimplemented method" => "未实现的方法",
+"Invalid request" => "无效请求",
 	"Total Calls" => "总呼叫量",
 	"Total Channels" => "总通道数",
 );

@@ -22,7 +22,11 @@
   $Id: es.lang,v 1.7 2007/09/05 00:36:42 alex Exp $ */
 global $arrLangModule;
 $arrLangModule = array(
-    "System Resources" => "Sistemski resursi",
-    "Hard Drives" => "Tvrdi diskovi",
+"Loading" => "Učitavanje",
+"Dashboard" => "Контролна табла",
+"You haven't extension" => "Екстензија није додељена",
+"News" => "Вести",
+"Unimplemented method" => "Метода није имплементирана",
+"Invalid request" => "Неважећи захтев",
 );
 ?>

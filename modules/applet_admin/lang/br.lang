@@ -24,6 +24,8 @@
   */
 global $arrLangModule;
 $arrLangModule=array(
+"Dashboard options" => "Opções do painel",
+"Show the news ticker" => "Mostrar o ticker de notícias",
 "Dashboard Applet Admin" => "Administrador Painel Dashboard",
 "Applet" => "Painel",
 "Activated" => "Ativado",

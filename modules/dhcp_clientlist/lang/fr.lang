@@ -25,12 +25,6 @@
   $Id: fr.lang, October 25, 2010, 5:39 pm kleber andres loayza Exp $ */
 global $arrLangModule;
 $arrLangModule=array(  
-"New Email list" => "Nouvelle liste de courrier électronique",
-"Are you sure you wish to delete the email list." => "Etes-vous sûr de vouloir supprimer la liste de courrier électronique ?",
-"Email List Name" => "Nom de la liste de courrier électronique",
-"Email Member" => "Email du membre",
-"Email List Members" => "Email de la liste des membres",
-"Number of Accounts" => "Nombre de comptes",
 "Dhcp Client List" => "Liste des clients DHCP",
 "New Dhcp client" => "Nouveau client DHCP",
 "Are you sure you wish to delete the Ip." => "Etes-vous sûr de vouloir supprimer l'adresse IP ?",
@@ -42,7 +36,6 @@ $arrLangModule=array(
 "End Date" => "Date de fin",
 "Mac Address" => "Adresse MAC",
 "DHCP Client List" => "Liste des clients DHCP",
-"See All DHCP Info" => "Voir toutes les informations DHCP",
 "IP Address" => "Adresse IP",
 "MAC Address" => "Adresse MAC",
 "View Details" => "Voir les détails",

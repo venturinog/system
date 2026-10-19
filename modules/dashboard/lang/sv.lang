@@ -22,7 +22,11 @@
   $Id: es.lang,v 1.7 2007/09/05 00:36:42 alex Exp $ */
 global $arrLangModule;
 $arrLangModule = array(
-    "System Resources" => "System Resurser",
-    "Hard Drives" => "Hårddiskar",
+"Loading" => "Laddar",
+"Dashboard" => "Översikt",
+"You haven't extension" => "Ingen tillägg har tilldelats",
+"News" => "Nyheter",
+"Unimplemented method" => "Oimplementerad metod",
+"Invalid request" => "Ogiltig begäran",
 );
 ?>

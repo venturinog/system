@@ -24,6 +24,7 @@
  +----------------------------------------------------------------------+
  $Id: ja.lang,v 1.6 2008/05/18 20:00:00 ganymean Exp $ */
 $arrLangModule=array(
+"System time changed successfully" => "システム時刻を正常に変更しました",
 "Date and Time Configuration" => "日時設定",
 "Current Datetime" => "現在日時",
 "New Date" => "新年月日",
@@ -35,6 +36,5 @@ $arrLangModule=array(
 "The change of date and time can concern important  system processes." => "日時の変更は、システムプロセスに重要な影響を及ぼすことがあります。",
 "System time changed correctly" => "System time changed correctly",
 "You can not change the system time" => "You can not change the system time",
-"Can not find file" => "Can not find file",
 );
 ?>

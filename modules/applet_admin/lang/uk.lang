@@ -22,6 +22,8 @@
   $Id: uk.lang,v 1.0 2023/09/23 17:13:30 Ltd LeNET support@lenet.com.ua Exp $ */
 global $arrLangModule;
 $arrLangModule=array(
+"Dashboard options" => "Опції панелі",
+"Show the news ticker" => "Показати стрічку новин",
 "Dashboard Applet Admin" => "Налаштування Панелі Стану",
 "Applet" => "Апплет",
 "Activated" => "Активовано",

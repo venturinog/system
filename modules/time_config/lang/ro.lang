@@ -26,6 +26,7 @@
   $Id: ro.lang,v 1.6 2007/09/05 00:36:42 gcarrillo Exp $ */
 global $arrLangModule;
 $arrLangModule=array(
+"System time changed successfully" => "Ora sistemului a fost modificată cu succes",
 "Date and Time Configuration"  =>  "Data/Ora",
 "Current Datetime"  =>  "Data si Ora Curenta Datetime",
 "New Date"  =>  "Data Noua",
@@ -37,6 +38,5 @@ $arrLangModule=array(
 "The change of date and time can concern important  system processes."  =>  "Schimbarea datei si orei poate afecta buna functionare a proceselor sistemului.",
 "System time changed correctly" => "System time changed correctly",
 "You can not change the system time" => "You can not change the system time",
-"Can not find file" => "Can not find file",
 );
 ?>

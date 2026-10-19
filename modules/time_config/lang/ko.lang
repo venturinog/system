@@ -22,6 +22,7 @@
   $Id: ko.lang,v 1.6 2007/09/05 00:36:42 gcarrillo Exp $ */
 global $arrLangModule;
 $arrLangModule=array(
+"System time changed successfully" => "시스템 시간을 성공적으로 변경했습니다",
 "Date and Time Configuration"  =>  "Date/Time",
 "Current Datetime"  =>  "Current Datetime",
 "New Date"  =>  "New Date",
@@ -33,6 +34,5 @@ $arrLangModule=array(
 "The change of date and time can concern important  system processes."  =>  "The change of date and time can concern important  system processes.",
 "System time changed correctly" => "System time changed correctly",
 "You can not change the system time" => "You can not change the system time",
-"Can not find file" => "Can not find file",
 );
 ?>

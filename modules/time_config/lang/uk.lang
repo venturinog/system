@@ -26,7 +26,6 @@
   $Id: uk.lang,v 1.7 2023-10-30 02:45:03 LLC LENET support@lenet.ua Exp $ */
 global $arrLangModule;
 $arrLangModule=array(
-	"Date/Time" => "Дата/Час",
 	"Date and Time Configuration" => "Дата/Час",
 	"Current Datetime" => "Поточна Дата та Час",
 	"New Date" => "Нова Дата",
@@ -35,18 +34,7 @@ $arrLangModule=array(
 "Minute" => "Хвилина",
 "Second" => "Секунда",
 	"New Timezone" => "Новий Часовий Пояс",
-	"Date not valid" => "Дата не дійсна",
-	"Unable to locate file" => "Не вдається знайти файл",
-	"Internal has failed" => "Не вдалося виконати (внутрішній) chown/etc/localtime",
-	"Internal reading" => "(внутрішнє) читання",
-	"Internal aperture" => "(внутрішня) апертура (w) /etc/localtime зазнала невдачі",
-	"Internal chown" => "(внутрішній) chown /var/spool/postfix/etc/localtime завершився невдало",
-	"Internal aperture localtime" => "(внутрішня) апертура (w) /var/spool/postfix/etc/localtime зазнала невдачі",
-	"Internal chown clock" => "(внутрішній) chown /etc/sysconfig/clock не вдалося",
-	"Internal aperture clock" => "(внутрішня) апертура (w) /etc/sysconfig/clock не вдалося.",
-	"has failed" => "не вдалося",
 	"System time changed successfully" => "Системну Дату/Час успішно змінено",
 	"The change of date and time can concern important  system processes." => "Зміна дати і часу в системі може призвести до неочікуваних або суперечливих значень у процесах, обчислення яких залежать від них, наприклад, при створенні звітів, часових умов тощо.",
-	"Can not find file" => "Не вдалося знайти файл",
 );
 ?>
