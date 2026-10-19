@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 71
+Release: 72
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,15 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-72
+- Currency: name the currencies in English. The English base file held the
+  Spanish names as keys and, for half of them, as values too.
+- Currency: translate the currency names. The French, Turkish and Brazilian
+  files were copies of the English one, and the Persian file had a dozen
+  names left untranslated.
+- Currency: add the Ukrainian hryvnia, which the code offered but no
+  language file had.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-71
 - Beta channel: show the result of the switch with the theme alert. The
   script prepended the message to a container that no theme defines, so the
