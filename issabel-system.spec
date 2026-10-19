@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 60
+Release: 61
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,11 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-61
+- Health: use the theme severity tokens for the score border and the finding
+  dots. The colours were hardcoded, so the mid tones the page picked washed
+  out on a dark background.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-60
 - Network parameters: use the theme alert primitives for the pending change
   and the pending draft banners. They hardcoded a light background and

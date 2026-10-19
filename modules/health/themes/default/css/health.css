@@ -10,9 +10,9 @@
     align-items: center;
     justify-content: center;
 }
-.iss-health__score--ok       { border-color: #2fb344; }
-.iss-health__score--warning  { border-color: #f59f00; }
-.iss-health__score--critical { border-color: #d63939; }
+.iss-health__score--ok       { border-color: var(--iss-sev-ok); }
+.iss-health__score--warning  { border-color: var(--iss-sev-warning); }
+.iss-health__score--critical { border-color: var(--iss-sev-critical); }
 .iss-health__scoreval { font-size: 26px; font-weight: 700; line-height: 1; }
 .iss-health__scorelbl { font-size: 10px; text-transform: uppercase; color: var(--tblr-secondary-color, #74838f); }
 
