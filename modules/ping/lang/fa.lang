@@ -31,7 +31,5 @@ $arrLangModule=array(
 "Results"=> "نتیجه",
 "Host name or IP"=> "نام هاست یا IP",
 "Required field"=> "فیلد مورد نیاز",
-"%s is required"=> "%s الزامی است",
-"%s is invalid"=> "%s نامعتبر است"
 );
 ?>

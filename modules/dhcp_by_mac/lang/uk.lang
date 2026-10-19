@@ -43,6 +43,5 @@ $arrLangModule=array(
 	"Invalid IP address" => "Недійсна IP Адреса",
 	"Invalid MAC address" => "Недійсна MAC Адреса",
 	"Duplicate IP or MAC" => "IP або MAC вже використовується",
-	"%s is required" => "%s є обов'язковим",
 );
 ?>

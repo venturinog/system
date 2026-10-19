@@ -84,8 +84,6 @@ $arrLangModule=array(
 "Gateway" => "Gateway",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "Gateway er påkrævet (brug 0.0.0.0 for en on-link-rute)",
 "IPv4" => "IPv4",
-"%s is required" => "%s er påkrævet",
-"%s is invalid" => "%s er ugyldig",
 "The operation could not be completed." => "Handlingen kunne ikke gennemføres.",
 );
 ?>

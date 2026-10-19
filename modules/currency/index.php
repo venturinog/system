@@ -54,18 +54,26 @@ function _moduleContent(&$smarty, $module_name)
         case "save":
             $content = saveCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrConf);
             break;
+        case "edit":
+            $content = formCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrConf, 'input');
+            break;
         default:
-            $content = formCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrConf);
+            $content = formCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrConf, 'view');
             break;
     }
     return $content;
 }
 
-function formCurrency($smarty, $module_name, $local_templates_dir, &$pDB, $arrConf)
+/*
+ * Render unico de la pagina. En modo vista la moneda aparece como texto plano
+ * en una tarjeta compacta; el modo edicion es un paso aparte (POST).
+ */
+function formCurrency($smarty, $module_name, $local_templates_dir, &$pDB, $arrConf, $mode = 'view', $errors = array())
 {
     $pCurrency = new paloSantoCurrency($pDB);
     $arrFormCurrency = createFieldForm();
     $oForm = new paloForm($smarty,$arrFormCurrency);
+    if ($mode !== 'input') $oForm->setViewMode();
 
     //CARGAR CURRENCY GUARDADO
     $curr = loadCurrentCurrency($pDB);
@@ -73,12 +81,23 @@ function formCurrency($smarty, $module_name, $local_templates_dir, &$pDB, $arrCo
     if( $curr == false ) $curr = "$";
 
     $smarty->assign("SAVE", _tr("Save"));
+    $smarty->assign("EDIT", _tr("Edit"));
+    $smarty->assign("CANCEL", _tr("Cancel"));
     $smarty->assign("REQUIRED_FIELD", _tr("Required field"));
     $smarty->assign("icon", "modules/$module_name/images/system_preferences_currency.png");
     $smarty->assign("module_name", $module_name);
-    $_POST['currency'] = $curr;
 
-    $htmlForm = $oForm->fetchForm("$local_templates_dir/form.tpl",_tr("Currency"), $_POST);
+    // Vista compacta: el simbolo y el nombre de la moneda como texto plano.
+    $arrCurrencies = getCurrencys();
+    $smarty->assign("CURRENCY_VIEW", array(
+        'symbol' => $curr,
+        'name'   => isset($arrCurrencies[$curr]) ? $arrCurrencies[$curr] : $curr,
+    ));
+
+    $smarty->assign("CURRENCY_ERROR", isset($errors['currency']) ? $errors['currency'] : '');
+
+    $arrData = array('currency' => $curr);
+    $htmlForm = $oForm->fetchForm("$local_templates_dir/form.tpl",_tr("Currency"), $arrData);
 
     return $htmlForm;
 }
@@ -87,7 +106,18 @@ function saveCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrCon
 {
     $curr = getParameter("currency");
     $oPalo = new paloSantoCurrency($pDB);
-    //print_r($curr);
+
+    // La moneda debe ser una de la lista: el valor se guarda en la base de
+    // datos y se usa al formatear los importes de la facturacion.
+    $errors = array();
+    if ($curr === '' || $curr === NULL)
+        $errors['currency'] = sprintf(_tr('%s is required'), _tr('Currency'));
+    else if (!array_key_exists($curr, getCurrencys()))
+        $errors['currency'] = sprintf(_tr('%s is invalid'), _tr('Currency'));
+
+    if (count($errors) > 0)
+        return formCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrConf, 'input', $errors);
+
     $bandera = $oPalo->SaveOrUpdateCurrency($curr);
 
     if($bandera == true ){
@@ -98,7 +128,7 @@ function saveCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrCon
         $smarty->assign("mb_message", $oPalo->errMsg);
     }
 
-    return formCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrConf);
+    return formCurrency($smarty, $module_name, $local_templates_dir, $pDB, $arrConf, 'view');
 }
 
 function createFieldForm()
@@ -124,6 +154,8 @@ function getAction()
         return "show";
     if(getParameter("save"))
         return "save";
+    else if(getParameter("edit"))
+        return "edit";
     else if(getParameter("new"))
         return "new";
     else if(getParameter("action")=="show") //Get parameter by GET (command pattern, links)
@@ -145,7 +177,7 @@ function getCurrencys()
             "฿"     => "฿ - "._tr("Baht tailandés / balboa panameño"),
             "Bs"    => "Bs - "._tr("Bolívar venezolano"),
             "Bs.F." => "Bs.F. - "._tr("Bolívar fuerte venezolana"),
-            "¢"     => "¢ - "._tr("Colón costarricense"),
+            "₡"     => "₡ - "._tr("Colón costarricense"),
             "C$"    => "C$ - "._tr("Córdoba nicaragüense/dólar canadiense"),
             "₫"     => "₫ - "._tr("Dong vietnamita"),
             "EC$"   => "EC$ - "._tr("Dólar del Caribe Oriental"),

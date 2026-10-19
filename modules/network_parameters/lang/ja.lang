@@ -82,8 +82,6 @@ $arrLangModule=array(
 "Gateway" => "ゲートウェイ",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "ゲートウェイは必須です（on-link ルートには 0.0.0.0 を使用）",
 "IPv4" => "IPv4",
-"%s is required" => "%s は必須です",
-"%s is invalid" => "%s が無効です",
 "The operation could not be completed." => "操作を完了できませんでした。",
 );
 ?>

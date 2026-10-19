@@ -58,8 +58,6 @@ $arrLangModule=array(
 "Inactive" => "Dezactivat",
 "Information" => "Information",
 "Active"=>"Activ",
-"%s is required" => "%s este obligatoriu",
-"%s is invalid" => "%s este invalid",
 "PXE Boot Server" => "Server de boot PXE",
 );
 ?>

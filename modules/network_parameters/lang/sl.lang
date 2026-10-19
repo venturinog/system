@@ -80,8 +80,6 @@ $arrLangModule=array(
 "Gateway" => "Prehod",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "Prehod je obvezen (uporabite 0.0.0.0 za on-link pot)",
 "IPv4" => "IPv4",
-"%s is required" => "%s je obvezno",
-"%s is invalid" => "%s ni veljavno",
 "The operation could not be completed." => "Operacije ni bilo mogoče dokončati.",
 );
 ?>

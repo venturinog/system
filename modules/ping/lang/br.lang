@@ -25,7 +25,5 @@ $arrLangModule=array(
 "Results"=> "Resultados",
 "Host name or IP"=> "Nome de host ou IP",
 "Required field"=> "Campo obrigatório",
-"%s is required"=> "%s é obrigatório",
-"%s is invalid"=> "%s é inválido"
 );
 ?>

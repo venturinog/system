@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 63
+Release: 64
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,11 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-64
+- Drop the local copies of the "%s is required" and "%s is invalid" keys
+  from the network parameters, DHCP by MAC, DHCP server and ping language
+  files. The keys now live in the global language files of the framework.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-63
 - DHCP server: split the page into a view and an edit mode. The page used to
   render the live inputs straight away, so the configuration was never

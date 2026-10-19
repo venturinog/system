@@ -64,12 +64,14 @@ class paloSantoCurrency {
 
     function SaveOrUpdateCurrency($curr)
     {
+        // El valor va como parametro: la cadena se interpola en la consulta
+        // y no debe hacerlo.
         if( $this->loadCurrency() == false )//no tiene registro de currency
-            $query = "INSERT INTO settings(key,value) values('currency','$curr')";
+            $query = "INSERT INTO settings(key,value) values('currency',?)";
         else
-            $query = "UPDATE settings SET value='$curr' WHERE key='currency'";
+            $query = "UPDATE settings SET value=? WHERE key='currency'";
 
-        $result = $this->_DB->genQuery($query);
+        $result = $this->_DB->genQuery($query, array($curr));
         if( $result == false ){
             $this->errMsg = $this->_DB->errMsg;
             return false;

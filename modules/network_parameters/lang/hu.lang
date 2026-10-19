@@ -84,8 +84,6 @@ $arrLangModule=array(
 "Gateway" => "Átjáró",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "Az átjáró kötelező (használjon 0.0.0.0-t on-link útvonalhoz)",
 "IPv4" => "IPv4",
-"%s is required" => "%s kötelező",
-"%s is invalid" => "%s érvénytelen",
 "The operation could not be completed." => "A műveletet nem sikerült befejezni.",
 );
 ?>

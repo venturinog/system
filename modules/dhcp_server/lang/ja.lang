@@ -56,8 +56,6 @@ $arrLangModule=array(
 "Inactive" => "未使用",
 "Information" => "Information",
 "Active"=>"使用中",
-"%s is required" => "%s は必須です",
-"%s is invalid" => "%s が無効です",
 "PXE Boot Server" => "PXE ブートサーバー",
 );
 ?>

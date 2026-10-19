@@ -31,7 +31,5 @@ $arrLangModule=array(
 	"Results" => "Результати",
 	"Host name or IP" => "Ім'я хоста або IP",
 	"Required field" => "Обов'язкове поле",
-	"%s is required" => "%s є обов'язковим",
-	"%s is invalid" => "%s є неприпустимим",
 );
 ?>

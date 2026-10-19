@@ -84,8 +84,6 @@ $arrLangModule=array(
 "Gateway" => "Porta d'enllaç",
 "Gateway is required (use 0.0.0.0 for an on-link route)" => "La passarel·la és obligatòria (utilitzeu 0.0.0.0 per a una ruta on-link)",
 "IPv4" => "IPv4",
-"%s is required" => "%s és obligatori",
-"%s is invalid" => "%s no és vàlid",
 "The operation could not be completed." => "No s'ha pogut completar l'operació.",
 );
 ?>
