@@ -3,16 +3,16 @@
 {$NETWORK_ALERT}
 {/if}
 {if $PENDING_CHANGE eq 'yes'}
-<div style="border:1px solid #d9a000;background:#fff6d9;padding:8px 12px;margin-bottom:10px;">
-    <div style="margin-bottom:6px;"><strong>{$PENDING_WARNING}</strong><br>{$PENDING_SUMMARY} &mdash; {$PENDING_REMAINING}s</div>
+<div class="iss-alert iss-alert--warning">
+    <div class="iss-alert__content"><strong>{$PENDING_WARNING}</strong><br>{$PENDING_SUMMARY} &mdash; {$PENDING_REMAINING}s</div>
     <input class="button" type="submit" name="confirm_network_change" value="{$CONFIRM_CHANGE}">
     <input class="button" type="submit" name="revert_network_change" value="{$REVERT_CHANGE}">
 </div>
 {/if}
 {if $DRAFT_COUNT > 0}
-<div id="issabel_draft" style="border:1px solid #6aa84f;background:#eef7e6;padding:8px 12px;margin-bottom:10px;">
-    <strong>{$PENDING_CHANGES_TITLE}</strong>
-    <ul style="margin:6px 0 6px 18px;">
+<div id="issabel_draft" class="iss-alert iss-alert--success">
+    <div class="iss-alert__title">{$PENDING_CHANGES_TITLE}</div>
+    <ul class="iss-alert__list">
     {foreach from=$DRAFT_CHANGES item=L}
         <li>{$L}</li>
     {/foreach}

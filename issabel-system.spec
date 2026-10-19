@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 59
+Release: 60
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,18 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-60
+- Network parameters: use the theme alert primitives for the pending change
+  and the pending draft banners. They hardcoded a light background and
+  inherited the body text colour, so in dark mode they showed light text on
+  a light background. The error box now uses the same family.
+- Health: use the theme alert primitives. The page used the Bootstrap 3
+  "alert alert-*" classes, which Tabler does not have, so the message showed
+  without any style.
+- Updates: use the theme alert primitives, for the same reason as the Health
+  page. The message type is now "error" instead of "danger" so it matches the
+  primitive modifier.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-59
 - Updates: stop loading the module script twice. paloSantoNavigation already
   injects every .js from modules/<id>/themes/default/js into the iframe head, so

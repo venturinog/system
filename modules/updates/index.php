@@ -68,13 +68,13 @@ function _moduleContent(&$smarty, $module_name)
     if ($action === 'update') {
         $pkgs = (isset($_POST['pkg_x']) && is_array($_POST['pkg_x'])) ? $_POST['pkg_x'] : array();
         $r = $u->start($pkgs, $user);
-        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
+        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'error';
     } elseif ($action === 'refresh') {
         $r = $u->refresh($user);
-        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
+        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'error';
     } elseif ($action === 'reset') {
         $r = $u->reset($user);
-        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
+        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'error';
     }
 
     return _updatesRenderPage($smarty, $u, $local_templates_dir, $msg, $msgType);

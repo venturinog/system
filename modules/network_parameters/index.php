@@ -456,9 +456,9 @@ function networkSetAlert(&$smarty, $sMessage, $sTitle = NULL)
     // Siempre hay recuadro: si el helper no dejó ningún mensaje, uno genérico.
     if (trim((string)$sMessage) === '') $sMessage = _tr('The operation could not be completed.');
     if ($sTitle === NULL) $sTitle = _tr('ERROR');
-    $html = '<div class="iss-alert-error">'
-        .'<div class="iss-alert-error__title"><b>&nbsp;'.htmlspecialchars($sTitle, ENT_COMPAT, 'UTF-8').'</b></div>'
-        .'<div class="iss-alert-error__content">'.nl2br(htmlspecialchars((string)$sMessage, ENT_COMPAT, 'UTF-8')).'</div>'
+    $html = '<div class="iss-alert iss-alert--error">'
+        .'<div class="iss-alert__title">&nbsp;'.htmlspecialchars($sTitle, ENT_COMPAT, 'UTF-8').'</div>'
+        .'<div class="iss-alert__content">'.nl2br(htmlspecialchars((string)$sMessage, ENT_COMPAT, 'UTF-8')).'</div>'
         .'</div>';
     $smarty->assign("NETWORK_ALERT", $html);
 }

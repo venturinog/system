@@ -11,7 +11,7 @@
     </div>
 
     {if $msg}
-    <div class="alert alert-{$msgType}">{$msg|escape:'html'}</div>
+    <div class="iss-alert iss-alert--{$msgType}">{$msg|escape:'html'}</div>
     {/if}
 
     <div class="card mb-3">

@@ -10,11 +10,11 @@
     </div>
 
     {if $msg}
-    <div class="alert alert-{$msgType}">{$msg|escape:'html'}</div>
+    <div class="iss-alert iss-alert--{$msgType}">{$msg|escape:'html'}</div>
     {/if}
 
     {if $job_state eq 'running'}
-    <div class="alert alert-info d-flex align-items-center gap-2" id="iss-updates-working">
+    <div class="iss-alert iss-alert--info d-flex align-items-center gap-2" id="iss-updates-working">
         <span class="spinner-border spinner-border-sm" role="status"></span>
         <span>{$LABEL_WORKING}{if $job_started} ({$job_started}){/if}</span>
         <a href="#" id="iss-updates-viewlog" class="ms-auto">{$LABEL_VIEW_LOG}</a>
@@ -22,7 +22,7 @@
     {/if}
 
     {if $reboot_needed}
-    <div class="alert alert-warning">
+    <div class="iss-alert iss-alert--warning">
         <i class="ti ti-alert-triangle"></i> {$LABEL_REBOOT}
     </div>
     {/if}

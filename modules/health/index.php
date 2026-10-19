@@ -63,18 +63,18 @@ function _moduleContent(&$smarty, $module_name)
                        'channels_capacity','backup_warn_hours') as $k)
             if (isset($_POST[$k])) $in[$k] = $_POST[$k];
         $r = $h->saveThresholds($in, $user);
-        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
+        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'error';
     } elseif ($action === 'saveCritical') {
         $type = isset($_POST['ctype']) ? $_POST['ctype'] : '';
         $mode = isset($_POST['cmode']) ? $_POST['cmode'] : 'list';
         $ids  = (isset($_POST['cids']) && is_array($_POST['cids'])) ? $_POST['cids'] : array();
         $r = $h->saveCriticalEndpoints($type, $mode, $ids, $user);
-        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
+        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'error';
     } elseif ($action === 'saveEndpointPolicy') {
         $dm = isset($_POST['ep_minutes']) ? $_POST['ep_minutes'] : 10;
         $rd = isset($_POST['ep_days']) ? $_POST['ep_days'] : 7;
         $r = $h->saveEndpointPolicy($dm, $rd, $user);
-        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
+        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'error';
     } elseif ($action === 'saveApi') {
         if (isset($_POST['do']) && $_POST['do'] === 'regenerate') {
             $r = $h->regenerateApiToken($user);
@@ -82,7 +82,7 @@ function _moduleContent(&$smarty, $module_name)
             $en = (isset($_POST['api_enabled']) && $_POST['api_enabled'] === '1');
             $r = $h->setApiEnabled($en, $user);
         }
-        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'danger';
+        $msg = $r['message']; $msgType = $r['ok'] ? 'success' : 'error';
     }
 
     return _healthRenderPage($smarty, $h, $local_templates_dir, $msg, $msgType);
