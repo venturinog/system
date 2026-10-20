@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 76
+Release: 77
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,11 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Tue Oct 20 2026 Issabel Foundation <info@issabel.org> - 6.0.0-77
+- Health Center: give the module name to the template. The page asked for its
+  stylesheet and its script with a path that had no module name in it, so
+  both requests ended in a 404.
+
 * Mon Oct 19 2026 Issabel Foundation <info@issabel.org> - 6.0.0-76
 - Backup and restore: complete the language files. The keys the code looks for
   were missing in most of the languages, so the error messages of the backup,

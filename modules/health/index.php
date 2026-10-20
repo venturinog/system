@@ -38,6 +38,9 @@ function _moduleContent(&$smarty, $module_name)
     $templates_dir = isset($arrConf['templates_dir']) ? $arrConf['templates_dir'] : 'themes';
     $local_templates_dir = "$base_dir/modules/$module_name/$templates_dir/".$arrConf['theme'];
 
+    // La plantilla usa {$module_name} para las rutas de sus assets.
+    $smarty->assign('module_name', $module_name);
+
     if (!_healthLib()) {
         return _healthDenied($smarty, $local_templates_dir, _tr('Health module is not installed'));
     }
