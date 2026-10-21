@@ -7,22 +7,22 @@
             <div class="iss-field">
                 <span class="iss-field__label">{$AUTOMATIC_LABEL}</span>
                 <span class="iss-field__control">
-                    <div class="d-flex align-items-center gap-2">
-                        <select name="time" id="time" class="form-select form-select-sm">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <select name="time" id="time" class="form-select form-select-sm" style="flex:1 1 0;min-width:140px;max-width:430px">
                             {html_options options=$backupIntervals selected=$selectedBackupTime}
                         </select>
-                        <button type="submit" name="automatic" value="{$AUTOMATIC_LABEL}" class="btn btn-sm btn-outline-primary"><i class="ti ti-check"></i> {$APPLY}</button>
+                        <button type="submit" name="automatic" value="{$AUTOMATIC_LABEL}" class="btn btn-sm btn-outline-primary" style="flex-shrink:0;max-width:100%;white-space:normal;text-align:left"><i class="ti ti-check"></i> {$APPLY}</button>
                     </div>
                 </span>
             </div>
             <div class="iss-field">
                 <span class="iss-field__label">{$DELETEB_LABEL}</span>
                 <span class="iss-field__control">
-                    <div class="d-flex align-items-center gap-2">
-                        <select name="deltime" id="deltime" class="form-select form-select-sm">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <select name="deltime" id="deltime" class="form-select form-select-sm" style="flex:1 1 0;min-width:140px;max-width:430px">
                             {html_options options=$deleteIntervals selected=$selectedDeleteTime}
                         </select>
-                        <button type="submit" name="automatic_del" value="{$DELETEB_LABEL}" class="btn btn-sm btn-outline-primary"><i class="ti ti-check"></i> {$APPLY}</button>
+                        <button type="submit" name="automatic_del" value="{$DELETEB_LABEL}" class="btn btn-sm btn-outline-primary" style="flex-shrink:0;max-width:100%;white-space:normal;text-align:left"><i class="ti ti-check"></i> {$APPLY}</button>
                     </div>
                 </span>
             </div>

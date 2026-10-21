@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 82
+Release: 83
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-83
+-- Stop the Apply button of the backup automation card from losing its label.
+  The select took the whole width of the column and the button was squeezed
+  until the text was cut. The select now yields the space it does not need
+  and the button wraps its label instead of losing it, so the card also
+  holds with the longest translation.
+
 * Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-82
 -- Show the text of the notice when the FTP server is not configured. The
   alert was painted without its content, because the variable with the
