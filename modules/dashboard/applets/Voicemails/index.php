@@ -35,7 +35,14 @@ class Applet_Voicemails extends Applet_ReportForExtension
         ));
 
         $voicePath = "/var/spool/asterisk/voicemail/default/$extension/INBOX";
-        $files = is_dir($voicePath) ? glob("$voicePath/*.txt") : array();
+        /* glob() devuelve false si no puede resolver el patrón y el directorio
+         * puede no existir (Asterisk lo crea con el contexto de voicemail):
+         * ambos casos se tratan como lista vacía. */
+        $files = array();
+        if (is_dir($voicePath) && is_readable($voicePath)) {
+            $encontrados = glob("$voicePath/*.txt");
+            if (is_array($encontrados)) $files = $encontrados;
+        }
 
         $smarty->assign('rows', $this->_buildRows($files, $extension));
         $smarty->assign('total', count($files));

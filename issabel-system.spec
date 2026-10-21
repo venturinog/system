@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 77
+Release: 78
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-78
+- Guard the voicemail applet against a missing or unreadable spool. glob()
+  returns false on error and count(false) is a fatal TypeError in PHP 8, so
+  the dashboard widget could take the whole page down when the spool existed
+  but could not be read. Both a missing directory and a failed glob are now
+  treated as an empty list.
+
 * Tue Oct 20 2026 Issabel Foundation <info@issabel.org> - 6.0.0-77
 - Health Center: give the module name to the template. The page asked for its
   stylesheet and its script with a path that had no module name in it, so
