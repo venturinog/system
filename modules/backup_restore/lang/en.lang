@@ -91,6 +91,7 @@ $arrLangModule=array(
 "Successfully written" => "Successfully written",
 "Problem downloading" => "There was a problem downloading",
 "TITLE" => "Please Drag and Drop a tar file between lists for uploading or downloading by FTP",
+"CREDENTIALS" => "Server credentials",
 "AUTOMATIC" => "Set Automatic Backup",
 "AUTOMATION" => "Backup automation",
 "DELETEB" => "Delete backups older than",

@@ -107,6 +107,7 @@ $arrLangModule=array(
 "Successfully written" => "با موفقيت ثبت شد",
 "Problem downloading" => "خطا در دانلود",
 "TITLE" => "فايل‌ها را از داخل ليست براي جابجاي بگيريد و بكشيد",
+"CREDENTIALS" => "اطلاعات ورود سرور",
 "AUTOMATIC" => "پشتیبان گیری خودکار",
 "AUTOMATION" => "پشتیبان‌گیری خودکار",
 "DAILY" => "روزانه",

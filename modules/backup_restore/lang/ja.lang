@@ -92,6 +92,7 @@ $arrLangModule=array(
 "Successfully written" => "Successfully written",
 "Problem downloading" => "ダウンロード中に問題が発生しました",
 "TITLE" => "FTP でアップロードまたはダウンロードするため、リスト間で tar ファイルをドラッグしてください",
+"CREDENTIALS" => "サーバーの認証情報",
 "AUTOMATIC" => "Automatic Backup",
 "AUTOMATION" => "自動バックアップ",
 "DAILY" => "毎日",

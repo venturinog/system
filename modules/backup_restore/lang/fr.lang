@@ -93,6 +93,7 @@ $arrLangModule=array(
 "Successfully written" => "Écrit avec succès.",
 "Problem downloading" => "Il y a eu un problème avec le téléchargement!",
 "TITLE" => "SVP Glisser-déplacer un fichier .tar entre listes pour transmettre ou télécharger par FTP",
+"CREDENTIALS" => "Identifiants du serveur",
 "AUTOMATIC" => "Sauvegarde Automatique",
 "AUTOMATION" => "Automatisation des sauvegardes",
 "DAILY" => "Quotidienne",

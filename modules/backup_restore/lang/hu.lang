@@ -94,6 +94,7 @@ $arrLangModule=array(
 "Successfully written" => "Successfully written",
 "Problem downloading" => "Hiba történt a letöltés közben",
 "TITLE" => "Kérjük, húzza a tar fájlt a listák közé, hogy FTP-n keresztül feltöltse vagy letöltse",
+"CREDENTIALS" => "Kiszolgáltatás hitelesítő adatai",
 "AUTOMATIC" => "Automatic Backup",
 "AUTOMATION" => "Automatikus mentés",
 "DAILY" => "Napi",

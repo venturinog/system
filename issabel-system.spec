@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 79
+Release: 80
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,27 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-80
+-- Bring the FTP backup form onto the theme grid. The two file lists and the
+  server credentials shared one card laid out with floats and fixed widths
+  from a legacy stylesheet, so the credentials were squeezed into a sixth of
+  the width and the lists kept the look of the jQuery UI widgets. They are
+  now two cards with their own headers and a full width card for the
+  credentials, and the stylesheet keeps only the drag list rules, with the
+  theme tokens instead of hardcoded colours.
+-- The drag and drop script no longer calls disableSelection(), which was
+  removed from jQuery UI 1.9 and made every page of the module log a
+  TypeError, and the result of the transfer is shown in a theme alert
+  instead of a browser alert.
+-- The five credential fields are marked as required, as the server already
+  required all of them, and the labels of the two lists are no longer form
+  fields that were never shown.
+-- Escape the file names in the FTP form. They were printed without
+  escaping, and the upload button accepts any name, so a backup file could
+  run markup in the session of the administrator.
+-- Stop passing the result of explode() by reference when the local file
+  list is built, which PHP 8 reports on every page of the module.
+
 * Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-79
 -- Move the backup automation settings out of the grid toolbar. The frequency
   of the automatic backup and the age at which the backups are deleted were

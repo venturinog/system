@@ -94,6 +94,7 @@ $arrLangModule=array(
 "Successfully written" => "Successfully written",
 "Problem downloading" => "Si è verificato un problema durante il download",
 "TITLE" => "Trascina e rilascia un file tar tra le liste per caricarlo o scaricarlo via FTP",
+"CREDENTIALS" => "Credenziali del server",
 "AUTOMATIC" => "Automatic Backup",
 "AUTOMATION" => "Backup automatico",
 "DAILY" => "Giornaliero",

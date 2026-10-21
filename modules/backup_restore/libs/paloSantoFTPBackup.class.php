@@ -215,8 +215,12 @@ class paloSantoFTPBackup {
     function obtainFiles($dir){
         $files =  glob($dir."/{*.tar}",GLOB_BRACE);
         $names = array();
-        foreach ($files as $ima)
-            $names[]=array_pop(explode("/",$ima));
+        foreach ($files as $ima) {
+            // array_pop() necesita una variable: explode() no se puede pasar
+            // por referencia y PHP 8 lo avisa por pantalla.
+            $partes = explode("/", $ima);
+            $names[] = array_pop($partes);
+        }
         return $names;
     }
 

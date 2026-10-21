@@ -93,6 +93,7 @@ $arrLangModule=array(
 "Successfully written" => "Successfully written",
 "Problem downloading" => "Възникна проблем при изтеглянето",
 "TITLE" => "Моля, влачете и пуснете tar файл между списъците, за да го качите или свалите през FTP",
+"CREDENTIALS" => "Данни за връзка към сървъра",
 "AUTOMATIC" => "Automatic Backup",
 "AUTOMATION" => "Автоматично архивиране",
 "DAILY" => "Ежедневно",

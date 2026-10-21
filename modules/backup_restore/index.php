@@ -936,6 +936,11 @@ function viewFormFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB, $
         'module_name'       =>  $module_name,
     ));
 
+    // Rotulos de las dos listas de archivos y de la tarjeta de credenciales.
+    $smarty->assign('LOCAL_LABEL', _tr('Local'));
+    $smarty->assign('REMOTE_LABEL', _tr('Server FTP'));
+    $smarty->assign('CREDENTIALS_TITLE', _tr('CREDENTIALS'));
+
     $pFTPBackup = new paloSantoFTPBackup($pDB);
 
     // Datos a mostrar en el formulario de credenciales del servidor
@@ -1079,28 +1084,32 @@ function obtainList($fileString)
 
 function createFieldForm()
 {
+    // Los cinco campos son obligatorios: validateFTPForm() los exige todos y
+    // el atributo required impide enviar el formulario con alguno vacio.
+    // 'local' y 'server_ftp' ya no son campos: eran los rotulos de las dos
+    // listas de archivos y se asignan aparte, en viewFormFTPBackup().
     $arrFields = array(
         "server"   => array(
             "LABEL"                  => _tr("Server FTP"),
-            "REQUIRED"               => "no",
+            "REQUIRED"               => "si",
             "INPUT_TYPE"             => "TEXT",
-            "INPUT_EXTRA_PARAM"      => "",
+            "INPUT_EXTRA_PARAM"      => array("class" => "form-control", "required" => "required"),
             "VALIDATION_TYPE"        => "text",
             "VALIDATION_EXTRA_PARAM" => ""
             ),
         "port"   => array(
             "LABEL"                  => _tr("Port"),
-            "REQUIRED"               => "no",
+            "REQUIRED"               => "si",
             "INPUT_TYPE"             => "TEXT",
-            "INPUT_EXTRA_PARAM"      => "",
+            "INPUT_EXTRA_PARAM"      => array("class" => "form-control", "required" => "required", "inputmode" => "numeric"),
             "VALIDATION_TYPE"        => "text",
             "VALIDATION_EXTRA_PARAM" => ""
             ),
         "user"   => array(
             "LABEL"                  => _tr("User"),
-            "REQUIRED"               => "no",
+            "REQUIRED"               => "si",
             "INPUT_TYPE"             => "TEXT",
-            "INPUT_EXTRA_PARAM"      => "",
+            "INPUT_EXTRA_PARAM"      => array("class" => "form-control", "required" => "required"),
             "VALIDATION_TYPE"        => "text",
             "VALIDATION_EXTRA_PARAM" => ""
             ),
@@ -1108,31 +1117,15 @@ function createFieldForm()
             "LABEL"                  => _tr("Password"),
             "REQUIRED"               => "si",
             "INPUT_TYPE"             => "PASSWORD",
-            "INPUT_EXTRA_PARAM"      => "",
-            "VALIDATION_TYPE"        => "text",
-            "VALIDATION_EXTRA_PARAM" => ""
-            ),
-        "local"   => array(
-            "LABEL"                  => _tr("Local"),
-            "REQUIRED"               => "no",
-            "INPUT_TYPE"             => "TEXT",
-            "INPUT_EXTRA_PARAM"      => "",
-            "VALIDATION_TYPE"        => "text",
-            "VALIDATION_EXTRA_PARAM" => ""
-            ),
-        "server_ftp"   => array(
-            "LABEL"                  => _tr("Server FTP"),
-            "REQUIRED"               => "no",
-            "INPUT_TYPE"             => "TEXT",
-            "INPUT_EXTRA_PARAM"      => "",
+            "INPUT_EXTRA_PARAM"      => array("class" => "form-control", "required" => "required"),
             "VALIDATION_TYPE"        => "text",
             "VALIDATION_EXTRA_PARAM" => ""
             ),
         "pathServer"   => array(
             "LABEL"                  => _tr("Path Server FTP"),
-            "REQUIRED"               => "no",
+            "REQUIRED"               => "si",
             "INPUT_TYPE"             => "TEXT",
-            "INPUT_EXTRA_PARAM"      => "",
+            "INPUT_EXTRA_PARAM"      => array("class" => "form-control", "required" => "required"),
             "VALIDATION_TYPE"        => "text",
             "VALIDATION_EXTRA_PARAM" => ""
             ),
