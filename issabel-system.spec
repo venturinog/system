@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 80
+Release: 81
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,20 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-81
+-- Refuse the FTP transfer when the server is not configured. Opening the
+  form without credentials used to fail with a global error and offered the
+  two lists to drag, although no transfer could succeed. The page now says
+  that the credentials have to be set and the lists are not draggable until
+  they are, and the handlers answer with the same message instead of trying
+  to reach a server that is not there.
+-- The answer of the drag and drop handlers now starts with OK| or ERR|, so
+  the page can tell a failed transfer from a successful one and paint the
+  alert of the theme accordingly.
+-- Remove the stray comma that four language files had after the closing
+  tag. It was outside the PHP block, so it was printed at the top of every
+  page in Spanish, Farsi, Russian and Ukrainian.
+
 * Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-80
 -- Bring the FTP backup form onto the theme grid. The two file lists and the
   server credentials shared one card laid out with floats and fixed widths

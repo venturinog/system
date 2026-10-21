@@ -108,6 +108,7 @@ $arrLangModule=array(
 "Problem downloading" => "خطا در دانلود",
 "TITLE" => "فايل‌ها را از داخل ليست براي جابجاي بگيريد و بكشيد",
 "CREDENTIALS" => "اطلاعات ورود سرور",
+"FTP_NOT_CONFIGURED" => "برای فعال‌سازی انتقال، اطلاعات ورود سرور را تنظیم کنید",
 "AUTOMATIC" => "پشتیبان گیری خودکار",
 "AUTOMATION" => "پشتیبان‌گیری خودکار",
 "DAILY" => "روزانه",
@@ -160,4 +161,4 @@ $arrLangModule=array(
 "Upload successfully" => "بارگذاری موفق بود",
 "is not a file" => "یک فایل نیست",
 );
-?>,
+?>

@@ -953,6 +953,11 @@ function viewFormFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB, $
     );
     $dbcred = $pFTPBackup->obtenerCredencialesFTP();
 
+    // Sin credenciales guardadas no hay servidor al que preguntar: la pagina
+    // se abre igual, pero sin arrastrar y soltar y sin un error global.
+    $hayCredenciales = is_array($dbcred) && trim((string)$dbcred['server']) !== '';
+    $smarty->assign('FTP_CONFIGURED', $hayCredenciales);
+
     if (is_array($dbcred)) {
         foreach (array_keys($ftpcred) as $k) {
             if (isset($dbcred[$k])) $ftpcred[$k] = $dbcred[$k];
@@ -965,8 +970,12 @@ function viewFormFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB, $
 
     // Listado de archivos local y remoto
     $smarty->assign('local_files', $pFTPBackup->obtainFiles($arrConf['dir']));
-    $smarty->assign('remote_files', $pFTPBackup->listarArchivosTarFTP());
-    if ($pFTPBackup->errMsg != '') $smarty->assign('mb_message', $pFTPBackup->errMsg);
+    if ($hayCredenciales) {
+        $smarty->assign('remote_files', (array)$pFTPBackup->listarArchivosTarFTP());
+        if ($pFTPBackup->errMsg != '') $smarty->assign('mb_message', $pFTPBackup->errMsg);
+    } else {
+        $smarty->assign('remote_files', array());
+    }
 
     $arrForm = createFieldForm();
     $campos = array('server','port','user','password','pathServer');
@@ -1045,14 +1054,16 @@ function file_upload_FTPServer($module_name, &$pDB)
 
     $array = obtainList($file);
     if($lista == 'droptrue2' && $array[0] == 'out')
-        return _tr('Error Drag Drop');
+        return 'ERR|'._tr('Error Drag Drop');
     if(!$array[1])
-        return _tr('Error Drag Drop');
+        return 'ERR|'._tr('Error Drag Drop');
     $pFTPBackup = new paloSantoFTPBackup($pDB);
+    if (!is_array($pFTPBackup->obtenerCredencialesFTP()))
+        return 'ERR|'._tr('FTP server credentials not set');
     $r = $pFTPBackup->enviarArchivoFTP($array[1]);
     if (!$r)
-        return $pFTPBackup->errMsg;
-    return _tr('Successfully uploaded').' '.$array[1];
+        return 'ERR|'.$pFTPBackup->errMsg;
+    return 'OK|'._tr('Successfully uploaded').' '.$array[1];
 }
 
 function file_download_FTPServer($module_name, &$pDB)
@@ -1062,14 +1073,16 @@ function file_download_FTPServer($module_name, &$pDB)
 
     $array = obtainList($file);
     if($lista == 'droptrue' && $array[0] == 'inn')
-        return _tr('Error Drag Drop');
+        return 'ERR|'._tr('Error Drag Drop');
     if(!$array[1])
-        return _tr('Error Drag Drop');
+        return 'ERR|'._tr('Error Drag Drop');
     $pFTPBackup = new paloSantoFTPBackup($pDB);
+    if (!is_array($pFTPBackup->obtenerCredencialesFTP()))
+        return 'ERR|'._tr('FTP server credentials not set');
     $r = $pFTPBackup->recibirArchivoFTP($array[1]);
     if (!$r)
-        return $pFTPBackup->errMsg;
-    return _tr('Successfully written').' '.$array[1];
+        return 'ERR|'.$pFTPBackup->errMsg;
+    return 'OK|'._tr('Successfully written').' '.$array[1];
 }
 
 function obtainList($fileString)

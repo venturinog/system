@@ -8,6 +8,12 @@
         </div>
     </div>
 
+    {if !$FTP_CONFIGURED}
+    <div class="iss-alert iss-alert--info">
+        <div class="iss-alert__content">{$FTP_NOT_CONFIGURED}</div>
+    </div>
+    {/if}
+
     <div id="ftp-message"></div>
 
     <div class="row g-3">
@@ -15,7 +21,7 @@
             <section class="iss-card h-100">
                 <header class="iss-card__header"><i class="ti ti-folder"></i> {$LOCAL_LABEL}</header>
                 <div class="iss-card__body">
-                    <ul id="sortable1" class="droptrue list-unstyled border rounded p-2 mb-0" style="min-height:140px">
+                    <ul id="sortable1" class="list-unstyled border rounded p-2 mb-0{if $FTP_CONFIGURED} droptrue{/if}" style="min-height:140px">
                         {foreach from=$local_files item=file}
                         <li id="inn_{$file|escape}">{$file|escape}</li>
                         {/foreach}
@@ -27,7 +33,7 @@
             <section class="iss-card h-100">
                 <header class="iss-card__header"><i class="ti ti-server"></i> {$REMOTE_LABEL}</header>
                 <div class="iss-card__body">
-                    <ul id="sortable2" class="droptrue2 list-unstyled border rounded p-2 mb-0" style="min-height:140px">
+                    <ul id="sortable2" class="list-unstyled border rounded p-2 mb-0{if $FTP_CONFIGURED} droptrue2{/if}" style="min-height:140px">
                         {foreach from=$remote_files item=file}
                         <li id="out_{$file|escape}">{$file|escape}</li>
                         {/foreach}

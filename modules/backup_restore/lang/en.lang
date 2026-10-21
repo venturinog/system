@@ -92,6 +92,7 @@ $arrLangModule=array(
 "Problem downloading" => "There was a problem downloading",
 "TITLE" => "Please Drag and Drop a tar file between lists for uploading or downloading by FTP",
 "CREDENTIALS" => "Server credentials",
+"FTP_NOT_CONFIGURED" => "Set the server credentials below to enable the transfer",
 "AUTOMATIC" => "Set Automatic Backup",
 "AUTOMATION" => "Backup automation",
 "DELETEB" => "Delete backups older than",

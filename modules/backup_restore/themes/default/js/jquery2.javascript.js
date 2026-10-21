@@ -39,7 +39,9 @@ function ftp_mostrar_aviso(respuesta) {
 
 $(document).ready((function() {
 
-    if (!document.getElementById("sortable1")) return;
+    /* Sin credenciales del servidor las listas no son arrastrables: no hay
+     * nada que transferir. */
+    if ($("ul.droptrue").length === 0) return;
 
     $("ul.droptrue").sortable({
         connectWith: 'ul'

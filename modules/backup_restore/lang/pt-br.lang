@@ -95,6 +95,7 @@ $arrLangModule=array(
 "Problem downloading" => "Ocorreu um problema durante o download",
 "TITLE" => "Arraste e solte um arquivo tar entre as listas para enviá-lo ou baixá-lo por FTP",
 "CREDENTIALS" => "Credenciais do servidor",
+"FTP_NOT_CONFIGURED" => "Defina as credenciais do servidor abaixo para habilitar a transferência",
 "AUTOMATIC" => "Automatic Backup",
 "AUTOMATION" => "Automação de backups",
 "DAILY" => "Diariamente",
