@@ -95,6 +95,7 @@ $arrLangModule=array(
 "Problem downloading" => "Hi va haver un problema en la baixada",
 "TITLE" => "Si us plau, arrossegueu i deixeu anar un fitxer tar entre les llistes per pujar-lo o baixar-lo per FTP",
 "AUTOMATIC" => "Automatic Backup",
+"AUTOMATION" => "Automatització de les còpies de seguretat",
 "DAILY" => "Diàriament",
 "MONTHLY" => "Mensualment",
 "WEEKLY" => "Setmanalment",

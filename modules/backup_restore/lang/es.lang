@@ -93,6 +93,7 @@ La <i>Passphrase</i> debería ser la contraseña de administrador web del sistem
 "Problem downloading" => "Se ha encontrado un problema al descargar",
 "TITLE" => "Por favor arrastre y coloque un archivo tar entre listas para enviar o descargar vía FTP",
 "AUTOMATIC" => "Establecer Respaldo Automático",
+"AUTOMATION" => "Automatización de respaldos",
 "DELETEB" => "Borrar backups más antiguos que",
 "DAILY" => "Diario",
 "MONTHLY" => "Mensual",

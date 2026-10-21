@@ -95,6 +95,7 @@ $arrLangModule=array(
 "Problem downloading" => "A apărut o problemă la descărcare",
 "TITLE" => "Trage și eliberează un fișier tar între liste pentru a-l încărca sau descărca prin FTP",
 "AUTOMATIC" => "Automatic Backup",
+"AUTOMATION" => "Copiere de rezervă automată",
 "DAILY" => "Zilnic",
 "MONTHLY" => "Lunar",
 "WEEKLY" => "Săptămânal",

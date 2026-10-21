@@ -95,6 +95,7 @@ $arrLangModule=array(
 "Problem downloading" => "Ocorreu um problema ao baixar",
 "TITLE" => "Arraste e solte um arquivo tar entre as listas para enviar ou baixar por FTP",
 "AUTOMATIC" => "Backup Automático",
+"AUTOMATION" => "Automação de backups",
 "DAILY" => "Diario",
 "MONTHLY" => "Mensal",
 "WEEKLY" => "Semanal",

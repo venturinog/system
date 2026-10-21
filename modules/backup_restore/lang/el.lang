@@ -95,6 +95,7 @@ $arrLangModule=array(
 "Problem downloading" => "Υπήρξε πρόβλημα κατά τη λήψη",
 "TITLE" => "Παρακαλώ σύρετε και αφήστε ένα αρχείο tar μεταξύ των λιστών για μεταφόρτωση ή λήψη μέσω FTP",
 "AUTOMATIC" => "Automatic Backup",
+"AUTOMATION" => "Αυτοματοποίηση αντιγράφων ασφαλείας",
 "DAILY" => "Καθημερινά",
 "MONTHLY" => "Μηνιαία",
 "WEEKLY" => "Εβδομαδιαία",

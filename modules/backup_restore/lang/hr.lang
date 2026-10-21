@@ -95,6 +95,7 @@ $arrLangModule=array(
 "Problem downloading" => "Došlo je do problema pri preuzimanju",
 "TITLE" => "Molimo povucite i ispustite tar datoteku između popisa za učitavanje ili preuzimanje putem FTP-a",
 "AUTOMATIC" => "Automatic Backup",
+"AUTOMATION" => "Automatsko backupiranje",
 "DAILY" => "Svakodnevno",
 "MONTHLY" => "Mjesečno",
 "WEEKLY" => "Tjedno",

@@ -93,6 +93,7 @@ $arrLangModule=array(
 "Problem downloading" => "ダウンロード中に問題が発生しました",
 "TITLE" => "FTP でアップロードまたはダウンロードするため、リスト間で tar ファイルをドラッグしてください",
 "AUTOMATIC" => "Automatic Backup",
+"AUTOMATION" => "自動バックアップ",
 "DAILY" => "毎日",
 "MONTHLY" => "毎月",
 "WEEKLY" => "毎週",

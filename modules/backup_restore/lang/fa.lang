@@ -108,6 +108,7 @@ $arrLangModule=array(
 "Problem downloading" => "خطا در دانلود",
 "TITLE" => "فايل‌ها را از داخل ليست براي جابجاي بگيريد و بكشيد",
 "AUTOMATIC" => "پشتیبان گیری خودکار",
+"AUTOMATION" => "پشتیبان‌گیری خودکار",
 "DAILY" => "روزانه",
 "MONTHLY" => "ماهانه",
 "WEEKLY" => "هفتگي",

@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 78
+Release: 79
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,13 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-79
+-- Move the backup automation settings out of the grid toolbar. The frequency
+  of the automatic backup and the age at which the backups are deleted were
+  two combos in the list toolbar, applied with a magnifying glass that looked
+  like a filter instead of an action. They now sit in their own card above
+  the list, each with its own Apply button.
+
 * Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-78
 - Guard the voicemail applet against a missing or unreadable spool. glob()
   returns false on error and count(false) is a fatal TypeError in PHP 8, so

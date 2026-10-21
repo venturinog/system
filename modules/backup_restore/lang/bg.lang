@@ -94,6 +94,7 @@ $arrLangModule=array(
 "Problem downloading" => "Възникна проблем при изтеглянето",
 "TITLE" => "Моля, влачете и пуснете tar файл между списъците, за да го качите или свалите през FTP",
 "AUTOMATIC" => "Automatic Backup",
+"AUTOMATION" => "Автоматично архивиране",
 "DAILY" => "Ежедневно",
 "MONTHLY" => "Ежемесечно",
 "WEEKLY" => "Седмично",

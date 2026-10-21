@@ -282,6 +282,26 @@ function report_backup_restore($smarty, $module_name, $local_templates_dir, $dir
         .htmlspecialchars(_tr('Upload'), ENT_COMPAT, 'UTF-8').'</label>'
         .'<input id="iss-upload-backup" type="file" name="upload_backup_file" class="visually-hidden" onchange="return confirm_upload(this)">');
 
+    $contenidoModulo = $oGrid->fetchGrid($arrGrid, $arrData);
+
+    // La automatizacion (frecuencia del respaldo automatico y retencion de los
+    // respaldos) no es una accion de la lista: va en una tarjeta propia, arriba
+    // de la grilla, con su boton de aplicar. Antes vivia en la barra de la
+    // grilla como un combo con una lupa, que no aplicaba a nada.
+    $tarjeta = automation_card($smarty, $module_name, $local_templates_dir, $time, $deltime);
+
+    return $tarjeta . $contenidoModulo;
+}
+
+/**
+ * Tarjeta con la configuracion de la automatizacion de los respaldos.
+ *
+ * Los botones conservan los nombres "automatic" y "automatic_del" y los
+ * selectores los nombres "time" y "deltime": son los que despacha getAction()
+ * y lee automatic_backup(), de modo que la logica no cambia.
+ */
+function automation_card($smarty, $module_name, $local_templates_dir, $time, $deltime)
+{
     $backupIntervals = array(
         'DISABLED'  =>  _tr('DISABLED'),
         'DAILY'     =>  _tr('DAILY'),
@@ -298,11 +318,17 @@ function report_backup_restore($smarty, $module_name, $local_templates_dir, $dir
         '365'    => "365 ". _tr('DAYS'),
     );
 
-    $oGrid->addComboAction("time",_tr("AUTOMATIC"),$backupIntervals,$time,'automatic');
-    $oGrid->addComboAction("deltime",_tr("DELETEB"),$deleteIntervals,$deltime,'automatic_del');
-    $contenidoModulo = $oGrid->fetchGrid($arrGrid, $arrData);
+    $smarty->assign("module_name", $module_name);
+    $smarty->assign("AUTOMATION_TITLE", _tr('AUTOMATION'));
+    $smarty->assign("AUTOMATIC_LABEL", _tr('AUTOMATIC'));
+    $smarty->assign("DELETEB_LABEL", _tr('DELETEB'));
+    $smarty->assign("APPLY", _tr('Apply changes'));
+    $smarty->assign("backupIntervals", $backupIntervals);
+    $smarty->assign("deleteIntervals", $deleteIntervals);
+    $smarty->assign("selectedBackupTime", $time);
+    $smarty->assign("selectedDeleteTime", $deltime);
 
-    return $contenidoModulo;
+    return $smarty->fetch("$local_templates_dir/automation.tpl");
 }
 
 function automatic_backup($smarty, $module_name, $local_templates_dir, $dir_backup, &$pDB, $id)
