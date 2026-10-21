@@ -2,7 +2,7 @@
 Name: issabel-system
 Summary: Issabel System Module
 Version: 6.0.0
-Release: 81
+Release: 82
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -197,6 +197,11 @@ fi
 %config(noreplace) /etc/cron.d/issabel-healthcollect
 
 %changelog
+* Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-82
+-- Show the text of the notice when the FTP server is not configured. The
+  alert was painted without its content, because the variable with the
+  message was never handed to the template.
+
 * Wed Oct 21 2026 Issabel Foundation <info@issabel.org> - 6.0.0-81
 -- Refuse the FTP transfer when the server is not configured. Opening the
   form without credentials used to fail with a global error and offered the

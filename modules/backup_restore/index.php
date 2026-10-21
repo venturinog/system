@@ -940,6 +940,7 @@ function viewFormFTPBackup($smarty, $module_name, $local_templates_dir, &$pDB, $
     $smarty->assign('LOCAL_LABEL', _tr('Local'));
     $smarty->assign('REMOTE_LABEL', _tr('Server FTP'));
     $smarty->assign('CREDENTIALS_TITLE', _tr('CREDENTIALS'));
+    $smarty->assign('FTP_NOT_CONFIGURED', _tr('FTP_NOT_CONFIGURED'));
 
     $pFTPBackup = new paloSantoFTPBackup($pDB);
 
