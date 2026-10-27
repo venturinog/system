@@ -339,20 +339,16 @@ function automatic_backup($smarty, $module_name, $local_templates_dir, $dir_back
        $time = getParameter("deltime");
     }
 
-    //if there is data in database
     $pFTPBackup = new paloSantoFTPBackup($pDB);
-    $result = $pFTPBackup->getStatusAutomaticBackupById($id);
-    if(isset($result) && $result != "")
-        $pFTPBackup->updateStatus($id,$time);
-    else
-        $pFTPBackup->insertStatus($id,$time);
-        if ($id == 2 && $time != "DISABLED") {
-            $smarty->assign("mb_message", _tr('SUCCESSFUL').". "._tr('EVERYDAYBACKUP')." ".$time." "._tr('WILLBEDELETED'));
-        } elseif ( $id == 1) {
-            $smarty->assign("mb_message", _tr('SUCCESSFUL').". "._tr('Automatic backup configured'));
-        } else {
-           $smarty->assign("mb_message", _tr('SUCCESSFUL'));
-        }
+    $pFTPBackup->saveStatus($id, $time);
+
+    if ($id == 2 && $time != "DISABLED") {
+        $smarty->assign("mb_message", _tr('SUCCESSFUL').". "._tr('EVERYDAYBACKUP')." ".$time." "._tr('WILLBEDELETED'));
+    } elseif ( $id == 1) {
+        $smarty->assign("mb_message", _tr('SUCCESSFUL').". "._tr('Automatic backup configured'));
+    } else {
+       $smarty->assign("mb_message", _tr('SUCCESSFUL'));
+    }
     $pFTPBackup->createCronFile($id,$time);
 
     return report_backup_restore($smarty, $module_name, $local_templates_dir, $dir_backup, $pDB);

@@ -262,6 +262,21 @@ class paloSantoFTPBackup {
         }
         return true;
     }
+
+    /**
+     * Guarda el estado de una automatizacion. Actualiza la fila si existe y la
+     * crea si no. getFirstRowQuery() devuelve array() cuando no hay fila (solo
+     * FALSE en error), de modo que hay que mirar count(): array() != "" es
+     * cierto en PHP y hacia que el UPDATE se comiera el INSERT.
+     */
+    function saveStatus($id, $status)
+    {
+        $result = $this->getStatusAutomaticBackupById($id);
+        if (is_array($result) && count($result) > 0) {
+            return $this->updateStatus($id, $status);
+        }
+        return $this->insertStatus($id, $status);
+    }
     
     function createCronFile($id,$time)
     {
